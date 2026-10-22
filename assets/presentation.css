@@ -92,6 +92,52 @@ img, svg { display: block; }
   mask-image: linear-gradient(100deg, transparent 30%, #000 85%);
   -webkit-mask-image: linear-gradient(100deg, transparent 30%, #000 85%);
 }
+/* ---------- CyphronTech branding ---------- */
+:root { --ct-blue: #3A6CB0; --ct-blue-soft: #8FB4E6; }
+.brandbar {
+  position: relative; z-index: 2;
+  max-width: var(--wrap); margin: 0 auto;
+  padding: 20px var(--gutter) 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--white); text-decoration: none; }
+.brand__tile {
+  width: 34px; height: 34px; border-radius: 9px; flex: none;
+  background: var(--white); display: grid; place-items: center;
+}
+.brand__tile img { display: block; width: 24px; height: auto; }
+.brand__name { font-weight: 800; font-size: 19px; letter-spacing: -0.01em; }
+.brand__name span { color: var(--ct-blue-soft); }
+.brand:hover .brand__name { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+.brandbar__tag { font-size: 13px; color: #C9D6D4; letter-spacing: .01em; }
+.hero__meta a.by { color: inherit; text-decoration: underline; text-decoration-color: var(--ct-blue-soft); text-underline-offset: 3px; }
+
+.badge {
+  position: fixed; left: 14px; bottom: 14px; z-index: 50;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px 6px 6px; border-radius: 999px;
+  background: rgba(255, 255, 255, .92); color: var(--ink);
+  border: 1px solid var(--line); box-shadow: 0 4px 14px rgba(16, 32, 31, .12);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  font-size: 12px; text-decoration: none; opacity: .85; transition: opacity .15s var(--ease);
+}
+.badge:hover { opacity: 1; }
+.badge img { width: 20px; height: auto; background: var(--white); border-radius: 999px; padding: 3px; }
+.badge b { color: var(--ct-blue); }
+@media (max-width: 520px) { .badge span { display: none; } .badge { padding: 6px; } }
+@media print { .badge { display: none; } }
+
+.viewer__brand {
+  display: inline-flex; align-items: center; gap: 8px; margin-right: 6px;
+  color: #C9D6D4; font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap;
+}
+.viewer__brand .brand__tile { width: 26px; height: 26px; border-radius: 7px; }
+.viewer__brand .brand__tile img { width: 18px; }
+.viewer__brand:hover { color: var(--white); }
+@media (max-width: 720px) { .viewer__brand span:last-child { display: none; } }
+
+.footer__co .brand__name { font-size: 22px; }
+
 .hero__inner {
   position: relative; z-index: 1;
   max-width: var(--wrap); margin: 0 auto;

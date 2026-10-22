@@ -8,7 +8,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400..900;1,400..700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/presentation.css?v=3">
+<link rel="stylesheet" href="assets/presentation.css?v=4">
+<link rel="icon" type="image/png" href="assets/cyphrontech-mark.png">
+<meta name="author" content="CyphronTech">
 </head>
 <body>
 
@@ -18,6 +20,13 @@
      HERO / COVER
      ============================================================ -->
 <header class="hero" id="top">
+  <div class="brandbar">
+    <a class="brand" href="https://cyphrontech.com/" target="_blank" rel="noopener" aria-label="CyphronTech website">
+      <span class="brand__tile"><img src="assets/cyphrontech-mark.png" alt="" width="24" height="20"></span>
+      <span class="brand__name">Cyphron<span>Tech</span></span>
+    </a>
+    <span class="brandbar__tag">AI-Native Software Agency · Confidential client preview</span>
+  </div>
   <div class="hero__inner">
     <div class="hero__text">
       <p class="hero__mark"><span class="logo" aria-hidden="true">HB</span>Wireframes for client review</p>
@@ -30,7 +39,7 @@
         <!-- EDITABLE: client name -->
         <div><dt>Prepared for</dt><dd>[Client]</dd></div>
         <!-- EDITABLE: your company name -->
-        <div><dt>Prepared by</dt><dd>CyphronTech</dd></div>
+        <div><dt>Prepared by</dt><dd><a class="by" href="https://cyphrontech.com/" target="_blank" rel="noopener">CyphronTech</a></dd></div>
       </dl>
 
       <div class="hero__actions">
@@ -203,13 +212,15 @@
     </div>
     <div class="footer__meta">
       <!-- EDITABLE: company name and contact -->
-      <p class="footer__co"><a href="https://cyphrontech.com/" target="_blank" rel="noopener">CyphronTech</a></p>
+      <p class="footer__co"><a class="brand" href="https://cyphrontech.com/" target="_blank" rel="noopener"><span class="brand__tile"><img src="assets/cyphrontech-mark.png" alt="" width="24" height="20"></span><span class="brand__name">Cyphron<span>Tech</span></span></a></p>
+      <p class="muted-inv small">AI-Native Software Agency · AI automation and software, built to ship</p>
       <ul class="footer__contact">
         <li><a href="mailto:contact@cyphrontech.com">contact@cyphrontech.com</a></li>
         <li><a href="tel:+918275257252">+91 82752 57252</a></li>
         <li><a href="https://cyphrontech.com/" target="_blank" rel="noopener">cyphrontech.com</a></li>
       </ul>
       <p class="muted-inv small">Wireframes only. Names, numbers and amounts are sample data.</p>
+      <p class="muted-inv small">© 2026 CyphronTech. Confidential, prepared for client review only.</p>
       <button type="button" class="btn btn--light" data-open="0">Start presentation</button>
     </div>
   </div>
@@ -218,6 +229,10 @@
 <!-- ============================================================
      VIEWER (modal dialog)
      ============================================================ -->
+<a class="badge" href="https://cyphrontech.com/" target="_blank" rel="noopener" aria-label="Designed by CyphronTech">
+  <img src="assets/cyphrontech-mark.png" alt="" width="20" height="17"><span>Designed by <b>CyphronTech</b></span>
+</a>
+
 <div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-labelledby="viewerTitle" hidden>
   <div class="viewer__bar">
     <div class="viewer__id">
@@ -226,6 +241,7 @@
       <span class="viewer__group" id="viewerGroup"></span>
     </div>
     <div class="viewer__tools">
+      <a class="viewer__brand" href="https://cyphrontech.com/" target="_blank" rel="noopener" aria-label="CyphronTech website"><span class="brand__tile"><img src="assets/cyphrontech-mark.png" alt="" width="20" height="17"></span><span>by CyphronTech</span></a>
       <div class="seg" role="group" aria-label="Zoom">
         <button type="button" class="seg__btn" data-fit="fit" aria-pressed="true">Fit</button>
         <button type="button" class="seg__btn" data-fit="actual" aria-pressed="false">100%</button>
