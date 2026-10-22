@@ -1,0 +1,249 @@
+{
+ "v": 3,
+ "attachments": {},
+ "boards": {
+  "A2_Booking.dc.html": {
+   "expand": "fill",
+   "h": 1050,
+   "is_interactive": true,
+   "page": "admin",
+   "title": "A2 Booking options",
+   "w": 1280,
+   "x": 1360,
+   "y": 0
+  },
+  "A3_Venues.dc.html": {
+   "expand": "fill",
+   "h": 1200,
+   "is_interactive": true,
+   "page": "admin",
+   "title": "A3 Hall / Room configuration",
+   "w": 1280,
+   "x": 2720,
+   "y": 0
+  },
+  "A4_Mohalla.dc.html": {
+   "expand": "fill",
+   "h": 1100,
+   "is_interactive": true,
+   "page": "admin",
+   "title": "A4 Sector / Mohalla setup",
+   "w": 1280,
+   "x": 0,
+   "y": 1400
+  },
+  "A5_Payments.dc.html": {
+   "expand": "fill",
+   "h": 1150,
+   "is_interactive": true,
+   "page": "admin",
+   "title": "A5 Payment collection",
+   "w": 1280,
+   "x": 1360,
+   "y": 1400
+  },
+  "A6_Users.dc.html": {
+   "expand": "fill",
+   "h": 1000,
+   "is_interactive": true,
+   "page": "admin",
+   "title": "A6 User maintenance",
+   "w": 1280,
+   "x": 2720,
+   "y": 1400
+  },
+  "A7_Expenses.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "is_interactive": true,
+   "page": "admin",
+   "title": "A9 Expenses (future)",
+   "w": 1280,
+   "x": 2720,
+   "y": 2750
+  },
+  "A8_Cancellations.dc.html": {
+   "expand": "fill",
+   "h": 1150,
+   "is_interactive": true,
+   "page": "admin",
+   "title": "A7 Cancellation approval",
+   "w": 1280,
+   "x": 0,
+   "y": 2750
+  },
+  "A9_Miqaat.dc.html": {
+   "expand": "fill",
+   "h": 950,
+   "is_interactive": true,
+   "page": "admin",
+   "title": "A8 Miqaat details",
+   "w": 1280,
+   "x": 1360,
+   "y": 2750
+  },
+  "M1_Dashboard.dc.html": {
+   "expand": "fill",
+   "h": 950,
+   "is_interactive": true,
+   "page": "mohalla",
+   "title": "M1 Dashboard",
+   "w": 1280,
+   "x": 0,
+   "y": 0
+  },
+  "M2_Booking.dc.html": {
+   "expand": "fill",
+   "h": 1050,
+   "is_interactive": true,
+   "page": "mohalla",
+   "title": "M2 Booking: venue and date",
+   "w": 1280,
+   "x": 1360,
+   "y": 0
+  },
+  "M3_BookingReview.dc.html": {
+   "expand": "fill",
+   "h": 1050,
+   "is_interactive": true,
+   "page": "mohalla",
+   "title": "M3 Booking: household and review",
+   "w": 1280,
+   "x": 2720,
+   "y": 0
+  },
+  "M4_Payment.dc.html": {
+   "expand": "fill",
+   "h": 1100,
+   "is_interactive": true,
+   "page": "mohalla",
+   "title": "M4 Payment and WhatsApp",
+   "w": 1280,
+   "x": 0,
+   "y": 1250
+  },
+  "M5_Bookings.dc.html": {
+   "expand": "fill",
+   "h": 1000,
+   "is_interactive": true,
+   "page": "mohalla",
+   "title": "M5 List of bookings",
+   "w": 1280,
+   "x": 1360,
+   "y": 1250
+  },
+  "M6_Households.dc.html": {
+   "expand": "fill",
+   "h": 1200,
+   "is_interactive": true,
+   "page": "mohalla",
+   "title": "M6 Households",
+   "w": 1280,
+   "x": 2720,
+   "y": 1250
+  },
+  "M7_Cancel.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "is_interactive": true,
+   "page": "mohalla",
+   "title": "M7 Cancellation flow",
+   "w": 1280,
+   "x": 0,
+   "y": 2650
+  },
+  "Main.dc.html": {
+   "expand": "fill",
+   "h": 1050,
+   "is_interactive": true,
+   "page": "admin",
+   "title": "A1 Admin dashboard",
+   "w": 1280,
+   "x": 0,
+   "y": 0
+  },
+  "Login.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1280,
+   "h": 820,
+   "title": "Login",
+   "page": "login",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "M8_WhatsApp_Mobile.dc.html": {
+   "x": 1360,
+   "y": 2650,
+   "w": 390,
+   "h": 844,
+   "title": "M8 WhatsApp messages on mobile",
+   "page": "mohalla",
+   "radius": 24
+  }
+ },
+ "createdOnFiles": {
+  "at": "2026-10-22T12:00:00Z",
+  "v": 1
+ },
+ "designSystems": [],
+ "launch": {
+  "view": "canvas",
+  "page": "login"
+ },
+ "notes": {
+  "t_admin": {
+   "kind": "title1",
+   "maxW": 4000,
+   "page": "admin",
+   "text": "Admin — Husainin Baug Admin",
+   "w": 240,
+   "x": 0,
+   "y": -300
+  },
+  "t_moh": {
+   "kind": "title1",
+   "maxW": 4000,
+   "page": "mohalla",
+   "text": "Sector / Mohalla user — BURHANI MOHALLA (POONA)",
+   "w": 240,
+   "x": 0,
+   "y": -300
+  }
+ },
+ "order": [
+  "Login.dc.html",
+  "Main.dc.html",
+  "A2_Booking.dc.html",
+  "A3_Venues.dc.html",
+  "A4_Mohalla.dc.html",
+  "A5_Payments.dc.html",
+  "A6_Users.dc.html",
+  "A8_Cancellations.dc.html",
+  "A9_Miqaat.dc.html",
+  "A7_Expenses.dc.html",
+  "M1_Dashboard.dc.html",
+  "M2_Booking.dc.html",
+  "M3_BookingReview.dc.html",
+  "M4_Payment.dc.html",
+  "M5_Bookings.dc.html",
+  "M6_Households.dc.html",
+  "M7_Cancel.dc.html",
+  "M8_WhatsApp_Mobile.dc.html"
+ ],
+ "pages": [
+  {
+   "id": "login",
+   "name": "Login"
+  },
+  {
+   "id": "admin",
+   "name": "Admin"
+  },
+  {
+   "id": "mohalla",
+   "name": "Sector / Mohalla user"
+  }
+ ],
+ "title": "Husainin Baug Hall & Room Booking — Wireframes"
+}

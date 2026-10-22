@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Husainin Baug Booking Wireframes</title>
+<meta name="description" content="Wireframes for client review: Husainin Baug Hall &amp; Room Booking.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400..900;1,400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/presentation.css">
+</head>
+<body>
+
+<a class="skip" href="#gallery">Skip to the screens</a>
+
+<!-- ============================================================
+     HERO / COVER
+     ============================================================ -->
+<header class="hero" id="top">
+  <div class="hero__inner">
+    <div class="hero__text">
+      <p class="hero__mark"><span class="logo" aria-hidden="true">HB</span>Wireframes for client review</p>
+      <h1 class="hero__title">Husainin Baug<span class="hero__title-sub">Hall &amp; Room Booking</span></h1>
+      <p class="hero__lede">A shared booking system for the halls and rooms of Husainin Baug, used by the Admin team and by each Sector / Mohalla in Poona. Eighteen screens, from sign-in to the WhatsApp receipt.</p>
+
+      <dl class="hero__meta">
+        <!-- EDITABLE: version and date -->
+        <div><dt>Version</dt><dd>1.0, October 2026</dd></div>
+        <!-- EDITABLE: client name -->
+        <div><dt>Prepared for</dt><dd>[Client]</dd></div>
+        <!-- EDITABLE: your company name -->
+        <div><dt>Prepared by</dt><dd>[Your company]</dd></div>
+      </dl>
+
+      <div class="hero__actions">
+        <button type="button" class="btn btn--primary" data-open="0">
+          <svg aria-hidden="true" viewBox="0 0 20 20" width="18" height="18"><path d="M6 4.5v11l9-5.5z" fill="currentColor"/></svg>
+          Start presentation
+        </button>
+        <a class="btn btn--ghost" href="#gallery">Browse all screens</a>
+      </div>
+    </div>
+
+    <figure class="hero__grid" aria-label="Illustration of the venue availability calendar">
+      <div class="avail" id="heroGrid" aria-hidden="true"></div>
+      <figcaption class="legend">
+        <span><i class="c c--free"></i>Available</span>
+        <span><i class="c c--hold"></i>On hold</span>
+        <span><i class="c c--booked"></i>Booked</span>
+        <span><i class="c c--miqaat"></i>Miqaat</span>
+      </figcaption>
+    </figure>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Sections">
+  <div class="wrap toc__inner">
+    <a href="#overview">Overview</a>
+    <a href="#roles">Roles</a>
+    <a href="#journeys">Journeys</a>
+    <a href="#gallery">Screens</a>
+    <a href="#next">Next steps</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ============================================================
+     OVERVIEW
+     ============================================================ -->
+<section class="section" id="overview" aria-labelledby="overview-h">
+  <div class="wrap split">
+    <div class="split__head">
+      <h2 id="overview-h">What the system does</h2>
+      <p class="muted">One calendar for every hall and room. Each Sector / Mohalla books for its own households; the Admin team sets up venues, rates and Miqaat dates, and has the final word on cancellations.</p>
+    </div>
+    <dl class="features">
+      <div>
+        <dt>Book venues by date and slot</dt>
+        <dd>Halls book by morning, evening or full day; rooms book per day. A single booking can cover several halls and rooms across multiple days. If any one is taken, the booking is not created.</dd>
+      </div>
+      <div>
+        <dt>Households and head of family</dt>
+        <dd>Each booking is made for a household, identified by its HOF ID and WhatsApp number. Mohallas add households one by one or upload them from a spreadsheet.</dd>
+      </div>
+      <div>
+        <dt>Payment with WhatsApp confirmation</dt>
+        <dd>Creating a booking holds the venue for 10 minutes and sends a Razorpay payment link on WhatsApp. Once paid, the booking is confirmed automatically and a PDF receipt follows on WhatsApp.</dd>
+      </div>
+      <div>
+        <dt>Cancellations approved by Admin</dt>
+        <dd>A Mohalla requests a cancellation with a reason. The venue stays booked until Admin approves or rejects it; refunds are paid by the trust and recorded against the request.</dd>
+      </div>
+      <div>
+        <dt>Miqaat details</dt>
+        <dd>Admin enters the year's Miqaat dates, singly or by upload. Reserved venues show as unavailable on every Mohalla's calendar, and clashes with existing bookings are flagged.</dd>
+      </div>
+      <div>
+        <dt>Users, Sectors and Mohallas</dt>
+        <dd>There is no self sign-up. Admin creates the 13 Sectors / Mohallas and their users, and can switch accounts on or off.</dd>
+      </div>
+      <div>
+        <dt>Expenses <span class="tag">Future phase</span></dt>
+        <dd>Recording venue expenses and reporting income against expenses per hall is planned for a later phase and is shown for discussion only.</dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<!-- ============================================================
+     ROLES
+     ============================================================ -->
+<section class="section section--tint" id="roles" aria-labelledby="roles-h">
+  <div class="wrap">
+    <h2 id="roles-h">Two kinds of user</h2>
+    <p class="muted measure">Both sign in on the same page. What they see after that depends on their role.</p>
+    <div class="roles">
+      <article class="role">
+        <header class="role__head">
+          <span class="role__badge" aria-hidden="true">A</span>
+          <div>
+            <h3>Admin</h3>
+            <p class="role__who">Signed in as Husainin Baug Admin</p>
+          </div>
+        </header>
+        <p>Runs the venue: sets up halls, rooms and rates, manages Mohallas and users, watches collections, blocks Miqaat dates and approves cancellations.</p>
+        <ul class="role__list" data-role-list="admin"></ul>
+      </article>
+      <article class="role">
+        <header class="role__head">
+          <span class="role__badge role__badge--alt" aria-hidden="true">M</span>
+          <div>
+            <h3>Sector / Mohalla user</h3>
+            <p class="role__who">Signed in as BURHANI MOHALLA (POONA)</p>
+          </div>
+        </header>
+        <p>Books on behalf of households in their Mohalla, sends payment links, keeps the household list up to date and requests cancellations.</p>
+        <ul class="role__list" data-role-list="mohalla"></ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     KEY JOURNEYS
+     ============================================================ -->
+<section class="section" id="journeys" aria-labelledby="journeys-h">
+  <div class="wrap">
+    <h2 id="journeys-h">Key journeys</h2>
+    <p class="muted measure">Select any step to open that screen.</p>
+
+    <div class="journey">
+      <h3 class="journey__title">Making a booking</h3>
+      <p class="journey__desc">A Mohalla user books Muffadal Hall for a household's wedding on 01-01-2027.</p>
+      <ol class="steps">
+        <li><button type="button" class="step" data-open-id="M2_Booking"><span class="step__n">1</span><span class="step__code">M2</span><span class="step__t">Choose venue, date and slot</span><span class="step__d">Pick halls and rooms on the availability calendar.</span></button></li>
+        <li><button type="button" class="step" data-open-id="M3_BookingReview"><span class="step__n">2</span><span class="step__code">M3</span><span class="step__t">Household and review</span><span class="step__d">Select the HOF, add event details and check the total.</span></button></li>
+        <li><button type="button" class="step" data-open-id="M4_Payment"><span class="step__n">3</span><span class="step__code">M4</span><span class="step__t">Payment link</span><span class="step__d">Venue held for 10 minutes while the household pays via Razorpay.</span></button></li>
+        <li><button type="button" class="step step--end" data-open-id="M8_WhatsApp_Mobile"><span class="step__n">4</span><span class="step__code">M8</span><span class="step__t">WhatsApp confirmation</span><span class="step__d">The household receives the confirmation and PDF receipt.</span></button></li>
+      </ol>
+    </div>
+
+    <div class="journey">
+      <h3 class="journey__title">Cancelling a booking</h3>
+      <p class="journey__desc">The venue stays booked until Admin decides.</p>
+      <ol class="steps steps--two">
+        <li><button type="button" class="step" data-open-id="M7_Cancel"><span class="step__n">1</span><span class="step__code">M7</span><span class="step__t">Mohalla requests cancellation</span><span class="step__d">Select the booking, give a reason and submit the request.</span></button></li>
+        <li><button type="button" class="step step--end" data-open-id="A8_Cancellations"><span class="step__n">2</span><span class="step__code">A7</span><span class="step__t">Admin approves or rejects</span><span class="step__d">On approval the venue is released, the refund is recorded and the household is told on WhatsApp.</span></button></li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     SCREEN GALLERY
+     ============================================================ -->
+<section class="section section--tint" id="gallery" aria-labelledby="gallery-h">
+  <div class="wrap">
+    <div class="gallery__head">
+      <h2 id="gallery-h">All screens</h2>
+      <p class="muted">18 screens in presentation order. Select a screen to view it full size; links inside each screen work.</p>
+    </div>
+    <div id="galleryGroups"></div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================================================
+     FOOTER / NEXT STEPS
+     ============================================================ -->
+<footer class="footer" id="next">
+  <div class="wrap footer__inner">
+    <div>
+      <h2>Next steps</h2>
+      <!-- EDITABLE: next steps and how to send feedback -->
+      <ol class="next">
+        <li>Review the screens and note anything missing or unclear.</li>
+        <li>Send feedback by [date] to [name, email or WhatsApp].</li>
+        <li>We confirm Phase 1 scope and move to visual design.</li>
+      </ol>
+    </div>
+    <div class="footer__meta">
+      <!-- EDITABLE: company name and contact -->
+      <p class="footer__co">[Your company]</p>
+      <p class="muted-inv">[Contact email] · [Phone]</p>
+      <p class="muted-inv small">Wireframes only. Names, numbers and amounts are sample data.</p>
+      <button type="button" class="btn btn--light" data-open="0">Start presentation</button>
+    </div>
+  </div>
+</footer>
+
+<!-- ============================================================
+     VIEWER (modal dialog)
+     ============================================================ -->
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-labelledby="viewerTitle" hidden>
+  <div class="viewer__bar">
+    <div class="viewer__id">
+      <span class="viewer__count" id="viewerCount" aria-live="polite">1 / 18</span>
+      <h2 class="viewer__title" id="viewerTitle">Screen</h2>
+      <span class="viewer__group" id="viewerGroup"></span>
+    </div>
+    <div class="viewer__tools">
+      <div class="seg" role="group" aria-label="Zoom">
+        <button type="button" class="seg__btn" data-fit="fit" aria-pressed="true">Fit</button>
+        <button type="button" class="seg__btn" data-fit="actual" aria-pressed="false">100%</button>
+      </div>
+      <a class="tool" id="viewerNewTab" href="screens/Login.html" target="_blank" rel="noopener">
+        <svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16"><path d="M11 3h6v6M17 3l-8 8M8 4H4v12h12v-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Open in new tab</span>
+      </a>
+      <button type="button" class="tool tool--icon" id="viewerClose" aria-label="Close viewer (Esc)">
+        <svg aria-hidden="true" viewBox="0 0 20 20" width="18" height="18"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="viewer__stage" id="viewerStage">
+    <div class="viewer__frame" id="viewerFrame">
+      <iframe id="viewerIframe" title="Screen preview" src="about:blank"></iframe>
+    </div>
+  </div>
+
+  <div class="viewer__nav">
+    <button type="button" class="navbtn" id="viewerPrev" aria-label="Previous screen">
+      <svg aria-hidden="true" viewBox="0 0 20 20" width="18" height="18"><path d="M12.5 4.5L7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="navbtn__label">Previous</span>
+    </button>
+    <p class="viewer__hint" id="viewerHint">Use the arrow keys to move between screens. Esc closes.</p>
+    <button type="button" class="navbtn" id="viewerNext" aria-label="Next screen">
+      <span class="navbtn__label">Next</span>
+      <svg aria-hidden="true" viewBox="0 0 20 20" width="18" height="18"><path d="M7.5 4.5L13 10l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+</div>
+
+<script src="assets/presentation.js"></script>
+</body>
+</html>
