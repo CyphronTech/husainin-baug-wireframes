@@ -1,0 +1,23 @@
+# Firebase App Hosting (requires Blaze). Create secrets with:
+#   firebase apphosting:secrets:set RAZORPAY_KEY_SECRET   (etc.)
+env:
+  - variable: APP_URL
+    value: https://CHANGE-ME.web.app
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: CHANGE-ME
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: CHANGE-ME.firebaseapp.com
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: CHANGE-ME
+  - variable: RAZORPAY_KEY_ID
+    secret: RAZORPAY_KEY_ID
+  - variable: RAZORPAY_KEY_SECRET
+    secret: RAZORPAY_KEY_SECRET
+  - variable: RAZORPAY_WEBHOOK_SECRET
+    secret: RAZORPAY_WEBHOOK_SECRET
+  - variable: MSG91_AUTHKEY
+    secret: MSG91_AUTHKEY
+  - variable: MSG91_WA_NUMBER
+    value: CHANGE-ME
+  - variable: MSG91_WA_NAMESPACE
+    value: CHANGE-ME

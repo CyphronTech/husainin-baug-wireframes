@@ -1,0 +1,29 @@
+// One-time setup: venues, sectors and the first admin.
+//   node --env-file=.env.local scripts/seed.mjs admin@example.org "Husainin Baug Admin" 9822000100 [password]
+// With a password (emulator/dev) it is set directly; without, sign in via "Forgot password" on /login.
+import { initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
+
+const [email, name, mobile, password] = process.argv.slice(2);
+if (!email || !name || !mobile) throw new Error("usage: seed.mjs <email> <name> <mobile> [password]");
+initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID });
+const db = getFirestore();
+const auth = getAuth();
+const batch = db.batch();
+
+const hall = (code, name, capacity, morning, evening, fullDay) => ({ code, name, type: "hall", capacity, rates: { morning, evening, fullDay }, morningTime: "08:00–15:00", eveningTime: "17:00–23:00", active: true });
+const room = (code, name, perDay) => ({ code, name, type: "room", capacity: 4, rates: { perDay }, morningTime: "", eveningTime: "", active: true });
+for (const v of [hall("MUF", "Muffadal Hall", 500, 15000, 18000, 30000), hall("VAJ", "Vajihi Hall", 300, 10000, 12000, 20000), hall("H3", "Hall 3", 150, 6000, 7000, 12000), hall("H4", "Hall 4", 100, 4000, 5000, 8000), room("R1", "Room 1", 2500), room("R2", "Room 2", 2000)])
+  batch.set(db.doc(`venues/${v.code.toLowerCase()}`), v);
+
+const sectors = ["BURHANI MOHALLA (POONA)", "FAKHRI MOHALLA (POONA)", "FATEMI MOHALLA (POONA)", "HASANJI NAGAR (POONA)", "IMADI MOHALLA (POONA)", "JAMALI MOHALLA (POONA)", "KALIMI MOHALLA (POONA)", "KASARWADI", "KHADKI (POONA)", "MUFADDAL MOHALLA (POONA)", "SAIFEE MOHALLAH (POONA)", "TAIYEBI MOHALLA (POONA)", "ZAINI MOHALLA (POONA)"];
+for (const s of sectors) {
+  const code = s.slice(0, 3);
+  batch.set(db.doc(`sectors/${code.toLowerCase()}`), { name: s, code, contactName: "", contactMobile: "", active: true });
+}
+
+const user = await auth.getUserByEmail(email).catch(() => auth.createUser({ email, displayName: name, ...(password && { password }) }));
+batch.set(db.doc(`users/${user.uid}`), { name, mobile, email, role: "admin", sectorId: null, active: true });
+await batch.commit();
+console.log(`Seeded 6 venues, ${sectors.length} sectors, admin ${email} (${user.uid})`);
