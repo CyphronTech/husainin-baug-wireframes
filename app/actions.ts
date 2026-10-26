@@ -1,12 +1,10 @@
 "use server";
 
-import { createHash, randomInt } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { audit, cancelPending, createBooking, decideCancellation, deleteBlock, getBooking, markPaid, notify, requestCancellation, saveBlock } from "@/lib/booking";
 import { displayStatus } from "@/lib/format";
-import { sendPasswordEmail, signInWithCustomToken, signInWithPassword } from "@/lib/identity";
-import { sendWhatsApp } from "@/lib/whatsapp";
+import { sendPasswordEmail, signInWithPassword } from "@/lib/identity";
 import { getSectors, getVenues } from "@/lib/data";
 import { auth, db } from "@/lib/firebase-admin";
 import { createPaymentLink, mockPayments } from "@/lib/razorpay";
@@ -34,7 +32,7 @@ async function run(back: string, fn: () => Promise<string | void>) {
 
 // ── Login ───────────────────────────────────────────────────────────────────
 
-/** "Mobile number or User ID": a 10-digit number is looked up; anything else is treated as the login email. */
+/** Username = the user's mobile number or email (both set by Admin on the Users screen). */
 async function findUser(id: string) {
   const digits = id.replace(/\D/g, "");
   const q = id.includes("@") ? db.collection("users").where("email", "==", id.toLowerCase()) : db.collection("users").where("mobile", "==", digits.slice(-10));
@@ -58,43 +56,8 @@ export async function login(f: FormData) {
   await run("/login", async () => {
     const user = await findUser(s(f, "id"));
     const token = user && (await signInWithPassword(user.email, s(f, "password")).catch(() => null));
-    if (!token) throw new Error("Wrong mobile/User ID or password");
+    if (!token) throw new Error("Wrong username or password");
     await startSession(token, f.get("remember") === "on");
-    return "/";
-  });
-}
-
-// shortcut: OTP state in Firestore with a 60s resend gap and 5 tries per code; no IP-level rate limiting.
-// Upgrade: App Check / reCAPTCHA in front of sendOtp if it gets abused.
-const otpHash = (mobile: string, code: string) => createHash("sha256").update(`${mobile}:${code}`).digest("hex");
-
-export async function sendOtp(f: FormData) {
-  const id = s(f, "id");
-  await run(`/login?otp=${encodeURIComponent(id)}`, async () => {
-    const user = await findUser(id);
-    if (!user) return; // same response either way: don't reveal which numbers have accounts
-    const ref = db.doc(`otps/${user.uid}`);
-    const prev = (await ref.get()).data();
-    if (prev && Date.now() - prev.sentAt < 60_000) throw new Error("Wait a minute before requesting another code");
-    const code = String(randomInt(100000, 1000000));
-    await ref.set({ hash: otpHash(user.mobile, code), sentAt: Date.now(), expires: Date.now() + 5 * 60_000, tries: 0 });
-    await sendWhatsApp("otp", user.mobile, [code]);
-  });
-}
-
-export async function verifyOtp(f: FormData) {
-  const id = s(f, "id");
-  await run(`/login?otp=${encodeURIComponent(id)}`, async () => {
-    const user = await findUser(id);
-    const ref = user && db.doc(`otps/${user.uid}`);
-    const otp = ref && (await ref.get()).data();
-    if (!user || !otp || otp.expires < Date.now() || otp.tries >= 5) throw new Error("Code expired — request a new one");
-    if (otp.hash !== otpHash(user.mobile, s(f, "code"))) {
-      await ref.update({ tries: otp.tries + 1 });
-      throw new Error("Wrong code");
-    }
-    await ref.delete();
-    await startSession(await signInWithCustomToken(await auth.createCustomToken(user.uid)), f.get("remember") === "on");
     return "/";
   });
 }
@@ -347,7 +310,7 @@ type HouseholdInput = Omit<Household, "id">;
 
 /** HOF ID is the doc id: unique across all sectors. A HOF registered to another sector is never overwritten. */
 async function upsertHousehold(user: AppUser, h: HouseholdInput) {
-  if (!/^\d{8}$/.test(h.hof)) throw new Error(`HOF ID must be 8 digits (${h.hof || "blank"})`);
+  if (!/^\d{8,10}$/.test(h.hof)) throw new Error(`HOF ID must be 8–10 digits (${h.hof || "blank"})`);
   if (!h.name) throw new Error(`Name missing for HOF ${h.hof}`);
   if (user.role !== "admin" && h.sectorId !== user.sectorId) throw new Error("Not your Sector / Mohalla");
   h.mobile = mobile10(h.mobile);

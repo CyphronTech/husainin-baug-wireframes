@@ -41,7 +41,7 @@ export default async function Households({ searchParams }: { searchParams: SP })
                 <input type="hidden" name="back" value={sp.back ?? ""} />
                 <input type="hidden" name="sectorId" value={sectorId} />
                 <label>Head of family name<input name="name" required defaultValue={e.name} /></label>
-                <label>HOF ID<input name="hof" required pattern="\d{8}" defaultValue={e.hof} readOnly={!!e.id} /></label>
+                <label>HOF ID<input name="hof" required pattern="\d{8,10}" title="8–10 digits" defaultValue={e.hof} readOnly={!!e.id} /></label>
                 <label>Mobile (WhatsApp)<input name="mobile" required defaultValue={e.mobile} /></label>
                 <label>Address<input name="address" defaultValue={e.address} /></label>
                 <label>Sector / Mohalla<input value={sectorName} disabled /></label>

@@ -17,8 +17,5 @@ async function call(method: string, body: object) {
 export const signInWithPassword = async (email: string, password: string): Promise<string> =>
   (await call("signInWithPassword", { email, password, returnSecureToken: true })).idToken;
 
-export const signInWithCustomToken = async (token: string): Promise<string> =>
-  (await call("signInWithCustomToken", { token, returnSecureToken: true })).idToken;
-
 /** Firebase sends the email itself; for a new user it doubles as "set your password". */
 export const sendPasswordEmail = (email: string) => call("sendOobCode", { requestType: "PASSWORD_RESET", email });

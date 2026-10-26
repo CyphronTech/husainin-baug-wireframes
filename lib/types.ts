@@ -41,6 +41,8 @@ export type Booking = {
   refundDue?: boolean;
   payment?: { linkId: string; url: string; paymentId?: string; method?: string; paidAt?: string };
   receiptNo?: string;
+  /** Public B2 link to the receipt PDF (or the app's /r/{id}/pdf fallback). */
+  receiptUrl?: string;
   createdAt: string;
 };
 

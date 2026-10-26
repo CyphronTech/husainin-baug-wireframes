@@ -15,7 +15,7 @@ const hm = (iso?: string) => (iso ? new Date(iso).toLocaleTimeString("en-IN", { 
 /** Message previews mirror the approved WhatsApp templates (lib/whatsapp.ts). */
 const PREVIEW = {
   hold: ([name, no, what, amt, mins, url]: string[]) => [`Booking on hold: ${no}`, `Dear ${name}, ${what} is held for you. Please pay ${amt} within ${mins} minutes:\n${url}\n— Husainin Baug`],
-  confirmed: ([, no, what, amt]: string[]) => [`Booking confirmed: ${no}`, `Payment of ${amt} received. ${what}. Your receipt is attached.\n— Husainin Baug`],
+  confirmed: ([, no, what, amt, url]: string[]) => [`Booking confirmed: ${no}`, `Payment of ${amt} received. ${what}.\nYour receipt: ${url}\n— Husainin Baug`],
   cancelled: ([name, no, what, refund]: string[]) => [`Booking cancelled: ${no}`, `Dear ${name}, your booking ${what} is cancelled. Refund: ${refund}.\n— Husainin Baug`],
 };
 
@@ -96,7 +96,6 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
               const [title, body] = PREVIEW[tpl](l.data.values ?? messageValues(b as Booking, tpl));
               return (
                 <div key={i} className="bubble">
-                  {tpl === "confirmed" && <div className="note" style={{ marginTop: 0 }}>PDF · Receipt_{b.receiptNo}.pdf</div>}
                   <b>{title}</b>{"\n\n"}{body}
                   <div className="muted" style={{ textAlign: "right" }}>{hm(l.at)}</div>
                 </div>
@@ -120,7 +119,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
                 Cancellation is subject to Admin approval and the trust&apos;s policy.
               </div>
               <div className="row" style={{ marginTop: 12 }}>
-                <a className="btn" href={`/r/${b.id}/pdf`}>Download PDF</a>
+                <a className="btn" href={b.receiptUrl ?? `/r/${b.id}/pdf`}>Download PDF</a>
                 <Link className="btn primary" href="/my-bookings">Go to my bookings</Link>
               </div>
             </>

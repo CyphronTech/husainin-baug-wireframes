@@ -2,6 +2,7 @@ import type { DocumentReference, DocumentSnapshot, Transaction } from "firebase-
 import { getVenues } from "./data";
 import { db } from "./firebase-admin";
 import { dmy, inr, summary } from "./format";
+import { storeReceipt } from "./receipt";
 import { sendWhatsApp, type Template } from "./whatsapp";
 import type { AppUser, Block, Booking, Cancellation, Item, Lock, Slot, Venue } from "./types";
 
@@ -137,22 +138,24 @@ export async function markPaid(linkId: string, paymentId: string, method: string
     audit(tx, null, "booking.paid", { bookingId: b.id, paymentId, receiptNo: no });
     return { ...b, receiptNo: no };
   });
-  if (booking) await notify(booking, "confirmed");
+  if (!booking) return;
+  const receiptUrl = await storeReceipt(booking);
+  await db.doc(`bookings/${booking.id}`).update({ receiptUrl });
+  await notify({ ...booking, receiptUrl }, "confirmed");
 }
 
 /** WhatsApp template values per message; the booking page renders its message previews from the same function. */
-export function messageValues(b: Booking, template: Exclude<Template, "otp">, refund?: number) {
+export function messageValues(b: Booking, template: Template, refund?: number) {
   const base = [b.household.name, b.no, summary(b.items), inr(b.amount)];
   if (template === "hold") return [...base, String(HOLD_MINUTES), b.payment?.url ?? ""];
-  if (template === "confirmed") return base;
+  if (template === "confirmed") return [...base, b.receiptUrl ?? ""];
   return [...base.slice(0, 3), refund ? inr(refund) : "—"];
 }
 
-export async function notify(b: Booking, template: Exclude<Template, "otp">, refund?: number) {
+export async function notify(b: Booking, template: Template, refund?: number) {
   if (!b.household.whatsappConsent) return;
   const values = messageValues(b, template, refund);
-  const doc = template === "confirmed" ? { url: `${process.env.APP_URL}/r/${b.id}/pdf`, filename: `Receipt_${b.receiptNo}.pdf` } : undefined;
-  const ok = await sendWhatsApp(template, b.household.mobile, values, doc);
+  const ok = await sendWhatsApp(template, b.household.mobile, values);
   await db.runTransaction(async (tx) => audit(tx, null, ok ? `whatsapp.${template}` : `whatsapp.${template}.failed`, { bookingId: b.id, values }));
 }
 

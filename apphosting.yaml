@@ -15,6 +15,14 @@ env:
     secret: RAZORPAY_KEY_SECRET
   - variable: RAZORPAY_WEBHOOK_SECRET
     secret: RAZORPAY_WEBHOOK_SECRET
+  - variable: B2_KEY_ID
+    secret: B2_KEY_ID
+  - variable: B2_APP_KEY
+    secret: B2_APP_KEY
+  - variable: B2_BUCKET_ID
+    value: CHANGE-ME
+  - variable: B2_BUCKET_NAME
+    value: CHANGE-ME
   - variable: MSG91_AUTHKEY
     secret: MSG91_AUTHKEY
   - variable: MSG91_WA_NUMBER

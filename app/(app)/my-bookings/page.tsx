@@ -64,7 +64,7 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
                   <td><Badge s={b.shown} /></td>
                   <td>{mine ? "You" : b.createdByName}</td>
                   <td>
-                    {b.receiptNo && <a href={`/r/${b.id}/pdf`}>Receipt</a>}{" "}
+                    {b.receiptNo && <a href={b.receiptUrl ?? `/r/${b.id}/pdf`}>Receipt</a>}{" "}
                     {b.shown === "On hold" && <form action={resendLink} style={{ display: "inline" }}><input type="hidden" name="id" value={b.id} /><button className="link">Resend link</button></form>}{" "}
                     {b.shown === "Confirmed" && (mine || isAdmin) && <Link href={`/bookings/${b.id}/cancel`}>Request cancellation</Link>}
                   </td>

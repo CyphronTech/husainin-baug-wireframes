@@ -13,7 +13,7 @@ function parse(text: string, known: Set<string>): Row[] {
     .filter((l) => l.trim())
     .map((l) => {
       const [hof = "", name = "", mobile = "", address = "", consent = ""] = l.split(",").map((x) => x.trim());
-      const err = !/^\d{8}$/.test(hof) ? "HOF ID must be 8 digits" : !name ? "name missing" : mobile.replace(/\D/g, "").length < 10 ? "mobile invalid" : "";
+      const err = !/^\d{8,10}$/.test(hof) ? "HOF ID must be 8–10 digits" : !name ? "name missing" : mobile.replace(/\D/g, "").length < 10 ? "mobile invalid" : "";
       return { hof, name, mobile, address, whatsappConsent: /^y/i.test(consent), result: err ? `Error: ${err}` : known.has(hof) ? "Update existing" : "New" };
     });
 }
