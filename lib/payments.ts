@@ -2,7 +2,7 @@ import { rows } from "./data";
 import { db } from "./firebase-admin";
 import type { Booking, Cancellation } from "./types";
 
-export type PaymentRow = Booking & { payStatus: "paid" | "pending" | "refunded" };
+export type PaymentRow = Booking & { payStatus: "paid" | "pending" | "refunded" | "refund due" };
 
 /** Shared by the Payments page and its CSV export. */
 // shortcut: loads all bookings that ever had a payment link and filters in memory. Fine for a few thousand/year;
@@ -14,8 +14,8 @@ export async function paymentRows(f: { from?: string; to?: string; sector?: stri
   ]);
   const refunded = new Map(crs.filter((c) => c.refund).map((c) => [c.bookingId, c]));
   const list: PaymentRow[] = bookings
-    .filter((b) => b.status !== "cancelled" || b.receiptNo) // unpaid releases aren't payments
-    .map((b) => ({ ...b, payStatus: refunded.has(b.id) ? "refunded" : b.receiptNo ? "paid" : "pending" }) as PaymentRow)
+    .filter((b) => b.receiptNo || b.refundDue || (b.status === "pending" && b.holdUntil > new Date().toISOString())) // releases/expiries aren't payments
+    .map((b) => ({ ...b, payStatus: refunded.has(b.id) ? "refunded" : b.refundDue ? "refund due" : b.receiptNo ? "paid" : "pending" }) as PaymentRow)
     .filter((b) => {
       const day = (b.payment?.paidAt ?? b.createdAt).slice(0, 10);
       return (!f.from || day >= f.from) && (!f.to || day <= f.to) && (!f.sector || b.sectorId === f.sector) && (!f.status || b.payStatus === f.status);

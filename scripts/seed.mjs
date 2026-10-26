@@ -23,6 +23,10 @@ for (const s of sectors) {
   batch.set(db.doc(`sectors/${code.toLowerCase()}`), { name: s, code, contactName: "", contactMobile: "", active: true });
 }
 
+// A few demo households for the first sector
+for (const [hof, name, mobile] of [["50450029", "Aliasgar Chaiwala", "8605480902"], ["50453456", "Taher Bootwala", "9822000013"], ["50455678", "Ali Abbas Sakarwala", "9822000016"]])
+  batch.set(db.doc(`households/${hof}`), { hof, name, mobile, address: "", sectorId: "bur", whatsappConsent: true });
+
 const user = await auth.getUserByEmail(email).catch(() => auth.createUser({ email, displayName: name, ...(password && { password }) }));
 batch.set(db.doc(`users/${user.uid}`), { name, mobile, email, role: "admin", sectorId: null, active: true });
 await batch.commit();

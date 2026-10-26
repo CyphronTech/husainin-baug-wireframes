@@ -21,7 +21,9 @@ export async function createPaymentLink(b: Booking): Promise<{ id: string; url: 
       reference_id: b.no,
       description: `Husainin Baug booking ${b.no}`,
       customer: { name: b.household.name, contact: `+91${b.household.mobile}` },
-      notify: { sms: true },
+      notify: { sms: false, email: false }, // we send the link on WhatsApp ourselves
+      // Razorpay's floor for expire_by is 15 min, longer than our 10-min hold; markPaid() handles late payments.
+      expire_by: Math.floor(Date.now() / 1000) + 16 * 60,
       callback_url: `${process.env.APP_URL}/r/${b.id}`,
       callback_method: "get",
       notes: { bookingId: b.id },

@@ -18,6 +18,8 @@ export type Sector = { id: string; name: string; code: string; contactName: stri
 
 export type AppUser = { uid: string; name: string; mobile: string; email: string; role: Role; sectorId: string | null; active: boolean };
 
+export type Household = { id: string; hof: string; name: string; mobile: string; address: string; sectorId: string; whatsappConsent: boolean };
+
 export type Item = { venueId: string; venueName: string; date: string; slot: Slot; rate: number };
 
 export type Booking = {
@@ -27,10 +29,16 @@ export type Booking = {
   sectorName: string;
   createdBy: string;
   createdByName: string;
-  household: { name: string; hof: string; mobile: string };
+  household: { name: string; hof: string; mobile: string; whatsappConsent: boolean };
   items: Item[];
+  event: { purpose: string; guests: number };
   amount: number;
   status: "pending" | "confirmed" | "cancelled";
+  /** Pending only: after this the hold lapses and the slots count as free (lazily — no cron). */
+  holdUntil: string;
+  cancelRequested?: boolean;
+  /** Paid after the hold lapsed and someone else took the slot. Admin refunds manually. */
+  refundDue?: boolean;
   payment?: { linkId: string; url: string; paymentId?: string; method?: string; paidAt?: string };
   receiptNo?: string;
   createdAt: string;
@@ -45,6 +53,7 @@ export type Lock = {
   refId: string;
   status: "pending" | "confirmed" | "block";
   sectorId?: string;
+  holdUntil?: string;
 };
 
 export type Block = {

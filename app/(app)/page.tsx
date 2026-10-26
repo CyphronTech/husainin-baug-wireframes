@@ -1,16 +1,16 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { datesBetween } from "@/lib/booking";
+import { datesBetween, isLive } from "@/lib/booking";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { dmy, inr, SLOT_LABEL, today } from "@/lib/format";
-import { getUser } from "@/lib/session";
+import { requireUser } from "@/lib/session";
 import type { Block, Booking, Lock } from "@/lib/types";
 import { Badge } from "@/lib/ui";
+import { SectorDashboard } from "./sector-dashboard";
 
 export default async function Dashboard() {
-  const user = await getUser();
-  if (user?.role !== "admin") redirect("/bookings");
+  const user = await requireUser();
+  if (user.role !== "admin") return <SectorDashboard user={user} />;
 
   const t = today();
   const monthStart = t.slice(0, 8) + "01";
@@ -26,8 +26,8 @@ export default async function Dashboard() {
     db.collection("blocks").where("to", ">=", t).get(),
   ]);
 
-  const ml = monthLocks.docs.map((d) => d.data() as Lock).filter((l) => l.kind === "booking");
-  const ul = upcomingLocks.docs.map((d) => d.data() as Lock).filter((l) => l.kind === "booking");
+  const ml = monthLocks.docs.map((d) => d.data() as Lock).filter((l) => l.kind === "booking" && isLive(l));
+  const ul = upcomingLocks.docs.map((d) => d.data() as Lock).filter((l) => l.kind === "booking" && isLive(l));
   const upcomingIds = [...new Set(ul.map((l) => l.refId))];
   const upcoming = upcomingIds.length
     ? (await db.getAll(...upcomingIds.map((id) => db.doc(`bookings/${id}`)))).map((d) => ({ id: d.id, ...d.data() }) as Booking).sort((a, b) => a.items[0].date.localeCompare(b.items[0].date))
@@ -93,7 +93,7 @@ export default async function Dashboard() {
         <div className="card">
           <h2>Quick actions</h2>
           <div className="row">
-            <Link className="btn primary" href="/bookings#new">New booking</Link>
+            <Link className="btn primary" href="/book">New booking</Link>
             <Link className="btn" href="/venues#block">Block dates</Link>
             <Link className="btn" href="/users">Add user</Link>
             <Link className="btn" href="/cancellations">Review cancellations</Link>

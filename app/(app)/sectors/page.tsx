@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { saveSector } from "@/app/actions";
-import { getSectors, rows } from "@/lib/data";
+import { getHouseholds, getSectors, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { requireAdmin } from "@/lib/session";
 import type { AppUser, Sector } from "@/lib/types";
@@ -9,7 +9,7 @@ import { Badge, Msg, type SP } from "@/lib/ui";
 export default async function Sectors({ searchParams }: { searchParams: SP }) {
   await requireAdmin();
   const sp = await searchParams;
-  const [sectors, users] = await Promise.all([getSectors(), db.collection("users").get().then(rows<AppUser>)]);
+  const [sectors, users, households] = await Promise.all([getSectors(), db.collection("users").get().then(rows<AppUser>), getHouseholds()]);
   const e: Partial<Sector> = sectors.find((s) => s.id === sp.edit) ?? { active: true };
 
   return (
@@ -20,11 +20,11 @@ export default async function Sectors({ searchParams }: { searchParams: SP }) {
         <div className="card">
           <h2>Sectors / Mohallas ({sectors.length})</h2>
           <table>
-            <thead><tr><th>Sector / Mohalla</th><th>Code</th><th>Users</th><th>Contact</th><th>Status</th><th /></tr></thead>
+            <thead><tr><th>Sector / Mohalla</th><th>Code</th><th>Users</th><th>Households</th><th>Contact</th><th>Status</th><th /></tr></thead>
             <tbody>
               {sectors.map((s) => (
                 <tr key={s.id}>
-                  <td>{s.name}</td><td>{s.code}</td><td>{users.filter((u) => u.sectorId === s.id).length}</td>
+                  <td>{s.name}</td><td>{s.code}</td><td>{users.filter((u) => u.sectorId === s.id).length}</td><td><Link href={`/households?sector=${s.id}`}>{households.filter((h) => h.sectorId === s.id).length}</Link></td>
                   <td>{s.contactName}<div className="muted">{s.contactMobile}</div></td>
                   <td><Badge s={s.active ? "active" : "inactive"} /></td>
                   <td><Link href={`?edit=${s.id}`}>Edit</Link></td>
