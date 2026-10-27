@@ -3,6 +3,20 @@
 Next.js 16 (App Router, server actions) + Firebase Auth + Firestore. Razorpay Payment Links (mocked until keys are set), MSG91 WhatsApp.
 Built from the admin (A1–A9) and Sector / Mohalla (Login, M1–M8) wireframes on `main`.
 
+## Run locally against a real Firebase project (free Spark plan — no hosting needed)
+
+1. [console.firebase.google.com](https://console.firebase.google.com) → create a project (Spark plan is fine).
+2. Build → Authentication → Get started → enable **Email/Password**.
+3. Build → Firestore Database → Create database → **production mode** (deny-all rules; the app uses the Admin SDK,
+   which bypasses them).
+4. Project settings → General → Add app → Web → copy `apiKey`, `authDomain`, `projectId`.
+5. Project settings → Service accounts → Generate new private key → save the JSON **outside** this folder.
+6. `cp .env.example .env.local` and fill in the Firebase lines, `GOOGLE_APPLICATION_CREDENTIALS=/full/path/to/that.json`
+   and the four `B2_*` lines. Leave the emulator, Razorpay and MSG91 lines empty (both run as mocks).
+7. `npm i`
+8. `node --env-file=.env.local scripts/seed.mjs you@example.com "Husainin Baug Admin" 98XXXXXXXX YourPassword`
+9. `npm run dev` → http://localhost:3000, sign in with the mobile number or email + that password.
+
 ## Run locally (emulators, no cloud project needed)
 
 ```bash
