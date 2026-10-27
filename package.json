@@ -1,0 +1,22 @@
+{
+  "name": "husainin-baug",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "emulators": "firebase emulators:start --only firestore",
+    "seed": "node scripts/seed.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0",
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "typescript": "^5"
+  }
+}

@@ -1,0 +1,8 @@
+rules_version = '2';
+// All reads/writes go through the Next.js server (Admin SDK), which enforces
+// role + sector scoping. Clients never touch Firestore directly.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} { allow read, write: if false; }
+  }
+}
