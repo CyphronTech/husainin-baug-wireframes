@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <Nav admin={user.role === "admin"} />
       </aside>
       <div className="main">
-        <div className="top noprint" style={{ justifyContent: "flex-end" }}>
+        <div className="top noprint justify-end">
           <form action={logout} className="chip">
             <span>{user.name}<small>{user.role === "admin" ? "Admin" : sector}</small></span>
             <button className="link">Sign out</button>

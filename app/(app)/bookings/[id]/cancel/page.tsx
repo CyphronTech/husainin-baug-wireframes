@@ -19,8 +19,8 @@ export default async function CancelBooking({ params, searchParams }: { params: 
       <Msg msg={sp.msg} />
       <div className="grid g2">
         <div className="card stack">
-          <h2 style={{ margin: 0 }}>Booking selected</h2>
-          <p style={{ margin: 0 }}>
+          <h2 className="m0">Booking selected</h2>
+          <p className="m0">
             <b>{b.no}</b> · {summary(b.items)}<br />
             {b.household.name} · HOF {b.household.hof} · {b.household.mobile}<br />
             Amount paid: {inr(b.amount)}{b.receiptNo && ` · Receipt ${b.receiptNo}`}
@@ -35,14 +35,14 @@ export default async function CancelBooking({ params, searchParams }: { params: 
               <div className="row"><button className="btn primary">Submit cancellation request</button><Link className="btn" href={`/bookings/${id}`}>Back</Link></div>
             </form>
           ) : (
-            <p className="note" style={{ margin: 0 }}>
+            <p className="alert info m0">
               {status === "Cancellation requested" ? "Request submitted. The venue stays booked until Admin decides." : !mine ? "Only bookings you created can be cancelled from this account." : `A ${status.toLowerCase()} booking can't be cancelled here.`}{" "}
               <Link href={`/bookings/${id}`}>Back to booking</Link>
             </p>
           )}
         </div>
         <div className="card stack">
-          <h2 style={{ margin: 0 }}>What happens next</h2>
+          <h2 className="m0">What happens next</h2>
           <div><Badge s="Cancellation requested" /><p className="muted">The venue stays booked until Admin decides.</p></div>
           <div><Badge s="Cancelled" /><p className="muted">If Admin approves: venue released for all Sectors / Mohallas. Household gets a WhatsApp message. Refund paid by the trust.</p></div>
           <div><Badge s="Confirmed" /><p className="muted">If Admin rejects: booking stays confirmed. You see Admin&apos;s comment.</p></div>

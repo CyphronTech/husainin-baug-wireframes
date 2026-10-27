@@ -11,7 +11,7 @@ export default async function Receipt({ params }: { params: Promise<{ id: string
     return <main className="login"><div className="card"><h2>Payment processing</h2><p>Booking {b.no}: this page shows the receipt once the payment is confirmed. Refresh in a minute.</p></div></main>;
 
   return (
-    <main style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>
+    <main className="page-narrow">
       <div className="card">
         <div className="top"><div><h1>Husainin Baug</h1><span className="muted">Hall &amp; Room Booking · Receipt</span></div><b>{b.receiptNo}</b></div>
         <p>

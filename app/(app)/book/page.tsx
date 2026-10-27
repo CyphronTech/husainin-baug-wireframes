@@ -58,8 +58,8 @@ export default async function BookStep1({ searchParams }: { searchParams: SP }) 
       </div>
 
       <div className="card">
-        <div className="top" style={{ marginBottom: 8 }}>
-          <h2 style={{ margin: 0 }}>Pick venues and slots</h2>
+        <div className="top mb-2">
+          <h2 className="m0">Pick venues and slots</h2>
           <span><Link className="btn" href={href({ from: addDays(from, -7), to: addDays(to, -7), v: "" })}>← Prev week</Link> <Link className="btn" href={href({ from: addDays(from, 7), to: addDays(to, 7), v: "" })}>Next week →</Link></span>
         </div>
         <Legend picked />
@@ -74,7 +74,7 @@ export default async function BookStep1({ searchParams }: { searchParams: SP }) 
 
       <div className="card stack">
         <h2>Your selection</h2>
-        {!items.length && <p className="muted" style={{ margin: 0 }}>Click a free slot in the calendar.</p>}
+        {!items.length && <p className="muted m0">Click a free slot in the calendar.</p>}
         {selected.map((v) => {
           const vi = items.filter((i) => i.venueId === v.id);
           if (!vi.length) return null;
@@ -97,7 +97,7 @@ export default async function BookStep1({ searchParams }: { searchParams: SP }) 
           </label>
           <button className="btn">Add</button>
         </form>
-        <p className="note">For large gatherings, add several halls and rooms. If any one is taken, the booking is not created.</p>
+        <p className="alert info">For large gatherings, add several halls and rooms. If any one is taken, the booking is not created.</p>
         <div>{items.length > 0 && <Link className="btn primary" href={`/book/review?${new URLSearchParams(state)}`}>Continue</Link>}</div>
       </div>
     </>

@@ -15,7 +15,7 @@ export function Nav({ admin }: { admin: boolean }) {
   return (
     <nav>
       {(admin ? ADMIN : SECTOR).map(([href, label]) => (
-        <Link key={href} href={href} className={(href === "/" ? path === "/" : path === href || path.startsWith(href + "/")) ? "on" : ""}>{label}</Link>
+        <Link key={href} href={href} aria-current={(href === "/" ? path === "/" : path === href || path.startsWith(href + "/")) ? "page" : undefined}>{label}</Link>
       ))}
     </nav>
   );

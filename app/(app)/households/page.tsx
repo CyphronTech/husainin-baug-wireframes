@@ -34,7 +34,7 @@ export default async function Households({ searchParams }: { searchParams: SP })
       )}
       {sectorId && (
         <>
-          <div className="grid g2e" style={{ marginBottom: 20 }}>
+          <div className="grid g2e mb-5">
             <div className="card">
               <h2>{e.id ? `Edit household ${e.hof}` : "Add household"}</h2>
               <form action={saveHousehold} className="stack" key={e.id ?? "new"}>
@@ -55,8 +55,8 @@ export default async function Households({ searchParams }: { searchParams: SP })
             </div>
           </div>
           <div className="card">
-            <div className="top" style={{ marginBottom: 8 }}>
-              <h2 style={{ margin: 0 }}>Households · {sectorName} ({households.length})</h2>
+            <div className="top mb-2">
+              <h2 className="m0">Households · {sectorName} ({households.length})</h2>
               <form className="row">{sp.sector && <input type="hidden" name="sector" value={sp.sector} />}<input name="q" defaultValue={sp.q} placeholder="Search" /><button className="btn">Search</button></form>
             </div>
             <table>

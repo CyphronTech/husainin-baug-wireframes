@@ -77,7 +77,7 @@ export default async function Cancellations({ searchParams }: { searchParams: SP
               <button className="btn" name="decision" value="reject">Reject</button>
             </div>
           </form>
-          <p className="note">On approval the venues become available to all Sectors / Mohallas and the household gets a WhatsApp message.</p>
+          <p className="alert info">On approval the venues become available to all Sectors / Mohallas and the household gets a WhatsApp message.</p>
         </div>
       )}
     </>

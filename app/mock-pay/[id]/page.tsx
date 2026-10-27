@@ -16,8 +16,8 @@ export default async function MockPay({ params }: { params: Promise<{ id: string
 
   return (
     <main className="login">
-      <div className="card stack" style={{ width: 360 }}>
-        <span className="badge pending">MOCK RAZORPAY</span>
+      <div className="card stack narrow">
+        <span className="badge warn">MOCK RAZORPAY</span>
         <h2>Pay {inr(b.amount)}</h2>
         <p className="muted">Husainin Baug booking {b.no} · {b.household.name}</p>
         {b.status === "pending" ? (
@@ -25,7 +25,7 @@ export default async function MockPay({ params }: { params: Promise<{ id: string
             <form key={m} action={mockPay}>
               <input type="hidden" name="linkId" value={id} />
               <input type="hidden" name="method" value={m} />
-              <button className="btn primary" style={{ width: "100%" }}>Pay with {m}</button>
+              <button className="btn primary w-full">Pay with {m}</button>
             </form>
           ))
         ) : (

@@ -24,13 +24,13 @@ export default async function Payments({ searchParams }: { searchParams: SP }) {
           <button className="btn">Apply</button>
         </form>
       </div>
-      <div className="grid g4" style={{ marginBottom: 20 }}>
+      <div className="grid g4 mb-5">
         <div className="card"><div className="muted">Collected</div><div className="stat">{inr(list.filter((b) => b.receiptNo).reduce((s, b) => s + b.amount, 0))}</div></div>
         <div className="card"><div className="muted">Payment links pending</div><div className="stat">{list.filter((b) => b.payStatus === "pending").length}</div></div>
         <div className="card"><div className="muted">Refunds recorded</div><div className="stat">{inr(refunds.reduce((s, c) => s + c.refund!.amount, 0))}</div></div>
       </div>
       <div className="card">
-        <div className="top" style={{ marginBottom: 8 }}><h2 style={{ margin: 0 }}>Payment collection</h2><a className="btn" href={`/api/payments/export?${qs}`}>Export to Excel (CSV)</a></div>
+        <div className="top mb-2"><h2 className="m0">Payment collection</h2><a className="btn" href={`/api/payments/export?${qs}`}>Export to Excel (CSV)</a></div>
         <table>
           <thead><tr><th>Receipt no.</th><th>Booking</th><th>Household</th><th>Sector / Mohalla</th><th>Amount</th><th>Method</th><th>Razorpay ref.</th><th>Paid on</th><th>Status</th></tr></thead>
           <tbody>
@@ -60,7 +60,7 @@ export default async function Payments({ searchParams }: { searchParams: SP }) {
             ))}
           </tbody>
         </table>
-        <p className="note">Payments are confirmed automatically when Razorpay reports the payment. Online only: UPI, card, net banking.</p>
+        <p className="alert info">Payments are confirmed automatically when Razorpay reports the payment. Online only: UPI, card, net banking.</p>
       </div>
     </>
   );

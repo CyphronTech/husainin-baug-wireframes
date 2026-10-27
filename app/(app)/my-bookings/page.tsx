@@ -65,7 +65,7 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
                   <td>{mine ? "You" : b.createdByName}</td>
                   <td>
                     {b.receiptNo && <a href={b.receiptUrl ?? `/r/${b.id}/pdf`}>Receipt</a>}{" "}
-                    {b.shown === "On hold" && <form action={resendLink} style={{ display: "inline" }}><input type="hidden" name="id" value={b.id} /><button className="link">Resend link</button></form>}{" "}
+                    {b.shown === "On hold" && <form className="inline" action={resendLink}><input type="hidden" name="id" value={b.id} /><button className="link">Resend link</button></form>}{" "}
                     {b.shown === "Confirmed" && (mine || isAdmin) && <Link href={`/bookings/${b.id}/cancel`}>Request cancellation</Link>}
                   </td>
                 </tr>
@@ -73,7 +73,7 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
             })}
           </tbody>
         </table>
-        <p className="note">You can request cancellation only for bookings you created.</p>
+        <p className="alert info">You can request cancellation only for bookings you created.</p>
       </div>
     </>
   );

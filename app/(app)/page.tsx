@@ -39,14 +39,14 @@ export default async function Dashboard() {
   return (
     <>
       <div className="top"><h1>Admin dashboard</h1></div>
-      <div className="grid g4" style={{ marginBottom: 20 }}>
+      <div className="grid g4 mb-5">
         <div className="card"><div className="muted">Bookings this month</div><div className="stat">{new Set(ml.map((l) => l.refId)).size}</div></div>
         <div className="card"><div className="muted">Upcoming events (next 7 days)</div><div className="stat">{upcomingIds.length}</div></div>
         <div className="card"><div className="muted">Collections this month</div><div className="stat">{inr(collected)}</div><Link href="/payments">View</Link></div>
         <div className="card"><div className="muted">Pending cancellation approvals</div><div className="stat">{pendingCr.data().count}</div><Link href="/cancellations">View</Link></div>
       </div>
 
-      <div className="grid g2" style={{ marginBottom: 20 }}>
+      <div className="grid g2 mb-5">
         <div className="card">
           <h2>Upcoming bookings</h2>
           <table>
@@ -71,10 +71,10 @@ export default async function Dashboard() {
             const total = monthDays.length * (v.type === "hall" ? 2 : 1);
             const pct = Math.round((ml.filter((l) => l.venueId === v.id).length / total) * 100);
             return (
-              <div key={v.id} className="row" style={{ marginBottom: 10, alignItems: "center" }}>
-                <span style={{ flex: "0 0 120px" }}>{v.name}</span>
-                <div className="bar" style={{ flex: 1 }}><i style={{ width: `${pct}%` }} /></div>
-                <span className="muted" style={{ flex: "0 0 36px", textAlign: "right" }}>{pct}%</span>
+              <div key={v.id} className="occ">
+                <span>{v.name}</span>
+                <div className="bar"><i style={{ width: `${pct}%` }} /></div>
+                <span className="muted">{pct}%</span>
               </div>
             );
           })}

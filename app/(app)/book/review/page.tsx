@@ -36,10 +36,10 @@ export default async function BookReview({ searchParams }: { searchParams: SP })
       <div className="top"><h1>New booking · household and review</h1></div>
       <Steps on={hh ? 4 : 2} />
       <Msg msg={sp.msg} />
-      <div className="grid g2e" style={{ marginBottom: 20 }}>
+      <div className="grid g2e mb-5">
         <div className="card">
           <h2>2. Select household</h2>
-          <form className="row" style={{ marginBottom: 12 }}>
+          <form className="row mb-3">
             {Object.entries(state).map(([k, val]) => <input key={k} type="hidden" name={k} value={val} />)}
             {sp.h && <input type="hidden" name="h" value={sp.h} />}
             <label>Search household (HOF ID, name or mobile)<input name="q" defaultValue={sp.q} /></label>
@@ -59,7 +59,7 @@ export default async function BookReview({ searchParams }: { searchParams: SP })
           <div className="stack">
             <label>Purpose<select name="purpose" form="book" defaultValue="Wedding">{PURPOSES.map((p) => <option key={p}>{p}</option>)}</select></label>
             <label>Expected guests<input name="guests" form="book" type="number" min={1} max={capacity || undefined} required /></label>
-            {capacity > 0 && <p className="note" style={{ margin: 0 }}>Hall capacity for this booking: {capacity} guests.</p>}
+            {capacity > 0 && <p className="alert info m0">Hall capacity for this booking: {capacity} guests.</p>}
           </div>
         </div>
       </div>
@@ -73,7 +73,7 @@ export default async function BookReview({ searchParams }: { searchParams: SP })
             <tr><td colSpan={3}><b>Total payable (full amount)</b></td><td><b>{inr(items.reduce((s, i) => s + i.rate, 0))}</b></td></tr>
           </tbody>
         </table>
-        <p className="warn">
+        <p className="alert warn">
           Creating the booking holds the venue for {HOLD_MINUTES} minutes and sends a Razorpay payment link to the household on WhatsApp
           {hh && !hh.whatsappConsent && " (this household has not consented to WhatsApp, so share the link yourself)"}.
         </p>

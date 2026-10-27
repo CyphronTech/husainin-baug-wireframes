@@ -65,7 +65,7 @@ export default async function Venues({ searchParams }: { searchParams: SP }) {
               <label>Per day (₹, rooms)<input name="perDay" type="number" defaultValue={e.rates?.perDay} /></label>
             </div>
             <label className="check"><input type="checkbox" name="active" defaultChecked={e.active} />Active (available for booking)</label>
-            <p className="note">Rate changes apply only to bookings made after the change.</p>
+            <p className="alert info">Rate changes apply only to bookings made after the change.</p>
             <div className="row"><button className="btn primary">Save</button><Link className="btn" href="/venues">Cancel</Link></div>
           </form>
         </div>
@@ -84,7 +84,7 @@ export default async function Venues({ searchParams }: { searchParams: SP }) {
               <label>Reason<input name="name" required /></label>
               <div><button className="btn primary">Add block</button></div>
             </form>
-            <table style={{ marginTop: 12 }}>
+            <table className="mt-3">
               <tbody>
                 {blocks.map((b) => (
                   <tr key={b.id}>
@@ -104,7 +104,7 @@ export default async function Venues({ searchParams }: { searchParams: SP }) {
               <input type="file" name="file" accept=".csv" required />
               <button className="btn primary">Upload CSV</button>
             </form>
-            <p className="note">Rows that clash with an existing booking are skipped and reported back.</p>
+            <p className="alert info">Rows that clash with an existing booking are skipped and reported back.</p>
           </div>
         </div>
       </div>

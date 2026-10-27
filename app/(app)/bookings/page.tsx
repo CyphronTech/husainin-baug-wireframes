@@ -39,8 +39,8 @@ export default async function Bookings({ searchParams }: { searchParams: SP }) {
       </div>
 
       <div className="card">
-        <div className="top" style={{ marginBottom: 8 }}>
-          <h2 style={{ margin: 0 }}>Availability calendar</h2>
+        <div className="top mb-2">
+          <h2 className="m0">Availability calendar</h2>
           <span><Link className="btn" href={q({ start: addDays(start, -7) })}>← Prev week</Link> <Link className="btn" href={q({ start: addDays(start, 7) })}>Next week →</Link></span>
         </div>
         <Legend />
@@ -53,7 +53,7 @@ export default async function Bookings({ searchParams }: { searchParams: SP }) {
           takenHref={(id) => q({ sel: id })}
           dim={(l) => !!sp.sector && l.kind === "booking" && l.sectorId !== sp.sector}
         />
-        <div className="note">Halls book by Morning (M) or Evening (E) slot; both slots = Full day. Rooms book by full day. Click a free slot to start a booking.</div>
+        <div className="alert info">Halls book by Morning (M) or Evening (E) slot; both slots = Full day. Rooms book by full day. Click a free slot to start a booking.</div>
       </div>
 
       <div className="grid g2">
@@ -76,7 +76,7 @@ export default async function Bookings({ searchParams }: { searchParams: SP }) {
           )}
           {selData && sel!.kind === "booking" && (
             <div className="stack">
-              <p style={{ margin: 0 }}>
+              <p className="m0">
                 <b>{summary(selData.items)}</b><br />
                 Booking {selData.no}{canSeeHousehold(selData.sectorId) && ` · ${selData.household.name} (HOF ${selData.household.hof})`}<br />
                 Booked by {selData.sectorName}{selData.status === "confirmed" && ` · ${inr(selData.amount)} paid`}

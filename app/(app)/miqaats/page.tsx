@@ -32,19 +32,19 @@ export default async function Miqaats({ searchParams }: { searchParams: SP }) {
                 <td className="muted">{m.clashes.join(", ") || "—"}</td>
                 <td>
                   <Link href={`?edit=${m.id}#edit`}>Edit</Link>{" "}
-                  <form action={deleteBlockAction} style={{ display: "inline" }}><input type="hidden" name="id" value={m.id} /><input type="hidden" name="back" value="/miqaats" /><button className="link">Delete</button></form>
+                  <form className="inline" action={deleteBlockAction}><input type="hidden" name="id" value={m.id} /><input type="hidden" name="back" value="/miqaats" /><button className="link">Delete</button></form>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        <form action={importBlocks} className="row" style={{ marginTop: 16 }}>
+        <form action={importBlocks} className="row mt-4">
           <input type="hidden" name="kind" value="miqaat" />
           <a className="btn" href="/blocks-template.csv" download>Download template</a>
           <input type="file" name="file" accept=".csv" required />
           <button className="btn primary">Upload yearly Miqaat list (CSV)</button>
         </form>
-        <p className="note">Miqaat dates appear as Unavailable on every Sector / Mohalla calendar. Slots already booked are not blocked and are flagged here.</p>
+        <p className="alert info">Miqaat dates appear as Unavailable on every Sector / Mohalla calendar. Slots already booked are not blocked and are flagged here.</p>
       </div>
 
       <div className="card" id="edit">

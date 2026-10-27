@@ -47,7 +47,7 @@ export function HouseholdImport({ known, sectorId }: { known: string[]; sectorId
             <thead><tr><th>Row</th><th>HOF ID</th><th>Name</th><th>Mobile</th><th>Result</th></tr></thead>
             <tbody>{rows.map((r, i) => <tr key={i}><td>{i + 1}</td><td>{r.hof}</td><td>{r.name || "—"}</td><td>{r.mobile}</td><td>{r.result}</td></tr>)}</tbody>
           </table>
-          <p className="note" style={{ margin: 0 }}>Existing HOF IDs are updated, new ones added. HOF IDs registered to another Sector / Mohalla are rejected on import.</p>
+          <p className="alert info m0">Existing HOF IDs are updated, new ones added. HOF IDs registered to another Sector / Mohalla are rejected on import.</p>
           <form action={importHouseholds} className="row">
             <input type="hidden" name="rows" value={JSON.stringify(valid.map(({ result, ...r }) => r))} />
             {sectorId && <input type="hidden" name="sectorId" value={sectorId} />}

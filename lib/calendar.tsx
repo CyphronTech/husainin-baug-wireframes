@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { datesBetween, isLive } from "./booking";
 import { db } from "./firebase-admin";
-import { toISODate } from "./format";
+import { dmy, SLOT_LABEL, toISODate } from "./format";
 import type { Lock, Slot, Venue } from "./types";
 
 export const addDays = (iso: string, n: number) => toISODate(new Date(new Date(iso + "T00:00:00Z").getTime() + n * 864e5));
@@ -34,15 +34,19 @@ export function Calendar(p: {
   dim?: (l: Lock) => boolean;
   sel?: string;
 }) {
-  const pill = (venueId: string, date: string, slot: Slot, label: string) => {
+  const STATUS = { pending: "on hold", confirmed: "booked", block: "unavailable" } as const;
+  const pill = (venueName: string, venueId: string, date: string, slot: Slot, label: string) => {
     const id = `${venueId}_${date}_${slot}`;
     const l = p.locks.get(id);
+    const picked = !l && p.picked?.(venueId, date, slot);
+    const desc = `${venueName}, ${dmy(date)}, ${SLOT_LABEL[slot]}, ${l ? STATUS[l.status] : picked ? "selected" : "available"}`;
+    const a11y = { "aria-label": desc, title: desc };
     if (!l) {
-      const cls = `pill${p.picked?.(venueId, date, slot) ? " picked" : ""}`;
-      return p.freeHref ? <Link key={id} className={cls} href={p.freeHref(venueId, date, slot)}>{label}</Link> : <span key={id} className={cls}>{label}</span>;
+      const cls = `pill${picked ? " picked" : ""}`;
+      return p.freeHref ? <Link key={id} className={cls} href={p.freeHref(venueId, date, slot)} {...a11y}>{label}</Link> : <span key={id} className={cls} {...a11y}>{label}</span>;
     }
     const cls = `pill ${l.status}${p.dim?.(l) ? " other" : ""}${p.sel === id ? " sel" : ""}`;
-    return p.takenHref ? <Link key={id} className={cls} href={p.takenHref(id)}>{label}</Link> : <span key={id} className={cls}>{label}</span>;
+    return p.takenHref ? <Link key={id} className={cls} href={p.takenHref(id)} {...a11y}>{label}</Link> : <span key={id} className={cls} {...a11y}>{label}</span>;
   };
   return (
     <table className="cal">
@@ -53,7 +57,7 @@ export function Calendar(p: {
         {p.venues.map((v) => (
           <tr key={v.id}>
             <td><b>{v.name}</b><div className="muted">{v.type === "hall" ? "Hall" : "Room"}</div></td>
-            {p.days.map((d) => <td key={d}>{v.type === "hall" ? [pill(v.id, d, "M", "M"), pill(v.id, d, "E", "E")] : pill(v.id, d, "D", "Day")}</td>)}
+            {p.days.map((d) => <td key={d}>{v.type === "hall" ? [pill(v.name, v.id, d, "M", "M"), pill(v.name, v.id, d, "E", "E")] : pill(v.name, v.id, d, "D", "Day")}</td>)}
           </tr>
         ))}
       </tbody>

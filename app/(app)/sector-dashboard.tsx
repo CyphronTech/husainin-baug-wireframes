@@ -26,13 +26,13 @@ export async function SectorDashboard({ user }: { user: AppUser }) {
   return (
     <>
       <div className="top"><h1>Dashboard{sectorName && ` · ${sectorName}`}</h1></div>
-      <div className="grid g4" style={{ marginBottom: 20 }}>
+      <div className="grid g4 mb-5">
         {stat("Upcoming bookings", upcoming.filter((b) => b.shown !== "On hold").length, "/my-bookings?status=Confirmed")}
         {stat("Awaiting payment", shown.filter((b) => b.shown === "On hold").length, "/my-bookings?status=On+hold")}
         {stat("Cancellation requests", crs.docs.filter((d) => d.data().status === "awaiting").length, "/cancellations")}
         {stat("Households", households.length, "/households")}
       </div>
-      <div className="grid g2" style={{ marginBottom: 20 }}>
+      <div className="grid g2 mb-5">
         <div className="card">
           <h2>My upcoming bookings</h2>
           <table>
@@ -67,7 +67,7 @@ export async function SectorDashboard({ user }: { user: AppUser }) {
         <h2>This week</h2>
         <Legend />
         <Calendar venues={venues.filter((v) => v.active)} days={week.days} locks={week.locks} />
-        <div className="note">The shared calendar shows bookings from every Sector / Mohalla. <Link href="/bookings">Check availability</Link></div>
+        <div className="alert info">The shared calendar shows bookings from every Sector / Mohalla. <Link href="/bookings">Check availability</Link></div>
       </div>
     </>
   );

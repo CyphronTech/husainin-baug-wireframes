@@ -24,7 +24,7 @@ export default async function Users({ searchParams }: { searchParams: SP }) {
       <div className="grid g2">
         <div className="card">
           <h2>Users</h2>
-          <form className="row" style={{ marginBottom: 12 }}>
+          <form className="row mb-3">
             <label>Search<input name="q" defaultValue={sp.q} /></label>
             <label>Role<select name="role" defaultValue={sp.role}><option value="">All roles</option><option value="admin">Admin</option><option value="sector">Sector / Mohalla user</option></select></label>
             <button className="btn">Filter</button>
@@ -57,7 +57,7 @@ export default async function Users({ searchParams }: { searchParams: SP }) {
             <label className="check"><input type="checkbox" name="active" defaultChecked={e.active} />Active</label>
             <div className="row"><button className="btn primary">Save</button><Link className="btn" href="/users">Cancel</Link></div>
           </form>
-          <p className="note">Deactivating a user signs them out and keeps their bookings; Admin can act on them.</p>
+          <p className="alert info">Deactivating a user signs them out and keeps their bookings; Admin can act on them.</p>
         </div>
       </div>
     </>

@@ -44,7 +44,7 @@ export default async function Sectors({ searchParams }: { searchParams: SP }) {
             <label className="check"><input type="checkbox" name="active" defaultChecked={e.active} />Active</label>
             <div className="row"><button className="btn primary">Save</button><Link className="btn" href="/sectors">Cancel</Link></div>
           </form>
-          <p className="note">Users are linked to one Sector / Mohalla. Bookings are visible to all on the calendar; household details only to their own Sector / Mohalla.</p>
+          <p className="alert info">Users are linked to one Sector / Mohalla. Bookings are visible to all on the calendar; household details only to their own Sector / Mohalla.</p>
         </div>
       </div>
     </>
