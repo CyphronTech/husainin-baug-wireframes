@@ -1,36 +1,35 @@
 # Husainin Baug — Hall & Room Booking
 
-Next.js 16 (App Router, server actions) + Firebase Auth + Firestore. Razorpay Payment Links (mocked until keys are set), MSG91 WhatsApp.
+Next.js 16 (App Router, server actions) + Firestore. Razorpay Payment Links (mocked until keys are set), MSG91 WhatsApp.
 Built from the admin (A1–A9) and Sector / Mohalla (Login, M1–M8) wireframes on `main`.
 
 ## Run locally against a real Firebase project (free Spark plan — no hosting needed)
 
 1. [console.firebase.google.com](https://console.firebase.google.com) → create a project (Spark plan is fine).
-2. Build → Authentication → Get started → enable **Email/Password**.
-3. Build → Firestore Database → Create database → **production mode** (deny-all rules; the app uses the Admin SDK,
+2. Build → Firestore Database → Create database → **production mode** (deny-all rules; the app uses the Admin SDK,
    which bypasses them).
-4. Project settings → General → Add app → Web → copy `apiKey`, `authDomain`, `projectId`.
-5. Project settings → Service accounts → Generate new private key → save the JSON **outside** this folder.
-6. `cp .env.example .env.local` and fill in the Firebase lines, `GOOGLE_APPLICATION_CREDENTIALS=/full/path/to/that.json`
+3. Note the **Project ID** (Project settings → General).
+4. Project settings → Service accounts → Generate new private key → save the JSON **outside** this folder.
+5. `cp .env.example .env.local` (Windows: `copy .env.example .env.local`) and fill in `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS=/full/path/to/that.json`
    and the four `B2_*` lines. Leave the emulator, Razorpay and MSG91 lines empty (both run as mocks).
-7. `npm i`
-8. `node --env-file=.env.local scripts/seed.mjs you@example.com "Husainin Baug Admin" 98XXXXXXXX YourPassword`
-9. `npm run dev` → http://localhost:3000, sign in with the mobile number or email + that password.
+6. `npm i`
+7. `node --env-file=.env.local scripts/seed.mjs` (admin `50450028` / `Password`; pass `<username> <password>` to change)
+8. `npm run dev` → http://localhost:3000
 
 ## Run locally (emulators, no cloud project needed)
 
 ```bash
 npm i && npm i -g firebase-tools
-cp .env.example .env.local        # uncomment the emulator lines; any fake API key works
+cp .env.example .env.local        # uncomment FIRESTORE_EMULATOR_HOST, set any project id
 npm run emulators                 # terminal 1 (needs Java)
-node --env-file=.env.local scripts/seed.mjs admin@example.org "Husainin Baug Admin" 9822000100 secret123
+node --env-file=.env.local scripts/seed.mjs
 npm run dev                       # terminal 2 → http://localhost:3000
 ```
 
 ## How it works
 
-- **Login**: username (mobile number or email, set by Admin) + password. Sign-in runs server-side via the
-  Firebase Auth REST API (no Firebase SDK in the browser) and ends in an httpOnly session cookie.
+- **Login**: username + password stored in Firestore `users/{username}` (plain text for now — marked `shortcut:`
+  in `login()`). Sessions are random tokens in `sessions/{token}`. Admin sets and resets passwords on the Users screen.
 - **Holds**: a new booking holds its slots for 10 minutes (`HOLD_MINUTES`). Holds lapse lazily: every reader treats
   a pending lock past `holdUntil` as free, so there's no cron. If a payment arrives after the hold lapsed and the slot was
   taken meanwhile, the booking is marked *Refund due* (Payments page). Razorpay links expire at 16 min (their minimum is 15).
@@ -56,7 +55,7 @@ npm run dev                       # terminal 2 → http://localhost:3000
 ## Deploy
 
 Firebase App Hosting (Blaze): `firebase apphosting:backends:create`, fill in `apphosting.yaml`, set secrets, `firebase deploy --only firestore:rules`.
-Seed against prod with `GOOGLE_APPLICATION_CREDENTIALS` set and no password argument, then use "Forgot password" on /login.
+Seed with `GOOGLE_APPLICATION_CREDENTIALS` set: `node --env-file=.env.local scripts/seed.mjs <username> <password>`.
 
 ## Not built (deliberately)
 

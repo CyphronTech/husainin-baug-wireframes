@@ -1,14 +1,12 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { audit, cancelPending, createBooking, decideCancellation, deleteBlock, getBooking, markPaid, notify, requestCancellation, saveBlock } from "@/lib/booking";
 import { displayStatus } from "@/lib/format";
-import { sendPasswordEmail, signInWithPassword } from "@/lib/identity";
 import { getSectors, getVenues } from "@/lib/data";
-import { auth, db } from "@/lib/firebase-admin";
+import { db } from "@/lib/firebase-admin";
 import { createPaymentLink, mockPayments } from "@/lib/razorpay";
-import { requireAdmin, requireUser, SESSION_COOKIE } from "@/lib/session";
+import { endSession, requireAdmin, requireUser, startSession } from "@/lib/session";
 import type { AppUser, Block, Household, Slot } from "@/lib/types";
 
 const s = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
@@ -32,46 +30,20 @@ async function run(back: string, fn: () => Promise<string | void>) {
 
 // ── Login ───────────────────────────────────────────────────────────────────
 
-/** Username = the user's mobile number or email (both set by Admin on the Users screen). */
-async function findUser(id: string) {
-  const digits = id.replace(/\D/g, "");
-  const q = id.includes("@") ? db.collection("users").where("email", "==", id.toLowerCase()) : db.collection("users").where("mobile", "==", digits.slice(-10));
-  const d = (await q.limit(1).get()).docs[0];
-  return d && d.data().active ? ({ uid: d.id, ...d.data() } as AppUser) : null;
-}
-
-async function startSession(idToken: string, remember: boolean) {
-  const days = remember ? 14 : 1;
-  const cookie = await auth.createSessionCookie(idToken, { expiresIn: days * 864e5 });
-  (await cookies()).set(SESSION_COOKIE, cookie, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    ...(remember && { maxAge: days * 86400 }),
-  });
-}
-
 export async function login(f: FormData) {
   await run("/login", async () => {
-    const user = await findUser(s(f, "id"));
-    const token = user && (await signInWithPassword(user.email, s(f, "password")).catch(() => null));
-    if (!token) throw new Error("Wrong username or password");
-    await startSession(token, f.get("remember") === "on");
+    const doc = await db.doc(`users/${s(f, "username")}`).get();
+    const u = doc.data();
+    // shortcut: plain-text password compare, as requested for now. Anyone with Firestore console access can read
+    // passwords. Upgrade: store scrypt hashes (node:crypto scryptSync + timingSafeEqual), compare here.
+    if (!u || !u.active || u.password !== String(f.get("password") ?? "")) throw new Error("Wrong username or password");
+    await startSession(doc.id, f.get("remember") === "on");
     return "/";
   });
 }
 
-export async function forgotPassword(f: FormData) {
-  await run("/login", async () => {
-    const user = await findUser(s(f, "id"));
-    if (user) await sendPasswordEmail(user.email).catch(() => {});
-    throw new Error("If that account exists, a password reset email is on its way.");
-  });
-}
-
 export async function logout() {
-  (await cookies()).delete(SESSION_COOKIE);
+  await endSession();
   redirect("/login");
 }
 
@@ -267,40 +239,35 @@ export async function saveSector(f: FormData) {
   });
 }
 
+/** Username is the users/{username} doc id: unique, and fixed once created. */
 export async function saveUser(f: FormData) {
   const admin = await requireAdmin();
   await run("/users", async () => {
-    let uid = s(f, "id");
+    const editing = s(f, "id");
+    const username = editing || s(f, "username");
+    if (!/^[A-Za-z0-9._-]{3,40}$/.test(username)) throw new Error("Username: 3–40 letters, digits, . _ -");
+    const ref = db.doc(`users/${username}`);
     const role = s(f, "role") as "admin" | "sector";
+    const password = String(f.get("password") ?? "");
     const data = {
+      username,
       name: s(f, "name"),
       mobile: mobile10(s(f, "mobile")),
       email: s(f, "email").toLowerCase(),
       role,
       sectorId: role === "admin" ? null : s(f, "sectorId"),
       active: f.get("active") === "on",
+      ...(password && { password }), // blank on edit = keep current password
     };
     if (role === "sector" && !data.sectorId) throw new Error("Select a Sector / Mohalla");
-    const authFields = { email: data.email, displayName: data.name, disabled: !data.active };
-    if (uid) {
-      await auth.updateUser(uid, authFields);
-      if (!data.active) await auth.revokeRefreshTokens(uid); // kills existing sessions (verifySessionCookie checks revocation)
-    } else {
-      uid = (await auth.createUser(authFields)).uid;
-      await sendPasswordEmail(data.email);
-    }
     await db.runTransaction(async (tx) => {
-      tx.set(db.doc(`users/${uid}`), data);
-      audit(tx, admin, s(f, "id") ? "user.update" : "user.create", { uid, ...data });
+      const exists = (await tx.get(ref)).exists;
+      if (!editing && exists) throw new Error(`Username ${username} is taken`);
+      if (!editing && !password) throw new Error("Set a password");
+      tx.set(ref, data, { merge: true });
+      const { password: _, ...logged } = data;
+      audit(tx, admin, editing ? "user.update" : "user.create", { uid: username, ...logged });
     });
-  });
-}
-
-export async function resetPassword(f: FormData) {
-  await requireAdmin();
-  await run("/users", async () => {
-    await sendPasswordEmail(s(f, "email"));
-    return `/users?msg=${encodeURIComponent(`Password reset email sent to ${s(f, "email")}`)}`;
   });
 }
 

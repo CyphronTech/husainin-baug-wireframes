@@ -7,10 +7,6 @@
 env:
   - variable: APP_URL
     value: https://CHANGE-ME.hosted.app # App Hosting shows this URL after the first rollout
-  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
-    value: CHANGE-ME
-  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    value: CHANGE-ME.firebaseapp.com
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
     value: CHANGE-ME
   - variable: B2_KEY_ID

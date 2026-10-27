@@ -1,15 +1,16 @@
-// One-time setup: venues, sectors and the first admin.
-//   node --env-file=.env.local scripts/seed.mjs admin@example.org "Husainin Baug Admin" 9822000100 [password]
-// With a password (emulator/dev) it is set directly; without, sign in via "Forgot password" on /login.
+// One-time setup: venues, sectors, demo households and the first admin (users/{username}).
+//   node --env-file=.env.local scripts/seed.mjs            → admin 50450028 / Password
+//   node --env-file=.env.local scripts/seed.mjs <username> <password>
 import { initializeApp } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 
-const [email, name, mobile, password] = process.argv.slice(2);
-if (!email || !name || !mobile) throw new Error("usage: seed.mjs <email> <name> <mobile> [password]");
+if (!process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.FIRESTORE_EMULATOR_HOST) {
+  console.error("GOOGLE_APPLICATION_CREDENTIALS is empty. Put the service account JSON path in .env.local, e.g.\n  GOOGLE_APPLICATION_CREDENTIALS=C:/keys/husainin-sa.json\n(and make sure there is no second, empty GOOGLE_APPLICATION_CREDENTIALS= line below it)");
+  process.exit(1);
+}
+const [username = "50450028", password = "Password"] = process.argv.slice(2);
 initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID });
 const db = getFirestore();
-const auth = getAuth();
 const batch = db.batch();
 
 const hall = (code, name, capacity, morning, evening, fullDay) => ({ code, name, type: "hall", capacity, rates: { morning, evening, fullDay }, morningTime: "08:00–15:00", eveningTime: "17:00–23:00", active: true });
@@ -27,7 +28,7 @@ for (const s of sectors) {
 for (const [hof, name, mobile] of [["50450029", "Aliasgar Chaiwala", "8605480902"], ["50453456", "Taher Bootwala", "9822000013"], ["50455678", "Ali Abbas Sakarwala", "9822000016"]])
   batch.set(db.doc(`households/${hof}`), { hof, name, mobile, address: "", sectorId: "bur", whatsappConsent: true });
 
-const user = await auth.getUserByEmail(email).catch(() => auth.createUser({ email, displayName: name, ...(password && { password }) }));
-batch.set(db.doc(`users/${user.uid}`), { name, mobile, email, role: "admin", sectorId: null, active: true });
+// shortcut: plain-text password, as requested for now (see login() in app/actions.ts for the upgrade path).
+batch.set(db.doc(`users/${username}`), { username, password, name: "Husainin Baug Admin", mobile: "", email: "", role: "admin", sectorId: null, active: true }, { merge: true });
 await batch.commit();
-console.log(`Seeded 6 venues, ${sectors.length} sectors, admin ${email} (${user.uid})`);
+console.log(`Seeded 6 venues, ${sectors.length} sectors, 3 households, admin ${username}`);
