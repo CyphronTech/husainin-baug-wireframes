@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { deleteBlockAction, importBlocks, saveBlockAction, saveVenue } from "@/app/actions";
+import { deleteBlockAction, saveBlockAction, saveVenue } from "@/app/actions";
+import { BlockImport } from "../block-import";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { dmy, inr, SLOT_LABEL, today } from "@/lib/format";
@@ -98,13 +99,7 @@ export default async function Venues({ searchParams }: { searchParams: SP }) {
           </div>
           <div className="card">
             <h2>Bulk upload for the year</h2>
-            <form action={importBlocks} className="row">
-              <input type="hidden" name="kind" value="maintenance" />
-              <a className="btn" href="/blocks-template.csv" download>Download template</a>
-              <input type="file" name="file" accept=".csv" required />
-              <button className="btn primary">Upload CSV</button>
-            </form>
-            <p className="alert info">Rows that clash with an existing booking are skipped and reported back.</p>
+            <BlockImport kind="maintenance" label="Upload CSV / Excel" />
           </div>
         </div>
       </div>

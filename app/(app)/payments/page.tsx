@@ -30,7 +30,7 @@ export default async function Payments({ searchParams }: { searchParams: SP }) {
         <div className="card"><div className="muted">Refunds recorded</div><div className="stat">{inr(refunds.reduce((s, c) => s + c.refund!.amount, 0))}</div></div>
       </div>
       <div className="card">
-        <div className="top mb-2"><h2 className="m0">Payment collection</h2><a className="btn" href={`/api/payments/export?${qs}`}>Export to Excel (CSV)</a></div>
+        <div className="top mb-2"><h2 className="m0">Payment collection</h2><a className="btn" href={`/api/payments/export?${qs}`}>Export to Excel</a></div>
         <table>
           <thead><tr><th>Receipt no.</th><th>Booking</th><th>Household</th><th>Sector / Mohalla</th><th>Amount</th><th>Method</th><th>Razorpay ref.</th><th>Paid on</th><th>Status</th></tr></thead>
           <tbody>

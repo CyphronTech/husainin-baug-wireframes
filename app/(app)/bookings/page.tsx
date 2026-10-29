@@ -11,7 +11,10 @@ export default async function Bookings({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
   const user = await requireUser();
   const isAdmin = user.role === "admin";
-  const start = sp.start || today();
+  // Month filter jumps to the 1st of that month; prev/next week links carry `start`.
+  const start = sp.start || (sp.month ? `${sp.month}-01` : today());
+  const now = new Date();
+  const months = Array.from({ length: 15 }, (_, i) => new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 2 + i, 1)));
   const [allVenues, sectors, { days, locks }] = await Promise.all([getVenues(), getSectors(), loadWeek(start)]);
   const venues = allVenues.filter((v) => v.active && (!sp.type || v.type === sp.type) && (!sp.venue || v.id === sp.venue));
 
@@ -31,7 +34,10 @@ export default async function Bookings({ searchParams }: { searchParams: SP }) {
         <h2>Filters</h2>
         <form className="row">
           <label>Venue type<select name="type" defaultValue={sp.type}><option value="">All halls &amp; rooms</option><option value="hall">Halls</option><option value="room">Rooms</option></select></label>
-          <label>Week starting<input type="date" name="start" defaultValue={start} /></label>
+          <label>Month<select name="month" defaultValue={start.slice(0, 7)}>
+            {!months.some((m) => m.toISOString().startsWith(start.slice(0, 7))) && <option value={start.slice(0, 7)}>{start.slice(0, 7)}</option>}
+            {months.map((m) => <option key={m.toISOString()} value={m.toISOString().slice(0, 7)}>{m.toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" })}</option>)}
+          </select></label>
           <label>Venue<select name="venue" defaultValue={sp.venue}><option value="">All venues</option>{allVenues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></label>
           <label>Booked by<select name="sector" defaultValue={sp.sector}><option value="">All Sectors / Mohallas</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
           <button className="btn">Apply</button>

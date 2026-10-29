@@ -51,15 +51,15 @@ npm run dev                       # terminal 2 → http://localhost:3000
   falls back to `/r/{bookingDocId}/pdf`, which the app generates live.
 - **Cancellations**: unpaid hold → creator/admin releases it directly. Paid → creator requests, admin approves and records the manual refund.
 - **Audit**: every mutation writes to `audit/` within the same transaction.
+- **Imports** (households, maintenance blocks, Miqaat list): CSV or Excel (.xlsx), parsed in the browser
+  (`read-excel-file`), previewed with a server-side check (no writes), then only valid rows are imported.
+- **Expenses**: bills upload to the same B2 bucket (`bills/{id}/…`); the report sets income (confirmed bookings by
+  event date) against expenses per venue per month. Payments export is a real .xlsx (`write-excel-file`).
 
 ## Deploy
 
 Firebase App Hosting (Blaze): `firebase apphosting:backends:create`, fill in `apphosting.yaml`, set secrets, `firebase deploy --only firestore:rules`.
 Seed with `GOOGLE_APPLICATION_CREDENTIALS` set: `node --env-file=.env.local scripts/seed.mjs <username> <password>`.
-
-## Not built (deliberately)
-
-- Expenses screen (wireframe marks it "future").
 
 ---
 

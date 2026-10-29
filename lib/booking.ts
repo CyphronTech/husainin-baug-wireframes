@@ -221,19 +221,23 @@ export async function decideCancellation(admin: AppUser, crId: string, approve: 
   if (booking) await notify(booking, "cancelled", refund?.amount);
 }
 
-/** Miqaat / maintenance block. Slots already held by a booking are skipped and reported back as clashes. */
-export async function saveBlock(user: AppUser, id: string | null, data: Omit<Block, "id" | "lockIds" | "clashes">) {
+/**
+ * Miqaat / maintenance block. Slots already held by a booking are skipped and reported back as clashes.
+ * `blocking: false` records the Miqaat without reserving venues. `dryRun` only reports clashes (import preview).
+ */
+export async function saveBlock(user: AppUser, id: string | null, data: Omit<Block, "id" | "lockIds" | "clashes">, dryRun = false) {
   const venues = (await getVenues()).filter((v) => data.venueIds.includes(v.id));
   if (!venues.length) throw new Error("Select at least one venue");
   const dates = datesBetween(data.from, data.to);
   const ref = id ? db.doc(`blocks/${id}`) : db.collection("blocks").doc();
-  const wanted = venues.flatMap((v) => dates.flatMap((d) => lockSlots(v.type, data.slot).map((s) => lockRef(v.id, d, s))));
+  const wanted = data.blocking === false ? [] : venues.flatMap((v) => dates.flatMap((d) => lockSlots(v.type, data.slot).map((s) => lockRef(v.id, d, s))));
 
   return db.runTransaction(async (tx) => {
     const old = await tx.get(ref);
-    const snaps = await tx.getAll(...wanted);
+    const snaps = wanted.length ? await tx.getAll(...wanted) : [];
     const isClash = (s: DocumentSnapshot) => liveSnap(s) && s.data()!.refId !== ref.id;
     const clashes = snaps.filter(isClash).map((s) => describe(s.data() as Lock, venues));
+    if (dryRun) return clashes;
     const free = snaps.filter((s) => !isClash(s)).map((s) => s.ref as DocumentReference);
     const keep = new Set(free.map((r) => r.id));
     for (const lid of (old.data()?.lockIds as string[]) ?? []) if (!keep.has(lid)) tx.delete(db.doc(`locks/${lid}`));

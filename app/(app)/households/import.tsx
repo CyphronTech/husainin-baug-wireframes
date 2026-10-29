@@ -2,20 +2,15 @@
 
 import { useState } from "react";
 import { importHouseholds } from "@/app/actions";
+import { ACCEPT, readRows } from "@/lib/sheet";
 
 type Row = { hof: string; name: string; mobile: string; address: string; whatsappConsent: boolean; result: string };
 
-// shortcut: CSV only, naive comma split (no quoted commas). Excel users "Save as CSV". Upgrade: a real CSV/xlsx parser.
-function parse(text: string, known: Set<string>): Row[] {
-  return text
-    .split(/\r?\n/)
-    .slice(1)
-    .filter((l) => l.trim())
-    .map((l) => {
-      const [hof = "", name = "", mobile = "", address = "", consent = ""] = l.split(",").map((x) => x.trim());
-      const err = !/^\d{8,10}$/.test(hof) ? "HOF ID must be 8–10 digits" : !name ? "name missing" : mobile.replace(/\D/g, "").length < 10 ? "mobile invalid" : "";
-      return { hof, name, mobile, address, whatsappConsent: /^y/i.test(consent), result: err ? `Error: ${err}` : known.has(hof) ? "Update existing" : "New" };
-    });
+function parse(rows: string[][], known: Set<string>): Row[] {
+  return rows.slice(1).map(([hof = "", name = "", mobile = "", address = "", consent = ""]) => {
+    const err = !/^\d{8,10}$/.test(hof) ? "HOF ID must be 8–10 digits" : !name ? "name missing" : mobile.replace(/\D/g, "").length < 10 ? "mobile invalid" : "";
+    return { hof, name, mobile, address, whatsappConsent: /^y/i.test(consent), result: err ? `Error: ${err}` : known.has(hof) ? "Update existing" : "New" };
+  });
 }
 
 /** Preview runs in the browser; the server action validates everything again (incl. HOFs owned by other sectors). */
@@ -30,12 +25,12 @@ export function HouseholdImport({ known, sectorId }: { known: string[]; sectorId
         <a className="btn" href="/households-template.csv" download>Download template</a>
         <input
           type="file"
-          accept=".csv"
+          accept={ACCEPT}
           onChange={async (e) => {
             const f = e.target.files?.[0];
             if (!f) return;
             setFile(f.name);
-            setRows(parse(await f.text(), new Set(known)));
+            setRows(parse(await readRows(f), new Set(known)));
           }}
         />
       </div>

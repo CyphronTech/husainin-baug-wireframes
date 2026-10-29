@@ -67,8 +67,27 @@ export type Block = {
   slot: Slot;
   venueIds: string[];
   notes: string;
+  /** false = Miqaat recorded for information only, venues stay bookable. Missing (older docs) = true. */
+  blocking?: boolean;
   lockIds: string[];
   clashes: string[];
+};
+
+export const EXPENSE_CATEGORIES = ["Electricity", "Maintenance", "Cleaning", "Repairs", "Other"];
+
+export type Expense = {
+  id: string;
+  date: string;
+  /** "" = All / general (not tied to one venue) */
+  venueId: string;
+  category: string;
+  amount: number;
+  paidTo: string;
+  notes: string;
+  billUrl?: string;
+  billName?: string;
+  createdBy: string;
+  createdAt: string;
 };
 
 export type Cancellation = {

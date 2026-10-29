@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { deleteBlockAction, importBlocks, saveBlockAction } from "@/app/actions";
+import { deleteBlockAction, saveBlockAction } from "@/app/actions";
+import { BlockImport } from "../block-import";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { dmy, SLOT_LABEL } from "@/lib/format";
@@ -21,7 +22,7 @@ export default async function Miqaats({ searchParams }: { searchParams: SP }) {
       <div className="card">
         <h2>Miqaat calendar</h2>
         <table>
-          <thead><tr><th>Miqaat</th><th>Dates</th><th>Slot</th><th>Venues</th><th>Clashes flagged</th><th /></tr></thead>
+          <thead><tr><th>Miqaat</th><th>Dates</th><th>Slot</th><th>Venues</th><th>Booking block</th><th>Clashes flagged</th><th /></tr></thead>
           <tbody>
             {miqaats.map((m) => (
               <tr key={m.id}>
@@ -29,6 +30,7 @@ export default async function Miqaats({ searchParams }: { searchParams: SP }) {
                 <td>{dmy(m.from)}{m.to !== m.from && ` – ${dmy(m.to)}`}</td>
                 <td>{SLOT_LABEL[m.slot]}</td>
                 <td>{m.venueIds.map((id) => venues.find((v) => v.id === id)?.name).join(", ")}</td>
+                <td>{m.blocking === false ? "Not blocked" : "Blocked"}</td>
                 <td className="muted">{m.clashes.join(", ") || "—"}</td>
                 <td>
                   <Link href={`?edit=${m.id}#edit`}>Edit</Link>{" "}
@@ -38,13 +40,8 @@ export default async function Miqaats({ searchParams }: { searchParams: SP }) {
             ))}
           </tbody>
         </table>
-        <form action={importBlocks} className="row mt-4">
-          <input type="hidden" name="kind" value="miqaat" />
-          <a className="btn" href="/blocks-template.csv" download>Download template</a>
-          <input type="file" name="file" accept=".csv" required />
-          <button className="btn primary">Upload yearly Miqaat list (CSV)</button>
-        </form>
-        <p className="alert info">Miqaat dates appear as Unavailable on every Sector / Mohalla calendar. Slots already booked are not blocked and are flagged here.</p>
+        <div className="mt-4"><BlockImport kind="miqaat" label="Upload yearly Miqaat list (CSV / Excel)" /></div>
+        <p className="alert info">Blocked Miqaat dates appear as Unavailable on every Sector / Mohalla calendar. Slots already booked are not blocked and are flagged here.</p>
       </div>
 
       <div className="card" id="edit">
@@ -60,6 +57,7 @@ export default async function Miqaats({ searchParams }: { searchParams: SP }) {
           </div>
           <div className="row">{venues.map((v) => <label key={v.id} className="check"><input type="checkbox" name="venueIds" value={v.id} defaultChecked={e.venueIds?.includes(v.id)} />{v.name}</label>)}</div>
           <label>Notes<textarea name="notes" rows={2} defaultValue={e.notes} /></label>
+          <label className="check"><input type="checkbox" name="blocking" defaultChecked={e.blocking !== false} />Block these venues for booking</label>
           <div className="row"><button className="btn primary">Save Miqaat</button><Link className="btn" href="/miqaats">Cancel</Link></div>
         </form>
       </div>

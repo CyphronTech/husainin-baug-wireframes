@@ -5,9 +5,10 @@ import { audit, cancelPending, createBooking, decideCancellation, deleteBlock, g
 import { displayStatus } from "@/lib/format";
 import { getSectors, getVenues } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
+import { b2Enabled, uploadPublic } from "@/lib/b2";
 import { createPaymentLink, mockPayments } from "@/lib/razorpay";
 import { endSession, requireAdmin, requireUser, startSession } from "@/lib/session";
-import type { AppUser, Block, Household, Slot } from "@/lib/types";
+import { EXPENSE_CATEGORIES, type AppUser, type Block, type Household, type Slot } from "@/lib/types";
 
 const s = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const n = (f: FormData, k: string) => (s(f, k) === "" ? undefined : Number(s(f, k)));
@@ -179,6 +180,7 @@ function blockFrom(f: FormData, kind: Block["kind"]) {
     slot: (s(f, "slot") || "D") as Slot,
     venueIds: f.getAll("venueIds").map(String),
     notes: s(f, "notes"),
+    blocking: kind === "maintenance" || f.get("blocking") === "on",
   };
 }
 
@@ -199,28 +201,52 @@ export async function deleteBlockAction(f: FormData) {
   await run(s(f, "back"), () => deleteBlock(admin, s(f, "id")));
 }
 
-/** CSV: name,from,to,slot,venue codes (; separated),notes — dates YYYY-MM-DD, slot M/E/D. */
-// shortcut: CSV only, naive comma split (no quoted commas). Excel users "Save as CSV". Upgrade: a real CSV/xlsx parser.
+/** One spreadsheet row: name, from, to, slot (M/E/D), venue codes (; separated), notes. Dates YYYY-MM-DD. */
+export type BlockRow = { name: string; from: string; to: string; slot: string; codes: string; notes: string };
+
+async function rowToBlock(kind: Block["kind"], r: BlockRow) {
+  const venues = await getVenues();
+  const codes = r.codes.split(";").map((c) => c.trim().toUpperCase()).filter(Boolean);
+  const unknown = codes.filter((c) => !venues.some((v) => v.code === c));
+  if (!r.name) throw new Error("name missing");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(r.from) || (r.to && !/^\d{4}-\d{2}-\d{2}$/.test(r.to))) throw new Error("dates must be YYYY-MM-DD");
+  if (unknown.length) throw new Error(`unknown venue code ${unknown.join(", ")}`);
+  if (r.slot && !["M", "E", "D"].includes(r.slot.toUpperCase())) throw new Error("slot must be M, E or D");
+  const venueIds = codes.map((c) => venues.find((v) => v.code === c)!.id);
+  return { kind, name: r.name, from: r.from, to: r.to || r.from, slot: (r.slot.toUpperCase() || "D") as Slot, venueIds, notes: r.notes, blocking: true };
+}
+
+/** Import preview: validates each row and checks clashes without writing anything. */
+export async function previewBlocks(kind: Block["kind"], rows: BlockRow[]) {
+  const admin = await requireAdmin();
+  return Promise.all(
+    rows.map(async (r) => {
+      try {
+        const clashes = await saveBlock(admin, null, await rowToBlock(kind, r), true);
+        return clashes.length ? `Clash: ${clashes.join(", ")}` : "OK";
+      } catch (e) {
+        return `Error: ${(e as Error).message}`;
+      }
+    }),
+  );
+}
+
+/** Imports the rows the preview passed. Clashes are re-checked inside each transaction (someone may have booked since). */
 export async function importBlocks(f: FormData) {
   const admin = await requireAdmin();
   const kind = s(f, "kind") as Block["kind"];
-  const back = kind === "miqaat" ? "/miqaats" : "/venues";
-  await run(back, async () => {
-    const file = f.get("file") as File;
-    const venues = await getVenues();
-    const lines = (await file.text()).split(/\r?\n/).slice(1).filter((l) => l.trim());
+  await run(kind === "miqaat" ? "/miqaats" : "/venues", async () => {
+    const rows = JSON.parse(s(f, "rows")) as BlockRow[];
     const report: string[] = [];
-    for (const [i, line] of lines.entries()) {
-      const [name, from, to, slot, codes, notes = ""] = line.split(",").map((x) => x.trim());
+    for (const r of rows) {
       try {
-        const venueIds = codes.split(";").map((c) => venues.find((v) => v.code === c.trim().toUpperCase())?.id).filter(Boolean) as string[];
-        const c = await saveBlock(admin, null, { kind, name, from, to: to || from, slot: (slot || "D") as Slot, venueIds, notes });
-        if (c.length) report.push(`row ${i + 2} ${name}: skipped ${c.join(", ")}`);
+        const c = await saveBlock(admin, null, await rowToBlock(kind, r));
+        if (c.length) report.push(`${r.name}: skipped ${c.join(", ")}`);
       } catch (e) {
-        report.push(`row ${i + 2} ${name}: ${(e as Error).message}`);
+        report.push(`${r.name}: ${(e as Error).message}`);
       }
     }
-    if (report.length) throw new Error(`Imported with issues — ${report.join(" | ")}`);
+    throw new Error(`Imported ${rows.length - report.length} of ${rows.length} rows${report.length ? ` — ${report.join(" | ")}` : ""}`);
   });
 }
 
@@ -320,5 +346,39 @@ export async function importHouseholds(f: FormData) {
     const errors: string[] = [];
     for (const r of rows) await upsertHousehold(user, { ...r, sectorId }).catch((e) => errors.push((e as Error).message));
     throw new Error(`Imported ${rows.length - errors.length} of ${rows.length} rows${errors.length ? ` — ${errors.join("; ")}` : ""}`);
+  });
+}
+
+// ── Admin: expenses ─────────────────────────────────────────────────────────
+
+export async function saveExpense(f: FormData) {
+  const admin = await requireAdmin();
+  await run("/expenses", async () => {
+    const amount = n(f, "amount");
+    if (!amount || amount <= 0) throw new Error("Enter the amount");
+    if (!EXPENSE_CATEGORIES.includes(s(f, "category"))) throw new Error("Pick a category");
+    const ref = db.collection("expenses").doc();
+    const bill = f.get("bill") as File | null;
+    let billUrl: string | undefined;
+    if (bill && bill.size) {
+      if (!b2Enabled()) throw new Error("Bill upload needs the B2 keys in .env.local");
+      // shortcut: same public B2 bucket as receipts; the path holds the random expense id, so it can't be guessed.
+      billUrl = await uploadPublic(`bills/${ref.id}/${bill.name.replace(/[^\w.-]+/g, "_")}`, Buffer.from(await bill.arrayBuffer()), bill.type || "application/octet-stream");
+    }
+    const data = {
+      date: s(f, "date"),
+      venueId: s(f, "venueId"),
+      category: s(f, "category"),
+      amount,
+      paidTo: s(f, "paidTo"),
+      notes: s(f, "notes"),
+      ...(billUrl && { billUrl, billName: bill!.name }),
+      createdBy: admin.uid,
+      createdAt: new Date().toISOString(),
+    };
+    await db.runTransaction(async (tx) => {
+      tx.set(ref, data);
+      audit(tx, admin, "expense.create", { expenseId: ref.id, ...data });
+    });
   });
 }

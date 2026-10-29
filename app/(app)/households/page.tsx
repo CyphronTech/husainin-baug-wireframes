@@ -50,7 +50,7 @@ export default async function Households({ searchParams }: { searchParams: SP })
               </form>
             </div>
             <div className="card">
-              <h2>Upload households (CSV)</h2>
+              <h2>Upload households (CSV / Excel)</h2>
               <HouseholdImport known={households.map((h) => h.hof)} sectorId={isAdmin ? sectorId : undefined} />
             </div>
           </div>
