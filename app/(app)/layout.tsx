@@ -4,8 +4,8 @@ import { requireUser } from "@/lib/session";
 import { Nav } from "./nav";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireUser();
-  const sector = user.sectorId ? (await getSectors()).find((s) => s.id === user.sectorId)?.name : null;
+  const [user, sectors] = await Promise.all([requireUser(), getSectors()]);
+  const sector = user.sectorId ? sectors.find((s) => s.id === user.sectorId)?.name : null;
   return (
     <div className="shell">
       <aside className="side">

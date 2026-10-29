@@ -30,7 +30,7 @@ export default async function Users({ searchParams }: { searchParams: SP }) {
             <button className="btn">Filter</button>
           </form>
           <table>
-            <thead><tr><th>Username</th><th>Name</th><th>Mobile</th><th>Email</th><th>Role</th><th>Sector / Mohalla</th><th>Status</th><th /></tr></thead>
+            <thead><tr><th>Username</th><th>Name</th><th>Mobile</th><th>Email</th><th>Role</th><th>Sector / Mohalla</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
             <tbody>
               {users.map((u) => (
                 <tr key={u.id}>

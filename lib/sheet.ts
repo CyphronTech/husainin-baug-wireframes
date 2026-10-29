@@ -10,5 +10,3 @@ export async function readRows(file: File): Promise<string[][]> {
     .map((r) => r.map((c) => (c == null ? "" : c instanceof Date ? c.toISOString().slice(0, 10) : String(c).trim())))
     .filter((r) => r.some(Boolean));
 }
-
-export const ACCEPT = ".csv,.xlsx";

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { type BlockRow, importBlocks, previewBlocks } from "@/app/actions";
-import { ACCEPT, readRows } from "@/lib/sheet";
 
 /** Upload → server preview (validation + clash check, nothing written) → import only the rows that passed. */
 export function BlockImport({ kind, label }: { kind: "miqaat" | "maintenance"; label: string }) {
@@ -17,12 +16,13 @@ export function BlockImport({ kind, label }: { kind: "miqaat" | "maintenance"; l
         <label>{label}
           <input
             type="file"
-            accept={ACCEPT}
+            accept=".csv,.xlsx"
             disabled={busy}
             onChange={async (e) => {
               const f = e.target.files?.[0];
               if (!f) return;
               setBusy(true);
+              const { readRows } = await import("@/lib/sheet"); // Excel parser only downloads when a file is picked
               const parsed = (await readRows(f)).slice(1).map(([name = "", from = "", to = "", slot = "", codes = "", notes = ""]) => ({ name, from, to, slot, codes, notes }));
               const results = await previewBlocks(kind, parsed);
               setRows(parsed.map((r, i) => ({ ...r, result: results[i] })));

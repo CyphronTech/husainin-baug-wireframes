@@ -20,7 +20,7 @@ export default async function Sectors({ searchParams }: { searchParams: SP }) {
         <div className="card">
           <h2>Sectors / Mohallas ({sectors.length})</h2>
           <table>
-            <thead><tr><th>Sector / Mohalla</th><th>Code</th><th>Users</th><th>Households</th><th>Contact</th><th>Status</th><th /></tr></thead>
+            <thead><tr><th>Sector / Mohalla</th><th>Code</th><th>Users</th><th>Households</th><th>Contact</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
             <tbody>
               {sectors.map((s) => (
                 <tr key={s.id}>

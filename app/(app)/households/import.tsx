@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { importHouseholds } from "@/app/actions";
-import { ACCEPT, readRows } from "@/lib/sheet";
 
 type Row = { hof: string; name: string; mobile: string; address: string; whatsappConsent: boolean; result: string };
 
@@ -23,16 +22,19 @@ export function HouseholdImport({ known, sectorId }: { known: string[]; sectorId
     <div className="stack">
       <div className="row">
         <a className="btn" href="/households-template.csv" download>Download template</a>
-        <input
-          type="file"
-          accept={ACCEPT}
-          onChange={async (e) => {
-            const f = e.target.files?.[0];
-            if (!f) return;
-            setFile(f.name);
-            setRows(parse(await readRows(f), new Set(known)));
-          }}
-        />
+        <label>Upload CSV / Excel
+          <input
+            type="file"
+            accept=".csv,.xlsx"
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              setFile(f.name);
+              const { readRows } = await import("@/lib/sheet"); // Excel parser only downloads when a file is picked
+              setRows(parse(await readRows(f), new Set(known)));
+            }}
+          />
+        </label>
       </div>
       <span className="muted">Columns: HOF ID, Name, Mobile, Address, WhatsApp consent (Yes/No)</span>
       {rows.length > 0 && (

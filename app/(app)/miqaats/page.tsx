@@ -22,7 +22,7 @@ export default async function Miqaats({ searchParams }: { searchParams: SP }) {
       <div className="card">
         <h2>Miqaat calendar</h2>
         <table>
-          <thead><tr><th>Miqaat</th><th>Dates</th><th>Slot</th><th>Venues</th><th>Booking block</th><th>Clashes flagged</th><th /></tr></thead>
+          <thead><tr><th>Miqaat</th><th>Dates</th><th>Slot</th><th>Venues</th><th>Booking block</th><th>Clashes flagged</th><th><span className="sr-only">Actions</span></th></tr></thead>
           <tbody>
             {miqaats.map((m) => (
               <tr key={m.id}>

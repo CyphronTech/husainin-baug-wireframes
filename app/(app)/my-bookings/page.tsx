@@ -48,7 +48,7 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
       <div className="card">
         <h2>Bookings ({list.length})</h2>
         <table>
-          <thead><tr><th>Booking</th><th>Household</th><th>Venue(s)</th><th>Date(s)</th><th>Slot</th><th>Amount</th><th>Status</th><th>Created by</th><th /></tr></thead>
+          <thead><tr><th>Booking</th><th>Household</th><th>Venue(s)</th><th>Date(s)</th><th>Slot</th><th>Amount</th><th>Status</th><th>Created by</th><th><span className="sr-only">Actions</span></th></tr></thead>
           <tbody>
             {list.map((b) => {
               const dates = [...new Set(b.items.map((i) => i.date))];

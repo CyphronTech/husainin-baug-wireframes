@@ -15,6 +15,8 @@ Built from the admin (A1–A9) and Sector / Mohalla (Login, M1–M8) wireframes 
 6. `npm i`
 7. `node --env-file=.env.local scripts/seed.mjs` (admin `50450028` / `Password`; pass `<username> <password>` to change)
 8. `npm run dev` → http://localhost:3000
+9. Day-to-day use (fast): `npm run build` once after each `git pull`, then `npm start`. `npm run dev` compiles every page on
+   first visit and ships unminified code, so it feels slow; use it only while changing code.
 
 ## Run locally (emulators, no cloud project needed)
 

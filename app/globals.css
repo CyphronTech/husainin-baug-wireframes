@@ -62,6 +62,7 @@ td { padding: var(--space-2); border-bottom: 1px solid var(--line); vertical-ali
 .items-center { align-items: center; } .justify-end { justify-content: flex-end; } .text-right { text-align: right; } .text-center { text-align: center; }
 .grow { flex: 1; } .inline { display: inline; } .w-full { width: 100%; }
 .narrow { width: 100%; max-width: 360px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .page-narrow { max-width: 720px; margin: 40px auto; padding: var(--space-4); }
 
 /* ── Components ───────────────────────────────────────────────────────────────────────────────────────── */

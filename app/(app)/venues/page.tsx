@@ -24,7 +24,7 @@ export default async function Venues({ searchParams }: { searchParams: SP }) {
       <div className="card">
         <h2>Halls and rooms</h2>
         <table>
-          <thead><tr><th>Name</th><th>Type</th><th>Capacity</th><th>Morning rate</th><th>Evening rate</th><th>Full-day rate</th><th>Per day (rooms)</th><th>Status</th><th /></tr></thead>
+          <thead><tr><th>Name</th><th>Type</th><th>Capacity</th><th>Morning rate</th><th>Evening rate</th><th>Full-day rate</th><th>Per day (rooms)</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
           <tbody>
             {venues.map((v) => (
               <tr key={v.id}>

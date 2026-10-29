@@ -5,7 +5,7 @@ import { getSectors, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { dmy, inr, summary, today } from "@/lib/format";
 import { requireUser } from "@/lib/session";
-import type { Cancellation } from "@/lib/types";
+import type { Booking, Cancellation } from "@/lib/types";
 import { Badge, Msg, type SP } from "@/lib/ui";
 
 export default async function Cancellations({ searchParams }: { searchParams: SP }) {
@@ -16,7 +16,9 @@ export default async function Cancellations({ searchParams }: { searchParams: SP
   const status = sp.status ?? (isAdmin ? "awaiting" : "all");
   const [sectors, all] = await Promise.all([getSectors(), db.collection("cancellations").get().then(rows<Cancellation>)]);
   const crs = all.filter((c) => (status === "all" || c.status === status) && (!sp.sector || c.sectorId === sp.sector)).sort((a, b) => b.requestedAt.localeCompare(a.requestedAt));
-  const bookings = new Map(await Promise.all(crs.map(async (c) => [c.bookingId, (await getBooking(c.bookingId))!] as const)));
+  // One batched read for all listed bookings (was one read per row).
+  const ids = [...new Set(crs.map((c) => c.bookingId))];
+  const bookings = new Map(ids.length ? (await db.getAll(...ids.map((id) => db.doc(`bookings/${id}`)))).map((d) => [d.id, { id: d.id, ...d.data() } as Booking] as const) : []);
   const review = isAdmin && all.find((c) => c.id === sp.review && c.status === "awaiting");
   const rb = review && (bookings.get(review.bookingId) ?? (await getBooking(review.bookingId)))!;
 
@@ -34,7 +36,7 @@ export default async function Cancellations({ searchParams }: { searchParams: SP
       <div className="card">
         <h2>Cancellation requests</h2>
         <table>
-          <thead><tr><th>Request</th><th>Booking</th><th>Household</th><th>Sector / Mohalla</th><th>Venue · date · slot</th><th>Amount paid</th><th>Requested by</th><th>Status</th><th>Admin comment</th><th /></tr></thead>
+          <thead><tr><th>Request</th><th>Booking</th><th>Household</th><th>Sector / Mohalla</th><th>Venue · date · slot</th><th>Amount paid</th><th>Requested by</th><th>Status</th><th>Admin comment</th><th><span className="sr-only">Actions</span></th></tr></thead>
           <tbody>
             {crs.map((c) => {
               const b = bookings.get(c.bookingId)!;

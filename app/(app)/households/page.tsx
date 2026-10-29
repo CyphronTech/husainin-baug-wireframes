@@ -60,7 +60,7 @@ export default async function Households({ searchParams }: { searchParams: SP })
               <form className="row">{sp.sector && <input type="hidden" name="sector" value={sp.sector} />}<input name="q" defaultValue={sp.q} placeholder="Search" /><button className="btn">Search</button></form>
             </div>
             <table>
-              <thead><tr><th>HOF ID</th><th>Name</th><th>Mobile</th><th>WhatsApp consent</th><th>Bookings</th><th /></tr></thead>
+              <thead><tr><th>HOF ID</th><th>Name</th><th>Mobile</th><th>WhatsApp consent</th><th>Bookings</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>
                 {list.map((h) => (
                   <tr key={h.id}>
