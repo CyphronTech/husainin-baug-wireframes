@@ -13,7 +13,7 @@ export default async function Receipt({ params }: { params: Promise<{ id: string
   return (
     <main className="page-narrow">
       <div className="card">
-        <div className="top"><div><h1>Husainin Baug</h1><span className="muted">Hall &amp; Room Booking · Receipt</span></div><b>{b.receiptNo}</b></div>
+        <div className="top"><div><h1>Husainin Baug</h1><span className="muted">Hall &amp; Room Booking · Receipt / Invoice{process.env.TRUST_GSTIN && ` · GSTIN ${process.env.TRUST_GSTIN}`}</span></div><b>Invoice {b.receiptNo}</b></div>
         <p>
           Booking <b>{b.no}</b>{b.status === "cancelled" && " (cancelled)"}<br />
           {b.household.name} · HOF {b.household.hof}<br />

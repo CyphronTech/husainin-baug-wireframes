@@ -60,7 +60,8 @@ td { padding: var(--space-2); border-bottom: 1px solid var(--line); vertical-ali
 .m0 { margin: 0; } .mb-2 { margin-bottom: var(--space-2); } .mb-3 { margin-bottom: var(--space-3); } .mb-5 { margin-bottom: var(--space-5); }
 .mt-3 { margin-top: var(--space-3); } .mt-4 { margin-top: var(--space-4); }
 .items-center { align-items: center; } .justify-end { justify-content: flex-end; } .text-right { text-align: right; } .text-center { text-align: center; }
-.grow { flex: 1; } .inline { display: inline; } .w-full { width: 100%; }
+.grow { flex: 1; } .inline { display: inline; }
+details.inline { display: inline-block; margin-left: var(--space-2); } details.inline summary { display: inline; list-style: none; } .w-full { width: 100%; }
 .narrow { width: 100%; max-width: 360px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .page-narrow { max-width: 720px; margin: 40px auto; padding: var(--space-4); }

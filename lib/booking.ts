@@ -3,6 +3,7 @@ import { getVenues } from "./data";
 import { db } from "./firebase-admin";
 import { dmy, inr, summary } from "./format";
 import { storeReceipt } from "./receipt";
+import { sendSms } from "./sms";
 import { sendWhatsApp, type Template } from "./whatsapp";
 import type { AppUser, Block, Booking, Cancellation, Item, Lock, Slot, Venue } from "./types";
 
@@ -51,10 +52,17 @@ export function priceItems(venues: Venue[], from: string, to: string, slot: Slot
 }
 
 /** Must be called before any tx writes (Firestore: all reads first). */
-async function nextNo(tx: Transaction, name: string, prefix: string) {
+async function nextNo(tx: Transaction, name: string, prefix: string, sep = "-") {
   const ref = db.doc(`counters/${name}`);
   const n = ((await tx.get(ref)).data()?.n ?? 0) + 1;
-  return { no: `${prefix}-${String(n).padStart(4, "0")}`, commit: () => tx.set(ref, { n }) };
+  return { no: `${prefix}${sep}${String(n).padStart(4, "0")}`, commit: () => tx.set(ref, { n }) };
+}
+
+/** Indian financial year (April–March, IST) as "26-27". */
+export function financialYear(d = new Date()) {
+  const ist = new Date(d.getTime() + 5.5 * 3600e3);
+  const y = ist.getUTCFullYear() - (ist.getUTCMonth() < 3 ? 1 : 0);
+  return `${String(y).slice(2)}-${String(y + 1).slice(2)}`;
 }
 
 export function audit(tx: Transaction, by: Pick<AppUser, "uid" | "name"> | null, action: string, data: object) {
@@ -131,7 +139,9 @@ export async function markPaid(linkId: string, paymentId: string, method: string
       audit(tx, null, "booking.paid_after_expiry", { bookingId: b.id, paymentId });
       return null;
     }
-    const { no, commit } = await nextNo(tx, "receipt", "RCPT");
+    // GST invoice number: sequential, restarts each financial year, ≤16 chars, e.g. HB/26-27/0001.
+    const fy = financialYear();
+    const { no, commit } = await nextNo(tx, `invoice-${fy}`, `${process.env.GST_INVOICE_PREFIX ?? "HB"}/${fy}`, "/");
     commit();
     tx.update(ref, { ...pay, status: "confirmed", receiptNo: no });
     lockRefs.forEach((l) => tx.update(l, { status: "confirmed" }));
@@ -152,11 +162,18 @@ export function messageValues(b: Booking, template: Template, refund?: number) {
   return [...base.slice(0, 3), refund ? inr(refund) : "—"];
 }
 
+/** WhatsApp first; SMS when WhatsApp fails or the household hasn't consented to WhatsApp. */
+// shortcut: "fails" = MSG91 rejected the send. A message accepted but never delivered isn't caught.
+// Upgrade: MSG91 delivery-report webhook → send the SMS on a failed delivery status.
 export async function notify(b: Booking, template: Template, refund?: number) {
-  if (!b.household.whatsappConsent) return;
   const values = messageValues(b, template, refund);
-  const ok = await sendWhatsApp(template, b.household.mobile, values);
-  await db.runTransaction(async (tx) => audit(tx, null, ok ? `whatsapp.${template}` : `whatsapp.${template}.failed`, { bookingId: b.id, values }));
+  const log = (action: string) => db.runTransaction(async (tx) => audit(tx, null, action, { bookingId: b.id, values }));
+  if (b.household.whatsappConsent) {
+    const ok = await sendWhatsApp(template, b.household.mobile, values);
+    await log(ok ? `whatsapp.${template}` : `whatsapp.${template}.failed`);
+    if (ok) return;
+  }
+  await log((await sendSms(template, b.household.mobile, values)) ? `sms.${template}` : `sms.${template}.failed`);
 }
 
 const canAct = (user: AppUser, b: Booking) => user.role === "admin" || b.createdBy === user.uid;

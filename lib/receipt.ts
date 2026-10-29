@@ -3,11 +3,14 @@ import { dmy, dmyhm, inr, SLOT_LABEL } from "./format";
 import { textPdf } from "./pdf";
 import type { Booking } from "./types";
 
+/** Invoice numbers contain "/" (HB/26-27/0001); file names and storage paths can't. */
+export const receiptFile = (b: Booking) => `Invoice_${b.receiptNo!.replace(/\//g, "-")}.pdf`;
+
 export function receiptPdf(b: Booking) {
   return textPdf([
     { text: "Husainin Baug", size: 18, bold: true, gap: 0 },
-    { text: "Hall & Room Booking - Receipt", gap: 20 },
-    { text: `Receipt no. ${b.receiptNo}    Booking ${b.no}`, bold: true, gap: 34 },
+    { text: `Hall & Room Booking - Receipt / Invoice${process.env.TRUST_GSTIN ? `   GSTIN ${process.env.TRUST_GSTIN}` : ""}`, gap: 20 },
+    { text: `Invoice no. ${b.receiptNo}    Booking ${b.no}`, bold: true, gap: 34 },
     { text: `Household: ${b.household.name}  -  HOF ${b.household.hof}  -  ${b.household.mobile}` },
     { text: `Sector / Mohalla: ${b.sectorName}` },
     { text: "Venue                          Date            Slot          Amount", bold: true, gap: 30 },
@@ -23,7 +26,7 @@ export async function storeReceipt(b: Booking) {
   const fallback = `${process.env.APP_URL}/r/${b.id}/pdf`; // generated live by the app
   if (!b2Enabled()) return fallback;
   try {
-    return await uploadPublic(`receipts/${b.id}/Receipt_${b.receiptNo}.pdf`, receiptPdf(b), "application/pdf");
+    return await uploadPublic(`receipts/${b.id}/${receiptFile(b)}`, receiptPdf(b), "application/pdf");
   } catch (e) {
     console.error("[b2]", e);
     return fallback;

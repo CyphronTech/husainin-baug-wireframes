@@ -30,14 +30,14 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
     db.collection("cancellations").where("bookingId", "==", id).get().then(rows<Cancellation>),
     db.collection("audit").where("data.bookingId", "==", id).get().then((s) => s.docs.map((d) => d.data()).sort((x, y) => x.at.localeCompare(y.at))),
   ]);
-  const wa = log.filter((l) => l.action.startsWith("whatsapp.") && !l.action.endsWith(".failed"));
-  const at = (action: string) => log.find((l) => l.action === action)?.at;
+  const wa = log.filter((l) => /^(whatsapp|sms)\./.test(l.action) && !l.action.endsWith(".failed"));
+  const at = (...actions: string[]) => log.find((l) => actions.includes(l.action))?.at;
   const steps: [string, string | undefined][] = [
     ["Booking created, venue on hold", b.createdAt],
-    ["Payment link sent on WhatsApp", at("whatsapp.hold")],
+    ["Payment link sent (WhatsApp or SMS)", at("whatsapp.hold", "sms.hold")],
     [`Household pays ${inr(b.amount)} via Razorpay${b.payment?.method ? ` ${b.payment.method.toUpperCase()}` : ""}`, b.payment?.paidAt],
     ["Payment confirmed automatically", b.receiptNo ? b.payment?.paidAt : undefined],
-    [`Receipt ${b.receiptNo ?? ""} sent on WhatsApp`, at("whatsapp.confirmed")],
+    [`Invoice ${b.receiptNo ?? ""} sent (WhatsApp or SMS)`, at("whatsapp.confirmed", "sms.confirmed")],
   ];
 
   return (
@@ -64,7 +64,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
               </div>
               {b.payment && <label>Payment link (copy)<input readOnly value={b.payment.url} /></label>}
               {mockPayments && b.payment && <p className="muted m0">Mock mode — <a href={b.payment.url}>open mock checkout</a></p>}
-              {!b.household.whatsappConsent && <p className="alert warn m0">No WhatsApp consent: share the link with the household yourself.</p>}
+              {!b.household.whatsappConsent && <p className="alert warn m0">No WhatsApp consent: the link goes by SMS instead.</p>}
               <p className="alert info m0">If payment is not made in time, the booking expires and the venue is released for others.</p>
             </>
           )}
@@ -88,15 +88,15 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
 
       <div className="grid g2e">
         <div className="card">
-          <h2>WhatsApp messages to the household</h2>
+          <h2>Messages to the household</h2>
           <div className="chat">
             {wa.length === 0 && <span className="muted">No messages sent yet.</span>}
             {wa.map((l, i) => {
-              const tpl = l.action.split(".")[1] as keyof typeof PREVIEW;
+              const [channel, tpl] = l.action.split(".") as [string, keyof typeof PREVIEW];
               const [title, body] = PREVIEW[tpl](l.data.values ?? messageValues(b as Booking, tpl));
               return (
                 <div key={i} className="bubble">
-                  <b>{title}</b>{"\n\n"}{body}
+                  <span className="badge muted">{channel === "sms" ? "SMS" : "WhatsApp"}</span>{"\n"}<b>{title}</b>{"\n\n"}{body}
                   <div className="muted text-right">{hm(l.at)}</div>
                 </div>
               );
@@ -110,7 +110,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
             <>
               <div className="receipt">
                 <b>Husainin Baug</b><br />
-                <b>Receipt no.</b> {b.receiptNo} · <b>Booking</b> {b.no}<br />
+                <b>Invoice no.</b> {b.receiptNo} · <b>Booking</b> {b.no}<br />
                 <b>Household</b> {b.household.name} · HOF {b.household.hof} · {b.household.mobile}<br />
                 <b>Sector / Mohalla</b> {b.sectorName}<br />
                 <b>Venue</b> {summary(b.items)}<br />

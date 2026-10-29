@@ -53,6 +53,12 @@ npm run dev                       # terminal 2 → http://localhost:3000
   falls back to `/r/{bookingDocId}/pdf`, which the app generates live.
 - **Cancellations**: unpaid hold → creator/admin releases it directly. Paid → creator requests, admin approves and records the manual refund.
 - **Audit**: every mutation writes to `audit/` within the same transaction.
+- **Invoice numbers**: GST-style `HB/26-27/0001`: sequential, restart each financial year (April–March, IST),
+  ≤16 characters. Set `GST_INVOICE_PREFIX` and `TRUST_GSTIN` (printed on receipts). No tax breakup is calculated.
+- **SMS fallback**: when WhatsApp fails, or the household has no WhatsApp consent, the same message goes by MSG91 SMS
+  (`lib/sms.ts`, needs DLT-approved template IDs). Households have no email address, so there's no email fallback.
+- **Reports**: Payments shows revenue by Sector / Mohalla for the selected period; Expenses shows income vs
+  expenses per venue per month.
 - **Imports** (households, maintenance blocks, Miqaat list): CSV or Excel (.xlsx), parsed in the browser
   (`read-excel-file`), previewed with a server-side check (no writes), then only valid rows are imported.
 - **Expenses**: bills upload to the same B2 bucket (`bills/{id}/…`); the report sets income (confirmed bookings by

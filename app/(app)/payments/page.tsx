@@ -10,6 +10,16 @@ export default async function Payments({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
   const [sectors, { list, refunds }] = await Promise.all([getSectors(), paymentRows(sp)]);
   const qs = new URLSearchParams(Object.entries(sp).filter(([, v]) => v) as [string, string][]).toString();
+  // Revenue per Sector / Mohalla for the same filters: paid bookings, amount collected, refunds recorded, net.
+  const bySector = sectors
+    .map((s) => {
+      const paid = list.filter((b) => b.sectorId === s.id && b.receiptNo);
+      const collected = paid.reduce((t, b) => t + b.amount, 0);
+      const refunded = refunds.filter((c) => c.sectorId === s.id).reduce((t, c) => t + c.refund!.amount, 0);
+      return { s, count: paid.length, collected, refunded };
+    })
+    .filter((r) => r.count || r.refunded)
+    .sort((a, b) => b.collected - b.refunded - (a.collected - a.refunded));
 
   return (
     <>
@@ -47,6 +57,18 @@ export default async function Payments({ searchParams }: { searchParams: SP }) {
                 <td><Badge s={b.payStatus} /></td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="card">
+        <h2>Revenue by Sector / Mohalla</h2>
+        <table>
+          <thead><tr><th>Sector / Mohalla</th><th className="text-right">Paid bookings</th><th className="text-right">Collected</th><th className="text-right">Refunded</th><th className="text-right">Net</th></tr></thead>
+          <tbody>
+            {bySector.map((r) => (
+              <tr key={r.s.id}><td>{r.s.name}</td><td className="text-right">{r.count}</td><td className="text-right">{inr(r.collected)}</td><td className="text-right">{inr(r.refunded)}</td><td className="text-right">{inr(r.collected - r.refunded)}</td></tr>
+            ))}
+            {!bySector.length && <tr><td colSpan={5} className="muted">No payments in this period.</td></tr>}
           </tbody>
         </table>
       </div>

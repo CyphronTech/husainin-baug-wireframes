@@ -75,7 +75,7 @@ export default async function BookReview({ searchParams }: { searchParams: SP })
         </table>
         <p className="alert warn">
           Creating the booking holds the venue for {HOLD_MINUTES} minutes and sends a Razorpay payment link to the household on WhatsApp
-          {hh && !hh.whatsappConsent && " (this household has not consented to WhatsApp, so share the link yourself)"}.
+          {hh && !hh.whatsappConsent && " (no WhatsApp consent, so it goes by SMS)"}.
         </p>
         <form id="book" action={bookFromWizard} className="row">
           {Object.entries(state).map(([k, val]) => <input key={k} type="hidden" name={k} value={val} />)}

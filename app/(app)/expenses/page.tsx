@@ -1,4 +1,5 @@
-import { saveExpense } from "@/app/actions";
+import Link from "next/link";
+import { deleteExpense, saveExpense } from "@/app/actions";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { dmy, inr, today } from "@/lib/format";
@@ -17,6 +18,7 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
     db.collection("expenses").get().then(rows<Expense>),
     db.collection("bookings").where("status", "==", "confirmed").get().then(rows<Booking>),
   ]);
+  const editing = expenses.find((x) => x.id === sp.edit);
   const inMonth = expenses.filter((e) => e.date.startsWith(month)).sort((a, b) => b.date.localeCompare(a.date));
   const venueName = (id: string) => (id ? venues.find((v) => v.id === id)?.name ?? id : "All / general");
   // Income = booked rate of each venue-day falling in the month (a booking spanning months splits across them).
@@ -33,20 +35,21 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
       <Msg msg={sp.msg} />
       <div className="grid g2e mb-5">
         <div className="card">
-          <h2>Record an expense</h2>
-          <form action={saveExpense} className="stack">
+          <h2>{editing ? "Edit expense" : "Record an expense"}</h2>
+          <form action={saveExpense} className="stack" key={editing?.id ?? "new"}>
+            <input type="hidden" name="id" value={editing?.id ?? ""} />
             <div className="row">
-              <label>Expense date<input type="date" name="date" required defaultValue={today()} /></label>
-              <label>Venue<select name="venueId"><option value="">All / general</option>{venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></label>
+              <label>Expense date<input type="date" name="date" required defaultValue={editing?.date ?? today()} /></label>
+              <label>Venue<select name="venueId" defaultValue={editing?.venueId ?? ""}><option value="">All / general</option>{venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></label>
             </div>
             <div className="row">
-              <label>Category<select name="category">{EXPENSE_CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select></label>
-              <label>Amount (₹)<input type="number" name="amount" min={1} required /></label>
+              <label>Category<select name="category" defaultValue={editing?.category}>{EXPENSE_CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select></label>
+              <label>Amount (₹)<input type="number" name="amount" min={1} required defaultValue={editing?.amount} /></label>
             </div>
-            <label>Paid to<input name="paidTo" required /></label>
-            <label>Bill / invoice (PDF or photo, max 10 MB)<input type="file" name="bill" accept=".pdf,image/*" /></label>
-            <label>Notes<textarea name="notes" rows={2} /></label>
-            <div><button className="btn primary">Save expense</button></div>
+            <label>Paid to<input name="paidTo" required defaultValue={editing?.paidTo} /></label>
+            <label>{editing?.billName ? `Replace bill (current: ${editing.billName})` : "Bill / invoice (PDF or photo, max 10 MB)"}<input type="file" name="bill" accept=".pdf,image/*" /></label>
+            <label>Notes<textarea name="notes" rows={2} defaultValue={editing?.notes} /></label>
+            <div className="row"><button className="btn primary">Save expense</button>{editing && <Link className="btn" href={`/expenses?month=${month}`}>Cancel</Link>}</div>
           </form>
         </div>
         <div className="card">
@@ -69,12 +72,19 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
       <div className="card">
         <h2>Expenses · {new Date(month + "-01T00:00:00Z").toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" })}</h2>
         <table>
-          <thead><tr><th>Date</th><th>Venue</th><th>Category</th><th className="text-right">Amount</th><th>Paid to</th><th>Bill</th><th>Notes</th></tr></thead>
+          <thead><tr><th>Date</th><th>Venue</th><th>Category</th><th className="text-right">Amount</th><th>Paid to</th><th>Bill</th><th>Notes</th><th><span className="sr-only">Actions</span></th></tr></thead>
           <tbody>
             {inMonth.map((e) => (
               <tr key={e.id}>
                 <td>{dmy(e.date)}</td><td>{venueName(e.venueId)}</td><td>{e.category}</td><td className="text-right">{inr(e.amount)}</td><td>{e.paidTo}</td>
                 <td>{e.billUrl ? <a href={e.billUrl} target="_blank" rel="noreferrer">{e.billName}</a> : "—"}</td><td>{e.notes}</td>
+                <td>
+                  <Link href={`/expenses?month=${month}&edit=${e.id}`}>Edit</Link>
+                  {/* Native two-step confirm: open, then confirm. No JS. */}
+                  <details className="inline"><summary className="link">Delete</summary>
+                    <form action={deleteExpense}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="month" value={month} /><button className="btn danger mt-3">Confirm delete</button></form>
+                  </details>
+                </td>
               </tr>
             ))}
           </tbody>

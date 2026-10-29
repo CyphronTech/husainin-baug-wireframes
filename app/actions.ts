@@ -353,13 +353,15 @@ export async function importHouseholds(f: FormData) {
 
 // ── Admin: expenses ─────────────────────────────────────────────────────────
 
+/** Create, or update when `id` is posted. On update the existing bill stays unless a new one is uploaded. */
 export async function saveExpense(f: FormData) {
   const admin = await requireAdmin();
-  await run("/expenses", async () => {
+  const id = s(f, "id");
+  await run(`/expenses?month=${s(f, "date").slice(0, 7)}`, async () => {
     const amount = n(f, "amount");
     if (!amount || amount <= 0) throw new Error("Enter the amount");
     if (!EXPENSE_CATEGORIES.includes(s(f, "category"))) throw new Error("Pick a category");
-    const ref = db.collection("expenses").doc();
+    const ref = id ? db.doc(`expenses/${id}`) : db.collection("expenses").doc();
     const bill = f.get("bill") as File | null;
     let billUrl: string | undefined;
     if (bill && bill.size) {
@@ -375,12 +377,26 @@ export async function saveExpense(f: FormData) {
       paidTo: s(f, "paidTo"),
       notes: s(f, "notes"),
       ...(billUrl && { billUrl, billName: bill!.name }),
-      createdBy: admin.uid,
-      createdAt: new Date().toISOString(),
+      ...(id ? { updatedBy: admin.uid, updatedAt: new Date().toISOString() } : { createdBy: admin.uid, createdAt: new Date().toISOString() }),
     };
     await db.runTransaction(async (tx) => {
-      tx.set(ref, data);
-      audit(tx, admin, "expense.create", { expenseId: ref.id, ...data });
+      if (id && !(await tx.get(ref)).exists) throw new Error("Expense not found");
+      tx.set(ref, data, { merge: true });
+      audit(tx, admin, id ? "expense.update" : "expense.create", { expenseId: ref.id, ...data });
+    });
+  });
+}
+
+// shortcut: the uploaded bill file stays in B2 after delete (only the record goes). Upgrade: b2_delete_file_version.
+export async function deleteExpense(f: FormData) {
+  const admin = await requireAdmin();
+  await run(`/expenses?month=${s(f, "month")}`, async () => {
+    const ref = db.doc(`expenses/${s(f, "id")}`);
+    await db.runTransaction(async (tx) => {
+      const e = (await tx.get(ref)).data();
+      if (!e) throw new Error("Expense not found");
+      tx.delete(ref);
+      audit(tx, admin, "expense.delete", { expenseId: ref.id, ...e }); // audit keeps the full record
     });
   });
 }
