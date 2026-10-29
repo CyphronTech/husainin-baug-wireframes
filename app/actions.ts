@@ -119,6 +119,7 @@ export async function requestCancel(f: FormData) {
 
 export async function mockPay(f: FormData) {
   if (!mockPayments) throw new Error("Mock payments disabled");
+  await requireUser();
   const linkId = s(f, "linkId");
   await markPaid(linkId, `pay_mock_${Date.now()}`, s(f, "method"));
   const b = await db.collection("bookings").where("payment.linkId", "==", linkId).limit(1).get();

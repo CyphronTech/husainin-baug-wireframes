@@ -3,12 +3,15 @@ import { mockPay } from "@/app/actions";
 import { db } from "@/lib/firebase-admin";
 import { inr } from "@/lib/format";
 import { mockPayments } from "@/lib/razorpay";
+import { requireUser } from "@/lib/session";
 import type { Booking } from "@/lib/types";
 
 // Stand-in for the Razorpay hosted payment page. Exists only while RAZORPAY_KEY_ID is unset.
 // "Pay" calls the same markPaid() the real webhook calls, so the rest of the flow is exercised for real.
+// Signed-in staff only: on a public deployment anyone holding a link could otherwise mark a booking paid.
 export default async function MockPay({ params }: { params: Promise<{ id: string }> }) {
   if (!mockPayments) notFound();
+  await requireUser();
   const { id } = await params;
   const q = await db.collection("bookings").where("payment.linkId", "==", id).limit(1).get();
   if (q.empty) notFound();

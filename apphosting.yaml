@@ -1,19 +1,26 @@
-# Firebase App Hosting (requires Blaze). Replace every CHANGE-ME, then create the two secrets:
-#   firebase apphosting:secrets:set B2_KEY_ID
-#   firebase apphosting:secrets:set B2_APP_KEY
-# Razorpay and MSG91 WhatsApp are mocked while their variables are absent. To go live, add
-# RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET / RAZORPAY_WEBHOOK_SECRET and MSG91_AUTHKEY / MSG91_WA_NUMBER /
-# MSG91_WA_NAMESPACE here (secret: for keys), as listed in .env.example.
+# Firebase App Hosting (needs the Blaze plan). Steps: README → "Deploy to Firebase App Hosting".
+# Secrets (never in git):  firebase apphosting:secrets:set B2_KEY_ID   and   B2_APP_KEY
+# Razorpay and MSG91 stay mocked while their variables are absent. To go live, add RAZORPAY_KEY_ID /
+# RAZORPAY_KEY_SECRET / RAZORPAY_WEBHOOK_SECRET and MSG91_* here (keys as `secret:`), as listed in .env.example.
+runConfig:
+  minInstances: 0 # scales to zero when idle (free); first visit after idle takes a few seconds. 1 = always warm, paid.
+  # shortcut: one instance, so the 60 s in-process caches (venues, sectors, sessions) can't go stale across instances.
+  # Ceiling: ~80 concurrent requests. Upgrade: shared cache (lib/data.ts, lib/session.ts), then raise this.
+  maxInstances: 1
 env:
   - variable: APP_URL
-    value: https://CHANGE-ME.hosted.app # App Hosting shows this URL after the first rollout
+    value: https://CHANGE-ME.hosted.app # replace with the URL App Hosting shows after the first rollout, then push
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    value: CHANGE-ME
+    value: hallbooking-8de43
   - variable: B2_KEY_ID
     secret: B2_KEY_ID
   - variable: B2_APP_KEY
     secret: B2_APP_KEY
   - variable: B2_BUCKET_ID
-    value: CHANGE-ME
+    value: CHANGE-ME # same value as in your .env.local (not secret)
   - variable: B2_BUCKET_NAME
-    value: CHANGE-ME
+    value: CHANGE-ME # same value as in your .env.local
+  - variable: GST_INVOICE_PREFIX
+    value: HB
+  # - variable: TRUST_GSTIN
+  #   value: CHANGE-ME

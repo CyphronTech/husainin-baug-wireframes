@@ -64,11 +64,22 @@ npm run dev                       # terminal 2 → http://localhost:3000
 - **Expenses**: bills upload to the same B2 bucket (`bills/{id}/…`); the report sets income (confirmed bookings by
   event date) against expenses per venue per month. Payments export is a real .xlsx (`write-excel-file`).
 
-## Deploy
+## Deploy to Firebase App Hosting
 
-Firebase App Hosting (Blaze): `firebase apphosting:backends:create`, fill in `apphosting.yaml`, set secrets, `firebase deploy --only firestore:rules`.
-Seed with `GOOGLE_APPLICATION_CREDENTIALS` set: `node --env-file=.env.local scripts/seed.mjs <username> <password>`.
+Needs the **Blaze** (pay-as-you-go) plan; a small trust app usually stays within the free tier. From the project folder:
 
+1. `npm i -g firebase-tools` then `firebase login`
+2. Edit `apphosting.yaml`: put your `B2_BUCKET_ID` / `B2_BUCKET_NAME` values in place of `CHANGE-ME`; commit and push.
+3. `firebase apphosting:secrets:set B2_KEY_ID` and `firebase apphosting:secrets:set B2_APP_KEY` (paste the values when
+   asked; answer yes to granting access).
+4. `firebase apphosting:backends:create` → connect GitHub repo `hussain0811/husainin-baug-wireframes`, branch `main`,
+   root directory `/`. Pick the region closest to India that it offers.
+5. When the first rollout finishes, copy the backend URL into `APP_URL` in `apphosting.yaml`; commit and push
+   (every push to `main` redeploys).
+6. `firebase deploy --only firestore:rules` (deny-all rules; the server uses the Admin SDK).
+
+Firestore data is shared with any local run that uses the same project. Seed once:
+`node --env-file=.env.local scripts/seed.mjs <username> <password>`.
 ---
 
 ## Wireframe presentation site (GitHub Pages)
