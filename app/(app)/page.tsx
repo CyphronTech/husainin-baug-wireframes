@@ -2,7 +2,8 @@ import Link from "next/link";
 import { datesBetween, isLive } from "@/lib/booking";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
-import { dmy, inr, SLOT_LABEL, today } from "@/lib/format";
+import { addDays } from "@/lib/calendar";
+import { dmy, inr, istMidnight, SLOT_LABEL, today } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Block, Booking, Lock } from "@/lib/types";
 import { Badge } from "@/lib/ui";
@@ -15,13 +16,13 @@ export default async function Dashboard() {
   const t = today();
   const monthStart = t.slice(0, 8) + "01";
   const monthDays = datesBetween(monthStart, new Date(Date.UTC(+t.slice(0, 4), +t.slice(5, 7), 0)).toISOString().slice(0, 10));
-  const in7 = datesBetween(t, new Date(Date.now() + 6 * 864e5).toISOString().slice(0, 10)).at(-1)!;
+  const in7 = addDays(t, 6);
 
   const [venues, monthLocks, upcomingLocks, paid, pendingCr, blocks] = await Promise.all([
     getVenues(),
     db.collection("locks").where("date", ">=", monthStart).where("date", "<=", monthDays.at(-1)).get(),
     db.collection("locks").where("date", ">=", t).where("date", "<=", in7).get(),
-    db.collection("bookings").where("payment.paidAt", ">=", monthStart).get(),
+    db.collection("bookings").where("payment.paidAt", ">=", istMidnight(monthStart)).get(),
     db.collection("cancellations").where("status", "==", "awaiting").count().get(),
     db.collection("blocks").where("to", ">=", t).get(),
   ]);

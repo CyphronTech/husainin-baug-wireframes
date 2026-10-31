@@ -6,6 +6,7 @@ import { dmy, inr, today } from "@/lib/format";
 import { requireAdmin } from "@/lib/session";
 import { EXPENSE_CATEGORIES, type Booking, type Expense } from "@/lib/types";
 import { Msg, type SP } from "@/lib/ui";
+import { Submit } from "@/lib/submit";
 
 export default async function Expenses({ searchParams }: { searchParams: SP }) {
   await requireAdmin();
@@ -49,7 +50,7 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
             <label>Paid to<input name="paidTo" required defaultValue={editing?.paidTo} /></label>
             <label>{editing?.billName ? `Replace bill (current: ${editing.billName})` : "Bill / invoice (PDF or photo, max 10 MB)"}<input type="file" name="bill" accept=".pdf,image/*" /></label>
             <label>Notes<textarea name="notes" rows={2} defaultValue={editing?.notes} /></label>
-            <div className="row"><button className="btn primary">Save expense</button>{editing && <Link className="btn" href={`/expenses?month=${month}`}>Cancel</Link>}</div>
+            <div className="row"><Submit className="btn primary">Save expense</Submit>{editing && <Link className="btn" href={`/expenses?month=${month}`}>Cancel</Link>}</div>
           </form>
         </div>
         <div className="card">

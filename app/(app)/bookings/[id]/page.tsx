@@ -9,6 +9,7 @@ import { mockPayments } from "@/lib/razorpay";
 import { requireUser } from "@/lib/session";
 import type { Booking, Cancellation } from "@/lib/types";
 import { Badge, Msg, type SP } from "@/lib/ui";
+import { Submit } from "@/lib/submit";
 
 const hm = (iso?: string) => (iso ? new Date(iso).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kolkata" }) : "");
 
@@ -59,8 +60,8 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
           {status === "On hold" && (
             <>
               <div className="row">
-                <form action={resendLink}><input type="hidden" name="id" value={id} /><button className="btn">{b.payment ? "Resend link on WhatsApp" : "Create & send payment link"}</button></form>
-                {canAct && <form action={releaseBooking}><input type="hidden" name="id" value={id} /><button className="btn danger">Cancel &amp; release</button></form>}
+                <form action={resendLink}><input type="hidden" name="id" value={id} /><Submit className="btn">{b.payment ? "Resend link on WhatsApp" : "Create & send payment link"}</Submit></form>
+                {canAct && <form action={releaseBooking}><input type="hidden" name="id" value={id} /><Submit className="btn danger">Cancel &amp; release</Submit></form>}
               </div>
               {b.payment && <label>Payment link (copy)<input readOnly value={b.payment.url} /></label>}
               {mockPayments && b.payment && <p className="muted m0">Mock mode — <a href={b.payment.url}>open mock checkout</a></p>}
