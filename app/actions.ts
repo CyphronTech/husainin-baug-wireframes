@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { redirect } from "next/navigation";
 import { audit, cancelPending, createBooking, decideCancellation, deleteBlock, getBooking, markPaid, notify, requestCancellation, saveBlock } from "@/lib/booking";
 import { displayStatus } from "@/lib/format";
@@ -17,28 +18,57 @@ const mobile10 = (m: string) => {
   if (d.length !== 10) throw new Error("Mobile must be 10 digits");
   return d;
 };
-
+const HOF = /^\d{8,10}$/;
+const USERNAME = /^[A-Za-z0-9._-]{3,40}$/;
 /** Run, then redirect back with ?msg= on failure. redirect() throws, so it must stay outside try. */
 async function run(back: string, fn: () => Promise<string | void>) {
   let to = back;
   try {
     to = (await fn()) || back;
   } catch (e) {
-    to = `${back}${back.includes("?") ? "&" : "?"}msg=${encodeURIComponent((e as Error).message)}`;
+    // Firestore/gRPC errors carry a `code` and internal paths: log them, show a plain message instead.
+    const internal = (e as { code?: unknown }).code !== undefined;
+    if (internal) console.error(e);
+    const msg = internal ? "Something went wrong. Please try again." : (e as Error).message;
+    to = `${back}${back.includes("?") ? "&" : "?"}msg=${encodeURIComponent(msg)}`;
   }
   redirect(to);
 }
 
 // ── Login ───────────────────────────────────────────────────────────────────
 
+/** Stored as scrypt$salt$hash. Older plain-text passwords still sign in once and are re-saved hashed. */
+const hashPassword = (p: string) => {
+  const salt = randomBytes(16).toString("hex");
+  return `scrypt$${salt}$${scryptSync(p, salt, 64).toString("hex")}`;
+};
+function checkPassword(stored: string, p: string) {
+  if (!stored.startsWith("scrypt$")) return stored !== "" && stored === p;
+  const [, salt, hash] = stored.split("$");
+  const want = Buffer.from(hash ?? "", "hex");
+  return want.length === 64 && timingSafeEqual(scryptSync(p, salt, 64), want);
+}
+
+// shortcut: failed-login counter lives in this process (fine with maxInstances: 1). More instances → keep it in Firestore.
+const failed = new Map<string, { n: number; until: number }>();
+const MAX_FAILS = 5;
+
 export async function login(f: FormData) {
   await run("/login", async () => {
-    const doc = await db.doc(`users/${s(f, "username")}`).get();
-    const u = doc.data();
-    // shortcut: plain-text password compare, as requested for now. Anyone with Firestore console access can read
-    // passwords. Upgrade: store scrypt hashes (node:crypto scryptSync + timingSafeEqual), compare here.
-    if (!u || !u.active || u.password !== String(f.get("password") ?? "")) throw new Error("Wrong username or password");
-    await startSession(doc.id, f.get("remember") === "on");
+    const username = s(f, "username");
+    const password = String(f.get("password") ?? "");
+    const prev = failed.get(username);
+    const live = prev && prev.until > Date.now() ? prev : undefined;
+    if (live && live.n >= MAX_FAILS) throw new Error("Too many attempts. Try again in 15 minutes");
+    const u = USERNAME.test(username) ? (await db.doc(`users/${username}`).get()).data() : undefined;
+    if (!u || !u.active || !checkPassword(String(u.password ?? ""), password)) {
+      if (failed.size > 10_000) failed.clear(); // stay bounded under a flood of made-up usernames
+      failed.set(username, { n: (live?.n ?? 0) + 1, until: Date.now() + 15 * 60_000 });
+      throw new Error("Wrong username or password");
+    }
+    failed.delete(username);
+    if (!String(u.password).startsWith("scrypt$")) await db.doc(`users/${username}`).update({ password: hashPassword(password) });
+    await startSession(username, f.get("remember") === "on");
     return "/";
   });
 }
@@ -54,6 +84,7 @@ export async function bookFromWizard(f: FormData) {
   const user = await requireUser();
   const state = new URLSearchParams({ t: s(f, "t"), from: s(f, "from"), to: s(f, "to"), v: s(f, "v"), h: s(f, "h") });
   await run(`/book/review?${state}`, async () => {
+    if (!HOF.test(s(f, "h"))) throw new Error("Select a household");
     const hh = (await db.doc(`households/${s(f, "h")}`).get()).data() as Household | undefined;
     if (!hh || (user.role !== "admin" && hh.sectorId !== user.sectorId)) throw new Error("Select a household");
     const sector = (await getSectors()).find((x) => x.id === hh.sectorId)!;
@@ -61,7 +92,7 @@ export async function bookFromWizard(f: FormData) {
       venueIds: s(f, "v").split(","),
       from: s(f, "from"),
       to: s(f, "to") || s(f, "from"),
-      slot: (s(f, "t") === "X" ? "D" : s(f, "t")) as Slot,
+      slot: (s(f, "t") === "X" ? "D" : s(f, "t")) as Slot, // validated in createBooking
       sectorId: sector.id,
       sectorName: sector.name,
       household: { name: hh.name, hof: hh.hof, mobile: hh.mobile, whatsappConsent: hh.whatsappConsent },
@@ -121,9 +152,11 @@ export async function mockPay(f: FormData) {
   if (!mockPayments) throw new Error("Mock payments disabled");
   await requireUser();
   const linkId = s(f, "linkId");
+  const found = await db.collection("bookings").where("payment.linkId", "==", linkId).limit(1).get();
+  if (found.empty) throw new Error("Not found");
+  await scoped(found.docs[0].id); // sector users pay only their own sector's bookings
   await markPaid(linkId, `pay_mock_${Date.now()}`, s(f, "method"));
-  const b = await db.collection("bookings").where("payment.linkId", "==", linkId).limit(1).get();
-  redirect(`/r/${b.docs[0].id}`);
+  redirect(`/r/${found.docs[0].id}`);
 }
 
 // ── Admin: cancellations ────────────────────────────────────────────────────
@@ -162,12 +195,17 @@ export async function saveVenue(f: FormData) {
       rates: JSON.parse(JSON.stringify(rates)), // drop undefined (Firestore rejects it)
       active: f.get("active") === "on",
     };
+    if (!data.name || !data.code) throw new Error("Enter the name and code");
+    if (type !== "hall" && type !== "room") throw new Error("Pick hall or room");
+    const bad = (x: unknown) => typeof x !== "number" || !Number.isFinite(x) || x < 0;
+    if (bad(data.capacity) || Object.values(data.rates).some(bad)) throw new Error("Capacity and rates must be 0 or more");
+    if ((await getVenues()).some((v) => v.code === data.code && v.id !== id)) throw new Error(`Code ${data.code} is already used`);
     const ref = id ? db.doc(`venues/${id}`) : db.collection("venues").doc();
     // Bookings snapshot their rate per item at creation, so changing rates here never touches existing bookings.
     await db.runTransaction(async (tx) => {
       const before = (await tx.get(ref)).data();
       tx.set(ref, data);
-      audit(tx, admin, id ? "venue.update" : "venue.create", { venueId: ref.id, before: before?.rates, after: data.rates });
+      audit(tx, admin, id ? "venue.update" : "venue.create", { venueId: ref.id, before: before?.rates ?? null, after: data.rates });
     });
     invalidate("venues");
   });
@@ -200,7 +238,7 @@ export async function saveBlockAction(f: FormData) {
 
 export async function deleteBlockAction(f: FormData) {
   const admin = await requireAdmin();
-  await run(s(f, "back"), () => deleteBlock(admin, s(f, "id")));
+  await run(s(f, "back") === "/venues" ? "/venues" : "/miqaats", () => deleteBlock(admin, s(f, "id"))); // never redirect to a posted URL
 }
 
 /** One spreadsheet row: name, from, to, slot (M/E/D), venue codes (; separated), notes. Dates YYYY-MM-DD. */
@@ -274,9 +312,10 @@ export async function saveUser(f: FormData) {
   await run("/users", async () => {
     const editing = s(f, "id");
     const username = editing || s(f, "username");
-    if (!/^[A-Za-z0-9._-]{3,40}$/.test(username)) throw new Error("Username: 3–40 letters, digits, . _ -");
+    if (!USERNAME.test(username)) throw new Error("Username: 3–40 letters, digits, . _ -");
     const ref = db.doc(`users/${username}`);
     const role = s(f, "role") as "admin" | "sector";
+    if (role !== "admin" && role !== "sector") throw new Error("Pick a role");
     const password = String(f.get("password") ?? "");
     const data = {
       username,
@@ -286,7 +325,7 @@ export async function saveUser(f: FormData) {
       role,
       sectorId: role === "admin" ? null : s(f, "sectorId"),
       active: f.get("active") === "on",
-      ...(password && { password }), // blank on edit = keep current password
+      ...(password && { password: hashPassword(password) }), // blank on edit = keep current password
     };
     if (role === "sector" && !data.sectorId) throw new Error("Select a Sector / Mohalla");
     await db.runTransaction(async (tx) => {
@@ -306,7 +345,7 @@ type HouseholdInput = Omit<Household, "id">;
 
 /** HOF ID is the doc id: unique across all sectors. A HOF registered to another sector is never overwritten. */
 async function upsertHousehold(user: AppUser, h: HouseholdInput) {
-  if (!/^\d{8,10}$/.test(h.hof)) throw new Error(`HOF ID must be 8–10 digits (${h.hof || "blank"})`);
+  if (!HOF.test(h.hof)) throw new Error(`HOF ID must be 8–10 digits (${h.hof || "blank"})`);
   if (!h.name) throw new Error(`Name missing for HOF ${h.hof}`);
   if (user.role !== "admin" && h.sectorId !== user.sectorId) throw new Error("Not your Sector / Mohalla");
   h.mobile = mobile10(h.mobile);
@@ -347,7 +386,9 @@ export async function importHouseholds(f: FormData) {
     const sectorId = user.role === "admin" ? s(f, "sectorId") : user.sectorId!;
     if (!sectorId) throw new Error("Select a Sector / Mohalla");
     const errors: string[] = [];
-    for (const r of rows) await upsertHousehold(user, { ...r, sectorId }).catch((e) => errors.push((e as Error).message));
+    // Copy known fields only: the posted JSON could carry extra keys that would otherwise be stored.
+    const pick = (r: Record<string, unknown>) => ({ hof: String(r.hof ?? ""), name: String(r.name ?? ""), mobile: String(r.mobile ?? ""), address: String(r.address ?? ""), whatsappConsent: r.whatsappConsent === true });
+    for (const r of rows) await upsertHousehold(user, { ...pick(r), sectorId }).catch((e) => errors.push((e as Error).message));
     throw new Error(`Imported ${rows.length - errors.length} of ${rows.length} rows${errors.length ? ` — ${errors.join("; ")}` : ""}`);
   });
 }

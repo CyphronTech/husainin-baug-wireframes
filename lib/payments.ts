@@ -1,5 +1,6 @@
 import { rows } from "./data";
 import { db } from "./firebase-admin";
+import { ist } from "./format";
 import type { Booking, Cancellation } from "./types";
 
 export type PaymentRow = Booking & { payStatus: "paid" | "pending" | "refunded" | "refund due" };
@@ -17,7 +18,7 @@ export async function paymentRows(f: { from?: string; to?: string; sector?: stri
     .filter((b) => b.receiptNo || b.refundDue || (b.status === "pending" && b.holdUntil > new Date().toISOString())) // releases/expiries aren't payments
     .map((b) => ({ ...b, payStatus: refunded.has(b.id) ? "refunded" : b.refundDue ? "refund due" : b.receiptNo ? "paid" : "pending" }) as PaymentRow)
     .filter((b) => {
-      const day = (b.payment?.paidAt ?? b.createdAt).slice(0, 10);
+      const day = ist(b.payment?.paidAt ?? b.createdAt).slice(0, 10);
       return (!f.from || day >= f.from) && (!f.to || day <= f.to) && (!f.sector || b.sectorId === f.sector) && (!f.status || b.payStatus === f.status);
     })
     .sort((a, b) => (b.payment?.paidAt ?? b.createdAt).localeCompare(a.payment?.paidAt ?? a.createdAt));

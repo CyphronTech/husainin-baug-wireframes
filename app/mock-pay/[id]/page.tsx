@@ -5,6 +5,7 @@ import { inr } from "@/lib/format";
 import { mockPayments } from "@/lib/razorpay";
 import { requireUser } from "@/lib/session";
 import type { Booking } from "@/lib/types";
+import { Submit } from "@/lib/submit";
 
 // Stand-in for the Razorpay hosted payment page. Exists only while RAZORPAY_KEY_ID is unset.
 // "Pay" calls the same markPaid() the real webhook calls, so the rest of the flow is exercised for real.
@@ -28,7 +29,7 @@ export default async function MockPay({ params }: { params: Promise<{ id: string
             <form key={m} action={mockPay}>
               <input type="hidden" name="linkId" value={id} />
               <input type="hidden" name="method" value={m} />
-              <button className="btn primary w-full">Pay with {m}</button>
+              <Submit className="btn primary w-full">Pay with {m}</Submit>
             </form>
           ))
         ) : (

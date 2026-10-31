@@ -2,8 +2,10 @@ import type { Booking, Item, Slot } from "./types";
 
 const nf = new Intl.NumberFormat("en-IN");
 export const inr = (n: number) => `₹ ${nf.format(n)}`;
-export const dmy = (iso?: string) => (iso ? iso.slice(0, 10).split("-").reverse().join("-") : "—");
-export const dmyhm = (iso?: string) => (iso ? `${dmy(iso)} ${iso.slice(11, 16)}` : "—");
+/** Timestamps are stored in UTC; shift to IST before reading the date or time. Plain YYYY-MM-DD dates pass through. */
+export const ist = (iso: string) => (iso.length > 10 ? new Date(Date.parse(iso) + 5.5 * 3600e3).toISOString() : iso);
+export const dmy = (iso?: string) => (iso ? ist(iso).slice(0, 10).split("-").reverse().join("-") : "—");
+export const dmyhm = (iso?: string) => (iso ? `${dmy(iso)} ${ist(iso).slice(11, 16)}` : "—");
 export const SLOT_LABEL: Record<Slot, string> = { M: "Morning", E: "Evening", D: "Full day" };
 
 export function summary(items: Item[]) {
@@ -14,12 +16,14 @@ export function summary(items: Item[]) {
 }
 
 export const toISODate = (d: Date) => d.toISOString().slice(0, 10);
-export const today = () => toISODate(new Date());
+export const today = () => ist(new Date().toISOString()).slice(0, 10);
+/** IST midnight of a YYYY-MM-DD date, as a UTC timestamp (for range queries on stored timestamps). */
+export const istMidnight = (date: string) => new Date(`${date}T00:00:00+05:30`).toISOString();
 
 /** Status as users see it: holds lapse, past events complete — derived, not stored. */
 export function displayStatus(b: Booking, now = new Date().toISOString()) {
   if (b.status === "cancelled") return b.refundDue ? "Refund due" : "Cancelled";
   if (b.status === "pending") return b.holdUntil < now ? "Expired" : "On hold";
   if (b.cancelRequested) return "Cancellation requested";
-  return b.items.at(-1)!.date < now.slice(0, 10) ? "Completed" : "Confirmed";
+  return b.items.at(-1)!.date < ist(now).slice(0, 10) ? "Completed" : "Confirmed";
 }

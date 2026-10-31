@@ -5,6 +5,7 @@ import { getBooking } from "@/lib/booking";
 import { displayStatus, inr, summary } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { Badge, Msg, type SP } from "@/lib/ui";
+import { Submit } from "@/lib/submit";
 
 export default async function CancelBooking({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: SP }) {
   const [{ id }, sp, user] = await Promise.all([params, searchParams, requireUser()]);
@@ -32,7 +33,7 @@ export default async function CancelBooking({ params, searchParams }: { params: 
               <label>Reason<select name="reason">{["Event postponed", "Event cancelled", "Venue change", "Other"].map((r) => <option key={r}>{r}</option>)}</select></label>
               <label>Details<textarea name="details" rows={3} /></label>
               <label className="check"><input type="checkbox" name="informed" required />Household informed that refund follows the trust&apos;s cancellation policy</label>
-              <div className="row"><button className="btn primary">Submit cancellation request</button><Link className="btn" href={`/bookings/${id}`}>Back</Link></div>
+              <div className="row"><Submit className="btn primary">Submit cancellation request</Submit><Link className="btn" href={`/bookings/${id}`}>Back</Link></div>
             </form>
           ) : (
             <p className="alert info m0">

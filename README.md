@@ -30,8 +30,9 @@ npm run dev                       # terminal 2 → http://localhost:3000
 
 ## How it works
 
-- **Login**: username + password stored in Firestore `users/{username}` (plain text for now — marked `shortcut:`
-  in `login()`). Sessions are random tokens in `sessions/{token}`. Admin sets and resets passwords on the Users screen.
+- **Login**: username + password in Firestore `users/{username}`, stored as an scrypt hash. Plain-text passwords
+  (e.g. from `seed.mjs`) sign in once and are re-saved hashed. 5 wrong tries lock that username for 15 minutes.
+  Sessions are random tokens in `sessions/{token}`. Admin sets and resets passwords on the Users screen.
 - **Holds**: a new booking holds its slots for 10 minutes (`HOLD_MINUTES`). Holds lapse lazily: every reader treats
   a pending lock past `holdUntil` as free, so there's no cron. If a payment arrives after the hold lapsed and the slot was
   taken meanwhile, the booking is marked *Refund due* (Payments page). Razorpay links expire at 16 min (their minimum is 15).

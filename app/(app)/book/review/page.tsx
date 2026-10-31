@@ -7,6 +7,7 @@ import { dmy, inr, SLOT_LABEL } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Slot } from "@/lib/types";
 import { Msg, Steps, type SP } from "@/lib/ui";
+import { Submit } from "@/lib/submit";
 
 const PURPOSES = ["Wedding", "Majlis", "Family function", "Meeting", "Other"];
 
@@ -80,7 +81,7 @@ export default async function BookReview({ searchParams }: { searchParams: SP })
         <form id="book" action={bookFromWizard} className="row">
           {Object.entries(state).map(([k, val]) => <input key={k} type="hidden" name={k} value={val} />)}
           <input type="hidden" name="h" value={hh?.id ?? ""} />
-          <button className="btn primary" disabled={!hh}>Create booking &amp; send payment link</button>
+          <Submit className="btn primary" disabled={!hh}>Create booking &amp; send payment link</Submit>
           <Link className="btn" href={back}>Back</Link>
           {!hh && <span className="muted">Select a household first.</span>}
         </form>

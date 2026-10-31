@@ -7,6 +7,7 @@ import { dmy, inr, summary, today } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Booking, Cancellation } from "@/lib/types";
 import { Badge, Msg, type SP } from "@/lib/ui";
+import { Submit } from "@/lib/submit";
 
 export default async function Cancellations({ searchParams }: { searchParams: SP }) {
   const user = await requireUser();
@@ -69,14 +70,14 @@ export default async function Cancellations({ searchParams }: { searchParams: SP
             <label>Admin comment<textarea name="comment" rows={2} /></label>
             <b>Refund (paid manually, recorded here)</b>
             <div className="row">
-              <label>Refund amount (₹)<input type="number" name="refundAmount" defaultValue={rb.amount} /></label>
+              <label>Refund amount (₹)<input type="number" name="refundAmount" min={1} max={rb.amount} defaultValue={rb.amount} /></label>
               <label>Refund date<input type="date" name="refundDate" defaultValue={today()} /></label>
               <label>Mode<select name="refundMode"><option>Bank transfer</option><option>UPI</option><option>Cheque</option></select></label>
               <label>Reference<input name="refundRef" /></label>
             </div>
             <div className="row">
-              <button className="btn primary" name="decision" value="approve">Approve cancellation</button>
-              <button className="btn" name="decision" value="reject">Reject</button>
+              <Submit className="btn primary" name="decision" value="approve">Approve cancellation</Submit>
+              <Submit className="btn" name="decision" value="reject">Reject</Submit>
             </div>
           </form>
           <p className="alert info">On approval the venues become available to all Sectors / Mohallas and the household gets a WhatsApp message.</p>

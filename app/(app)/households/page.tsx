@@ -46,7 +46,7 @@ export default async function Households({ searchParams }: { searchParams: SP })
                 <label>Address<input name="address" defaultValue={e.address} /></label>
                 <label>Sector / Mohalla<input value={sectorName} disabled /></label>
                 <label className="check"><input type="checkbox" name="whatsappConsent" defaultChecked={e.whatsappConsent} />Household agrees to receive WhatsApp messages</label>
-                <div className="row"><button className="btn primary">Save household</button><Link className="btn" href={keep({})}>Clear</Link>{sp.back && <Link className="btn" href={sp.back}>Back to booking</Link>}</div>
+                <div className="row"><button className="btn primary">Save household</button><Link className="btn" href={keep({})}>Clear</Link>{sp.back?.startsWith("/book/") && <Link className="btn" href={sp.back}>Back to booking</Link>}</div>
               </form>
             </div>
             <div className="card">

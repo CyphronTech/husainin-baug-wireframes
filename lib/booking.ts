@@ -1,7 +1,7 @@
 import type { DocumentReference, DocumentSnapshot, Transaction } from "firebase-admin/firestore";
 import { getVenues } from "./data";
 import { db } from "./firebase-admin";
-import { dmy, inr, summary } from "./format";
+import { dmy, inr, summary, today } from "./format";
 import { storeReceipt } from "./receipt";
 import { sendSms } from "./sms";
 import { sendWhatsApp, type Template } from "./whatsapp";
@@ -19,6 +19,11 @@ export function datesBetween(from: string, to: string) {
   if (!out.length) throw new Error("To date is before From date");
   if (out.length > MAX_DAYS) throw new Error(`Max ${MAX_DAYS} days per entry`);
   return out;
+}
+
+/** Form values arrive as strings: anything but M/E/D would make a lock no other slot checks (a double booking). */
+export function assertSlot(s: string): asserts s is Slot {
+  if (!["M", "E", "D"].includes(s)) throw new Error("Slot must be Morning, Evening or Full day");
 }
 
 /** Hall full day = both M and E locks, so a later M or E request clashes. Rooms only have day locks. */
@@ -75,6 +80,9 @@ export async function createBooking(
   user: AppUser,
   input: { venueIds: string[]; from: string; to: string; slot: Slot; sectorId: string; sectorName: string; household: Booking["household"]; event: Booking["event"] },
 ) {
+  assertSlot(input.slot);
+  if (input.from < today()) throw new Error("Date is in the past");
+  if (!Number.isInteger(input.event.guests) || input.event.guests < 1) throw new Error("Enter the expected guests");
   const venues = (await getVenues()).filter((v) => v.active && input.venueIds.includes(v.id));
   if (!venues.length) throw new Error("Select at least one venue");
   const capacity = venues.filter((v) => v.type === "hall").reduce((s, v) => s + v.capacity, 0);
@@ -225,10 +233,12 @@ export async function decideCancellation(admin: AppUser, crId: string, approve: 
   const venues = await getVenues();
   const crRef = db.doc(`cancellations/${crId}`);
   const booking = await db.runTransaction(async (tx) => {
-    const cr = (await tx.get(crRef)).data() as Cancellation;
+    const cr = (await tx.get(crRef)).data() as Cancellation | undefined;
+    if (!cr) throw new Error("Cancellation request not found");
     if (cr.status !== "awaiting") throw new Error("Already decided");
     const bRef = db.doc(`bookings/${cr.bookingId}`);
     const b = { id: bRef.id, ...(await tx.get(bRef)).data() } as Booking;
+    if (approve && refund && !(refund.amount > 0 && refund.amount <= b.amount)) throw new Error(`Refund must be between ₹ 1 and the amount paid (${inr(b.amount)})`);
     tx.update(crRef, { status: approve ? "approved" : "rejected", adminComment: comment, ...(approve && refund ? { refund: { ...refund, recordedBy: admin.name } } : {}) });
     if (approve) itemLockRefs(b.items, venues).forEach((l) => tx.delete(l)); // confirmed locks are never overwritten, so these are ours
     tx.update(bRef, { cancelRequested: false, ...(approve ? { status: "cancelled" } : {}) });
@@ -243,6 +253,7 @@ export async function decideCancellation(admin: AppUser, crId: string, approve: 
  * `blocking: false` records the Miqaat without reserving venues. `dryRun` only reports clashes (import preview).
  */
 export async function saveBlock(user: AppUser, id: string | null, data: Omit<Block, "id" | "lockIds" | "clashes">, dryRun = false) {
+  assertSlot(data.slot);
   const venues = (await getVenues()).filter((v) => data.venueIds.includes(v.id));
   if (!venues.length) throw new Error("Select at least one venue");
   const dates = datesBetween(data.from, data.to);
@@ -271,7 +282,8 @@ export async function saveBlock(user: AppUser, id: string | null, data: Omit<Blo
 export async function deleteBlock(user: AppUser, id: string) {
   await db.runTransaction(async (tx) => {
     const ref = db.doc(`blocks/${id}`);
-    const b = (await tx.get(ref)).data() as Block;
+    const b = (await tx.get(ref)).data() as Block | undefined;
+    if (!b) throw new Error("Already deleted");
     b.lockIds.forEach((l) => tx.delete(db.doc(`locks/${l}`)));
     tx.delete(ref);
     audit(tx, user, "block.delete", { blockId: id, name: b.name });
