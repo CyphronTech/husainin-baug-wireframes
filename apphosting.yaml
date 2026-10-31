@@ -9,7 +9,7 @@ runConfig:
   maxInstances: 1
 env:
   - variable: APP_URL
-    value: https://CHANGE-ME.hosted.app # replace with the URL App Hosting shows after the first rollout, then push
+    value: https://dbhallbooking--hallbooking-8de43.asia-southeast1.hosted.app
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
     value: hallbooking-8de43
   - variable: B2_KEY_ID
