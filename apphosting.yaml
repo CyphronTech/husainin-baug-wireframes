@@ -17,9 +17,9 @@ env:
   - variable: B2_APP_KEY
     secret: B2_APP_KEY
   - variable: B2_BUCKET_ID
-    value: CHANGE-ME # same value as in your .env.local (not secret)
+    value: 73e86f8ac48976e2a71f061a # same value as in your .env.local (not secret)
   - variable: B2_BUCKET_NAME
-    value: CHANGE-ME # same value as in your .env.local
+    value: HallbookingKey # same value as in your .env.local
   - variable: GST_INVOICE_PREFIX
     value: HB
   # - variable: TRUST_GSTIN
