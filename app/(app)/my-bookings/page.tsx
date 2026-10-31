@@ -2,7 +2,7 @@ import Link from "next/link";
 import { resendLink } from "@/app/actions";
 import { getSectors, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
-import { displayStatus, dmy, inr, SLOT_LABEL } from "@/lib/format";
+import { displayStatus, fmt, inr, SLOT_LABEL } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Booking } from "@/lib/types";
 import { Badge, Msg, type SP } from "@/lib/ui";
@@ -10,6 +10,7 @@ import { Badge, Msg, type SP } from "@/lib/ui";
 const STATUSES = ["On hold", "Confirmed", "Cancellation requested", "Cancelled", "Completed", "Expired", "Refund due"];
 
 export default async function MyBookings({ searchParams }: { searchParams: SP }) {
+  const { dmy } = await fmt();
   const user = await requireUser();
   const sp = await searchParams;
   const isAdmin = user.role === "admin";

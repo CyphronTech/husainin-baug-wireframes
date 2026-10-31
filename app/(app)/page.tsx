@@ -3,13 +3,14 @@ import { datesBetween, isLive } from "@/lib/booking";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { addDays } from "@/lib/calendar";
-import { dmy, inr, istMidnight, SLOT_LABEL, today } from "@/lib/format";
+import { fmt, inr, istMidnight, SLOT_LABEL, today } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Block, Booking, Lock } from "@/lib/types";
 import { Badge } from "@/lib/ui";
 import { SectorDashboard } from "./sector-dashboard";
 
 export default async function Dashboard() {
+  const { dmy } = await fmt();
   const user = await requireUser();
   if (user.role !== "admin") return <SectorDashboard user={user} />;
 

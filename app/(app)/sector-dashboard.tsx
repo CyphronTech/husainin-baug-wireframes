@@ -2,11 +2,12 @@ import Link from "next/link";
 import { Calendar, Legend, loadWeek } from "@/lib/calendar";
 import { getHouseholds, getSectors, getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
-import { displayStatus, dmy, SLOT_LABEL, today } from "@/lib/format";
+import { displayStatus, fmt, SLOT_LABEL, today } from "@/lib/format";
 import type { AppUser, Booking } from "@/lib/types";
 import { Badge } from "@/lib/ui";
 
 export async function SectorDashboard({ user }: { user: AppUser }) {
+  const { dmy } = await fmt();
   const t = today();
   const [bookings, households, crs, venues, week, sectors] = await Promise.all([
     db.collection("bookings").where("sectorId", "==", user.sectorId).get().then(rows<Booking>),

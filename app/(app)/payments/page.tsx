@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { getSectors } from "@/lib/data";
-import { dmy, dmyhm, inr } from "@/lib/format";
+import { fmt, inr } from "@/lib/format";
 import { paymentRows } from "@/lib/payments";
 import { requireAdmin } from "@/lib/session";
 import { Badge, type SP } from "@/lib/ui";
 
 export default async function Payments({ searchParams }: { searchParams: SP }) {
+  const { dmy, dmyhm } = await fmt();
   await requireAdmin();
   const sp = await searchParams;
   const [sectors, { list, refunds }] = await Promise.all([getSectors(), paymentRows(sp)]);

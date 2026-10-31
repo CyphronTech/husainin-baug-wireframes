@@ -3,13 +3,14 @@ import { decideCancel } from "@/app/actions";
 import { getBooking } from "@/lib/booking";
 import { getSectors, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
-import { dmy, inr, summary, today } from "@/lib/format";
+import { fmt, inr, today } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Booking, Cancellation } from "@/lib/types";
 import { Badge, Msg, type SP } from "@/lib/ui";
 import { Submit } from "@/lib/submit";
 
 export default async function Cancellations({ searchParams }: { searchParams: SP }) {
+  const { dmy, summary } = await fmt();
   const user = await requireUser();
   const isAdmin = user.role === "admin";
   const sp = await searchParams;

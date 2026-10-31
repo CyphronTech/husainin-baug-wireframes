@@ -69,6 +69,8 @@ details.inline { display: inline-block; margin-left: var(--space-2); } details.i
 /* ── Components ───────────────────────────────────────────────────────────────────────────────────────── */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-5); overflow-x: auto; }
 .chip { border: 1px solid var(--line); border-radius: var(--radius-full); padding: 6px var(--space-3); background: var(--surface); font-size: var(--text-md); display: flex; gap: 10px; align-items: center; }
+.seg { display: inline-flex; } .seg .btn { min-height: 32px; padding: 0 var(--space-3); }
+.seg .btn:first-child { border-radius: var(--radius) 0 0 var(--radius); } .seg .btn:last-child { border-radius: 0 var(--radius) var(--radius) 0; margin-left: -1px; }
 .chip small { display: block; color: var(--text-muted); font-size: var(--text-xs); }
 .stat { font-size: var(--text-2xl); font-weight: var(--weight-bold); }
 .muted { color: var(--text-muted); font-size: var(--text-md); }

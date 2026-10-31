@@ -2,13 +2,14 @@ import Link from "next/link";
 import { priceItems } from "@/lib/booking";
 import { addDays, Calendar, Legend, loadWeek } from "@/lib/calendar";
 import { getVenues } from "@/lib/data";
-import { dmy, inr, SLOT_LABEL, today } from "@/lib/format";
+import { fmt, inr, SLOT_LABEL, today } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Slot } from "@/lib/types";
 import { Msg, Steps, type SP } from "@/lib/ui";
 
 /** Wizard state lives in the URL: t (D/M/E/X = multiple days), from, to, vt (venue type), v (venue ids). */
 export default async function BookStep1({ searchParams }: { searchParams: SP }) {
+  const { dmy } = await fmt();
   await requireUser();
   const sp = await searchParams;
   const t = sp.t ?? "D";

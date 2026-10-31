@@ -3,7 +3,7 @@ import { deleteBlockAction, saveBlockAction, saveVenue } from "@/app/actions";
 import { BlockImport } from "../block-import";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
-import { dmy, inr, SLOT_LABEL, today } from "@/lib/format";
+import { fmt, inr, SLOT_LABEL, today } from "@/lib/format";
 import { requireAdmin } from "@/lib/session";
 import type { Block, Venue } from "@/lib/types";
 import { Badge, Msg, type SP } from "@/lib/ui";
@@ -11,6 +11,7 @@ import { Badge, Msg, type SP } from "@/lib/ui";
 const r = (n?: number) => (n == null ? "—" : inr(n));
 
 export default async function Venues({ searchParams }: { searchParams: SP }) {
+  const { dmy } = await fmt();
   await requireAdmin();
   const sp = await searchParams;
   const [venues, blockSnap] = await Promise.all([getVenues(), db.collection("blocks").where("to", ">=", today()).get()]);

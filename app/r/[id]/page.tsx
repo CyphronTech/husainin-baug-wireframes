@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import { getBooking } from "@/lib/booking";
-import { dmy, dmyhm, inr, SLOT_LABEL } from "@/lib/format";
+import { fmt, inr, SLOT_LABEL } from "@/lib/format";
 
 // Public receipt, linked from WhatsApp and the Razorpay callback. The URL holds the random Firestore doc id
 // (not BK-xxxx), so it can't be guessed. Print → Save as PDF gives the file; no PDF lib, no stored file.
 export default async function Receipt({ params }: { params: Promise<{ id: string }> }) {
+  const { dmy, dmyhm } = await fmt();
   const b = await getBooking((await params).id);
   if (!b) notFound();
   if (!b.receiptNo)

@@ -2,12 +2,13 @@ import Link from "next/link";
 import { addDays, Calendar, Legend, loadWeek } from "@/lib/calendar";
 import { getSectors, getVenues } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
-import { dmy, inr, SLOT_LABEL, summary, today } from "@/lib/format";
+import { fmt, inr, SLOT_LABEL, today } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Block, Booking } from "@/lib/types";
 import { Badge, Msg, type SP } from "@/lib/ui";
 
 export default async function Bookings({ searchParams }: { searchParams: SP }) {
+  const { dmy, summary } = await fmt();
   const sp = await searchParams;
   const user = await requireUser();
   const isAdmin = user.role === "admin";

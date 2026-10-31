@@ -2,13 +2,14 @@ import Link from "next/link";
 import { deleteExpense, saveExpense } from "@/app/actions";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
-import { dmy, inr, today } from "@/lib/format";
+import { fmt, inr, today } from "@/lib/format";
 import { requireAdmin } from "@/lib/session";
 import { EXPENSE_CATEGORIES, type Booking, type Expense } from "@/lib/types";
 import { Msg, type SP } from "@/lib/ui";
 import { Submit } from "@/lib/submit";
 
 export default async function Expenses({ searchParams }: { searchParams: SP }) {
+  const { dmy } = await fmt();
   await requireAdmin();
   const sp = await searchParams;
   const month = sp.month || today().slice(0, 7);
