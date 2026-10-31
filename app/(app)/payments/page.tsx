@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DateField } from "@/lib/date-field";
 import { getSectors } from "@/lib/data";
 import { fmt, inr } from "@/lib/format";
 import { paymentRows } from "@/lib/payments";
@@ -6,7 +7,7 @@ import { requireAdmin } from "@/lib/session";
 import { Badge, type SP } from "@/lib/ui";
 
 export default async function Payments({ searchParams }: { searchParams: SP }) {
-  const { dmy, dmyhm } = await fmt();
+  const { dmy, dmyhm, hijri } = await fmt();
   await requireAdmin();
   const sp = await searchParams;
   const [sectors, { list, refunds }] = await Promise.all([getSectors(), paymentRows(sp)]);
@@ -28,8 +29,8 @@ export default async function Payments({ searchParams }: { searchParams: SP }) {
       <div className="card">
         <h2>Filters</h2>
         <form className="row">
-          <label>From date<input type="date" name="from" defaultValue={sp.from} /></label>
-          <label>To date<input type="date" name="to" defaultValue={sp.to} /></label>
+          <label>From date<DateField hijri={hijri} name="from" defaultValue={sp.from} /></label>
+          <label>To date<DateField hijri={hijri} name="to" defaultValue={sp.to} /></label>
           <label>Sector / Mohalla<select name="sector" defaultValue={sp.sector}><option value="">All</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
           <label>Status<select name="status" defaultValue={sp.status}><option value="">All</option><option value="paid">Paid</option><option value="pending">Pending link</option><option value="refunded">Refunded</option></select></label>
           <button className="btn">Apply</button>

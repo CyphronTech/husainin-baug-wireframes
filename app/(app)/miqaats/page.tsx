@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { deleteBlockAction, saveBlockAction } from "@/app/actions";
 import { BlockImport } from "../block-import";
+import { DateField } from "@/lib/date-field";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { fmt, SLOT_LABEL } from "@/lib/format";
@@ -9,7 +10,7 @@ import type { Block } from "@/lib/types";
 import { Msg, type SP } from "@/lib/ui";
 
 export default async function Miqaats({ searchParams }: { searchParams: SP }) {
-  const { dmy } = await fmt();
+  const { dmy, hijri } = await fmt();
   await requireAdmin();
   const sp = await searchParams;
   const [venues, snap] = await Promise.all([getVenues(), db.collection("blocks").where("kind", "==", "miqaat").get()]);
@@ -52,8 +53,8 @@ export default async function Miqaats({ searchParams }: { searchParams: SP }) {
           <input type="hidden" name="id" value={e.id ?? ""} />
           <div className="row">
             <label>Miqaat name<input name="name" required defaultValue={e.name} /></label>
-            <label>From date<input type="date" name="from" required defaultValue={e.from} /></label>
-            <label>To date<input type="date" name="to" defaultValue={e.to} /></label>
+            <label>From date<DateField hijri={hijri} name="from" required defaultValue={e.from} /></label>
+            <label>To date<DateField hijri={hijri} name="to" defaultValue={e.to} /></label>
             <label>Slot<select name="slot" defaultValue={e.slot}><option value="D">Full day</option><option value="M">Morning</option><option value="E">Evening</option></select></label>
           </div>
           <div className="row">{venues.map((v) => <label key={v.id} className="check"><input type="checkbox" name="venueIds" value={v.id} defaultChecked={e.venueIds?.includes(v.id)} />{v.name}</label>)}</div>

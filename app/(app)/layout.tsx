@@ -1,13 +1,14 @@
-import { logout } from "@/app/actions";
-import { CalToggle } from "@/lib/cal-toggle";
+import { Fragment } from "react";
+import { logout, setCalendar } from "@/app/actions";
+import { CalButtons } from "@/lib/cal-toggle";
 import { getSectors } from "@/lib/data";
-import { fmt } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { Nav } from "./nav";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const [user, sectors, { hijri }] = await Promise.all([requireUser(), getSectors(), fmt()]);
+  const [user, sectors] = await Promise.all([requireUser(), getSectors()]);
   const sector = user.sectorId ? sectors.find((s) => s.id === user.sectorId)?.name : null;
+  const hijri = user.cal !== "en";
   return (
     <div className="shell">
       <aside className="side">
@@ -16,13 +17,16 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </aside>
       <div className="main">
         <div className="top noprint justify-end">
-          <CalToggle hijri={hijri} />
+          <form action={setCalendar} className="caltoggle" role="group" aria-label="Show dates first in" title="Which calendar's date shows first">
+            <CalButtons hijri={hijri} />
+          </form>
           <form action={logout} className="chip">
             <span>{user.name}<small>{user.role === "admin" ? "Admin" : sector}</small></span>
             <button className="link">Sign out</button>
           </form>
         </div>
-        {children}
+        {/* Remount on toggle so uncontrolled fields (month selects, date pickers) pick up the new calendar. */}
+        <Fragment key={hijri ? "hijri" : "en"}>{children}</Fragment>
       </div>
     </div>
   );

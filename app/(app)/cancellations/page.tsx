@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { decideCancel } from "@/app/actions";
 import { getBooking } from "@/lib/booking";
+import { DateField } from "@/lib/date-field";
 import { getSectors, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { fmt, inr, today } from "@/lib/format";
@@ -10,7 +11,7 @@ import { Badge, Msg, type SP } from "@/lib/ui";
 import { Submit } from "@/lib/submit";
 
 export default async function Cancellations({ searchParams }: { searchParams: SP }) {
-  const { dmy, summary } = await fmt();
+  const { dmy, summary, hijri } = await fmt();
   const user = await requireUser();
   const isAdmin = user.role === "admin";
   const sp = await searchParams;
@@ -72,7 +73,7 @@ export default async function Cancellations({ searchParams }: { searchParams: SP
             <b>Refund (paid manually, recorded here)</b>
             <div className="row">
               <label>Refund amount (₹)<input type="number" name="refundAmount" min={1} max={rb.amount} defaultValue={rb.amount} /></label>
-              <label>Refund date<input type="date" name="refundDate" defaultValue={today()} /></label>
+              <label>Refund date<DateField hijri={hijri} name="refundDate" defaultValue={today()} /></label>
               <label>Mode<select name="refundMode"><option>Bank transfer</option><option>UPI</option><option>Cheque</option></select></label>
               <label>Reference<input name="refundRef" /></label>
             </div>

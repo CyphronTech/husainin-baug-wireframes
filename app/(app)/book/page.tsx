@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { priceItems } from "@/lib/booking";
 import { addDays, Calendar, Legend, loadWeek } from "@/lib/calendar";
+import { DateField } from "@/lib/date-field";
 import { getVenues } from "@/lib/data";
 import { fmt, inr, SLOT_LABEL, today } from "@/lib/format";
 import { requireUser } from "@/lib/session";
@@ -9,7 +10,7 @@ import { Msg, Steps, type SP } from "@/lib/ui";
 
 /** Wizard state lives in the URL: t (D/M/E/X = multiple days), from, to, vt (venue type), v (venue ids). */
 export default async function BookStep1({ searchParams }: { searchParams: SP }) {
-  const { dmy } = await fmt();
+  const { hijri, dmy } = await fmt();
   await requireUser();
   const sp = await searchParams;
   const t = sp.t ?? "D";
@@ -51,8 +52,8 @@ export default async function BookStep1({ searchParams }: { searchParams: SP }) 
         <form className="row">
           <input type="hidden" name="v" value={state.v} />
           <label>Booking type<select name="t" defaultValue={t}><option value="D">Full day</option><option value="M">Morning slot</option><option value="E">Evening slot</option><option value="X">Multiple days</option></select></label>
-          <label>From date<input type="date" name="from" defaultValue={from} /></label>
-          <label>To date (multiple days)<input type="date" name="to" defaultValue={to} /></label>
+          <label>From date<DateField hijri={hijri} name="from" defaultValue={from} /></label>
+          <label>To date (multiple days)<DateField hijri={hijri} name="to" defaultValue={to} /></label>
           <label>Venue type<select name="vt" defaultValue={sp.vt}><option value="">Halls &amp; rooms</option><option value="hall">Halls</option><option value="room">Rooms</option></select></label>
           <button className="btn">Search</button>
         </form>

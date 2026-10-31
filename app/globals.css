@@ -69,8 +69,31 @@ details.inline { display: inline-block; margin-left: var(--space-2); } details.i
 /* ── Components ───────────────────────────────────────────────────────────────────────────────────────── */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-5); overflow-x: auto; }
 .chip { border: 1px solid var(--line); border-radius: var(--radius-full); padding: 6px var(--space-3); background: var(--surface); font-size: var(--text-md); display: flex; gap: 10px; align-items: center; }
-.seg { display: inline-flex; } .seg .btn { min-height: 32px; padding: 0 var(--space-3); }
-.seg .btn:first-child { border-radius: var(--radius) 0 0 var(--radius); } .seg .btn:last-child { border-radius: 0 var(--radius) var(--radius) 0; margin-left: -1px; }
+/* Misri date picker (lib/date-field.tsx): looks like an input, opens a month grid */
+.datefield { position: relative; display: block; }
+.datefield-btn small { margin-left: auto; padding-left: var(--space-2); font-size: var(--text-xs); min-width: 0; overflow: hidden; text-overflow: ellipsis; } /* other calendar, inside the field so rows stay aligned */
+.datefield-value { position: absolute; inset: auto 0 0; height: 1px; min-height: 0 !important; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+.datefield-btn { font: inherit; width: 100%; min-height: var(--control-h); padding: var(--space-2) 10px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); display: flex; align-items: center; text-align: left; cursor: pointer; white-space: nowrap; }
+.datefield-pop { position: fixed; z-index: 20; width: 264px; padding: var(--space-3); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); box-shadow: 0 8px 24px rgb(0 0 0 / 0.12); color: var(--text); }
+.datefield-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-2); }
+.datefield-head .btn { min-height: 32px; padding: 0 var(--space-3); }
+.datefield-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-size: var(--text-sm); }
+.datefield-grid button { font: inherit; height: 32px; border: 0; border-radius: var(--radius); background: none; color: var(--text); cursor: pointer; }
+.datefield-grid button:hover { background: var(--muted-bg); }
+.datefield-grid button.today { box-shadow: inset 0 0 0 1px var(--border-strong); }
+.datefield-grid button.on { background: var(--accent); color: var(--on-accent); }
+.datefield-foot { display: flex; justify-content: space-between; margin-top: var(--space-2); }
+/* Header calendar toggle (lib/cal-toggle.tsx): segmented control, a white thumb slides under the chosen calendar */
+.caltoggle { display: inline-flex; align-items: center; gap: var(--space-2); }
+.caltoggle-icon { fill: none; stroke: var(--text-muted); stroke-width: 2; stroke-linecap: round; flex: none; }
+.caltoggle-track { position: relative; display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border: 1px solid var(--line); border-radius: var(--radius-full); background: var(--muted-bg); }
+.caltoggle-thumb { position: absolute; inset: 3px auto 3px 3px; width: calc(50% - 3px); border-radius: var(--radius-full); background: var(--surface); box-shadow: 0 1px 2px rgb(0 0 0 / 0.14), 0 0 0 1px var(--line); transition: transform 200ms ease-out; }
+.caltoggle-track[data-on="en"] .caltoggle-thumb { transform: translateX(100%); }
+.caltoggle button { position: relative; font: inherit; font-size: var(--text-md); min-height: 32px; padding: 0 var(--space-4); border: 0; border-radius: var(--radius-full); background: none; color: var(--text-muted); font-weight: var(--weight-semibold); cursor: pointer; transition: color 150ms; }
+.caltoggle button:hover { color: var(--text); }
+.caltoggle button[aria-pressed="true"] { color: var(--accent); } /* same weight both states: no width jump on switch */
+.caltoggle button:disabled { cursor: progress; }
+.caltoggle-track:has(:disabled) .caltoggle-thumb { animation: skel 0.8s ease-in-out infinite alternate; } /* gentle pulse while the choice saves */
 .chip small { display: block; color: var(--text-muted); font-size: var(--text-xs); }
 .stat { font-size: var(--text-2xl); font-weight: var(--weight-bold); }
 .muted { color: var(--text-muted); font-size: var(--text-md); }
@@ -144,11 +167,13 @@ a.pill:hover { border-color: var(--text); }
   .shell { grid-template-columns: minmax(0, 1fr); }
   .side { padding: var(--space-3); }
   .side .brand { padding: 0 0 var(--space-2); }
-  .side nav { display: flex; gap: var(--space-1); overflow-x: auto; }
+  .side nav { display: flex; gap: var(--space-1); overflow-x: auto; position: relative; padding-inline: 16px 24px; margin-inline: calc(-1 * var(--space-3)); /* fade the edges: hints the strip scrolls; padding keeps end links clear of the fade */ mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 24px), transparent); }
   .side nav a { white-space: nowrap; margin: 0; }
   .g4, .g2, .g2e { grid-template-columns: 1fr 1fr; }
   .main { padding: var(--space-4); }
   .pill { min-height: 32px; line-height: 30px; }
+  .caltoggle button { min-height: 38px; }
+  input, select, textarea, .datefield-btn { font-size: 16px; } /* under 16px, iPhone Safari zooms in on focus */
 }
 @media (max-width: 520px) { .g4, .g2, .g2e { grid-template-columns: 1fr; } }
 @media print { .side, .noprint { display: none; } .shell { display: block; } body { background: var(--white); } }
@@ -158,4 +183,4 @@ a.pill:hover { border-color: var(--text); }
 .skel-title { height: 26px; width: 220px; margin: var(--space-2) 0 var(--space-6); }
 .skel-short { width: 40%; }
 @keyframes skel { to { opacity: 0.45; } }
-@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .skel, .caltoggle-track:has(:disabled) .caltoggle-thumb { animation: none; } .caltoggle-thumb { transition: none; } }

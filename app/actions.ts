@@ -1,6 +1,7 @@
 "use server";
 
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { audit, cancelPending, createBooking, decideCancellation, deleteBlock, getBooking, markPaid, notify, requestCancellation, saveBlock } from "@/lib/booking";
 import { displayStatus } from "@/lib/format";
@@ -76,6 +77,13 @@ export async function login(f: FormData) {
 export async function logout() {
   await endSession();
   redirect("/login");
+}
+
+/** Header toggle: Misri (default) or English dates, saved per user. */
+export async function setCalendar(fd: FormData) {
+  const user = await requireUser();
+  await db.doc(`users/${user.uid}`).update({ cal: fd.get("cal") === "en" ? "en" : "hijri" });
+  revalidatePath("/", "layout"); // every page shows dates
 }
 
 // ── Bookings ────────────────────────────────────────────────────────────────
@@ -399,7 +407,7 @@ export async function importHouseholds(f: FormData) {
 export async function saveExpense(f: FormData) {
   const admin = await requireAdmin();
   const id = s(f, "id");
-  await run(`/expenses?month=${s(f, "date").slice(0, 7)}`, async () => {
+  await run(`/expenses?month=${s(f, "date")}`, async () => {
     const amount = n(f, "amount");
     if (!amount || amount <= 0) throw new Error("Enter the amount");
     if (!EXPENSE_CATEGORIES.includes(s(f, "category"))) throw new Error("Pick a category");

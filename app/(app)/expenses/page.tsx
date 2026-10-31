@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { deleteExpense, saveExpense } from "@/app/actions";
+import { DateField } from "@/lib/date-field";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { fmt, inr, today } from "@/lib/format";
@@ -9,10 +10,14 @@ import { Msg, type SP } from "@/lib/ui";
 import { Submit } from "@/lib/submit";
 
 export default async function Expenses({ searchParams }: { searchParams: SP }) {
-  const { dmy } = await fmt();
+  const { dmy, monthStart, monthLabel, hijri } = await fmt();
   await requireAdmin();
   const sp = await searchParams;
-  const month = sp.month || today().slice(0, 7);
+  // Month (Misri or English, per the header toggle) as its first day; old YYYY-MM links still work.
+  const month = monthStart(sp.month?.length === 7 ? `${sp.month}-01` : sp.month || today());
+  const end = monthStart(month, 1);
+  const inRange = (d: string) => d >= month && d < end;
+  const months = Array.from({ length: 15 }, (_, i) => monthStart(today(), i - 12));
   // shortcut: loads all expenses and confirmed bookings, filters by month in memory. Fine for a few thousand/year;
   // beyond that, query by date range.
   const [venues, expenses, bookings] = await Promise.all([
@@ -21,11 +26,11 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
     db.collection("bookings").where("status", "==", "confirmed").get().then(rows<Booking>),
   ]);
   const editing = expenses.find((x) => x.id === sp.edit);
-  const inMonth = expenses.filter((e) => e.date.startsWith(month)).sort((a, b) => b.date.localeCompare(a.date));
+  const inMonth = expenses.filter((e) => inRange(e.date)).sort((a, b) => b.date.localeCompare(a.date));
   const venueName = (id: string) => (id ? venues.find((v) => v.id === id)?.name ?? id : "All / general");
   // Income = booked rate of each venue-day falling in the month (a booking spanning months splits across them).
   const report = [...venues.map((v) => v.id), ""].map((id) => {
-    const income = id ? bookings.flatMap((b) => b.items).filter((i) => i.venueId === id && i.date.startsWith(month)).reduce((s, i) => s + i.rate, 0) : 0;
+    const income = id ? bookings.flatMap((b) => b.items).filter((i) => i.venueId === id && inRange(i.date)).reduce((s, i) => s + i.rate, 0) : 0;
     const spent = inMonth.filter((e) => e.venueId === id).reduce((s, e) => s + e.amount, 0);
     return { id, income, spent };
   });
@@ -41,7 +46,7 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
           <form action={saveExpense} className="stack" key={editing?.id ?? "new"}>
             <input type="hidden" name="id" value={editing?.id ?? ""} />
             <div className="row">
-              <label>Expense date<input type="date" name="date" required defaultValue={editing?.date ?? today()} /></label>
+              <label>Expense date<DateField hijri={hijri} name="date" required defaultValue={editing?.date ?? today()} /></label>
               <label>Venue<select name="venueId" defaultValue={editing?.venueId ?? ""}><option value="">All / general</option>{venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></label>
             </div>
             <div className="row">
@@ -57,7 +62,7 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
         <div className="card">
           <div className="top mb-2">
             <h2 className="m0">Income vs expenses</h2>
-            <form className="row"><input type="month" name="month" defaultValue={month} /><button className="btn">Show</button></form>
+            <form className="row"><select name="month" defaultValue={month} aria-label="Month">{!months.includes(month) && <option value={month}>{monthLabel(month)}</option>}{months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}</select><button className="btn">Show</button></form>
           </div>
           <table>
             <thead><tr><th>Venue</th><th className="text-right">Income</th><th className="text-right">Expenses</th><th className="text-right">Net</th></tr></thead>
@@ -72,7 +77,7 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
         </div>
       </div>
       <div className="card">
-        <h2>Expenses · {new Date(month + "-01T00:00:00Z").toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" })}</h2>
+        <h2>Expenses · {monthLabel(month)}</h2>
         <table>
           <thead><tr><th>Date</th><th>Venue</th><th>Category</th><th className="text-right">Amount</th><th>Paid to</th><th>Bill</th><th>Notes</th><th><span className="sr-only">Actions</span></th></tr></thead>
           <tbody>

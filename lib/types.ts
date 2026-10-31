@@ -16,7 +16,7 @@ export type Venue = {
 
 export type Sector = { id: string; name: string; code: string; contactName: string; contactMobile: string; active: boolean };
 
-export type AppUser = { uid: string; name: string; mobile: string; email: string; role: Role; sectorId: string | null; active: boolean };
+export type AppUser = { uid: string; name: string; mobile: string; email: string; role: Role; sectorId: string | null; active: boolean; cal?: "hijri" | "en" };
 
 export type Household = { id: string; hof: string; name: string; mobile: string; address: string; sectorId: string; whatsappConsent: boolean };
 
