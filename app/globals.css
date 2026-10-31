@@ -148,3 +148,10 @@ a.pill:hover { border-color: var(--text); }
 }
 @media (max-width: 520px) { .g4, .g2, .g2e { grid-template-columns: 1fr; } }
 @media print { .side, .noprint { display: none; } .shell { display: block; } body { background: var(--white); } }
+
+/* Loading skeleton (app/(app)/loading.tsx) */
+.skel { height: 14px; margin: var(--space-3) 0; border-radius: var(--radius-sm); background: var(--muted-bg); animation: skel 1.2s ease-in-out infinite alternate; }
+.skel-title { height: 26px; width: 220px; margin: var(--space-2) 0 var(--space-6); }
+.skel-short { width: 40%; }
+@keyframes skel { to { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }

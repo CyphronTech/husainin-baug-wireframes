@@ -1,9 +1,10 @@
 "use server";
 
+import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { audit, cancelPending, createBooking, decideCancellation, deleteBlock, getBooking, markPaid, notify, requestCancellation, saveBlock } from "@/lib/booking";
 import { displayStatus } from "@/lib/format";
-import { getSectors, getVenues } from "@/lib/data";
+import { readSectors as getSectors, readVenues as getVenues } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { createPaymentLink, mockPayments } from "@/lib/razorpay";
 import { endSession, requireAdmin, requireUser, startSession } from "@/lib/session";
@@ -167,6 +168,7 @@ export async function saveVenue(f: FormData) {
       tx.set(ref, data);
       audit(tx, admin, id ? "venue.update" : "venue.create", { venueId: ref.id, before: before?.rates, after: data.rates });
     });
+    updateTag("venues");
   });
 }
 
@@ -236,6 +238,7 @@ export async function saveSector(f: FormData) {
       tx.set(ref, data);
       audit(tx, admin, id ? "sector.update" : "sector.create", { sectorId: ref.id, ...data });
     });
+    updateTag("sectors");
   });
 }
 
