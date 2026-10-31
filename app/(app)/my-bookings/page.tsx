@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { resendLink } from "@/app/actions";
+import { DateField } from "@/lib/date-field";
 import { getSectors, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { displayStatus, fmt, inr, SLOT_LABEL } from "@/lib/format";
@@ -10,7 +11,7 @@ import { Badge, Msg, type SP } from "@/lib/ui";
 const STATUSES = ["On hold", "Confirmed", "Cancellation requested", "Cancelled", "Completed", "Expired", "Refund due"];
 
 export default async function MyBookings({ searchParams }: { searchParams: SP }) {
-  const { dmy } = await fmt();
+  const { dmy, hijri } = await fmt();
   const user = await requireUser();
   const sp = await searchParams;
   const isAdmin = user.role === "admin";
@@ -39,8 +40,8 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
       <div className="card">
         <form className="row">
           <label>Search<input name="q" defaultValue={sp.q} placeholder="Booking, household, HOF, venue" /></label>
-          <label>From date<input type="date" name="from" defaultValue={sp.from} /></label>
-          <label>To date<input type="date" name="to" defaultValue={sp.to} /></label>
+          <label>From date<DateField hijri={hijri} name="from" defaultValue={sp.from} /></label>
+          <label>To date<DateField hijri={hijri} name="to" defaultValue={sp.to} /></label>
           <label>Status<select name="status" defaultValue={sp.status}><option value="">All</option>{STATUSES.map((s) => <option key={s}>{s}</option>)}</select></label>
           {isAdmin && <label>Sector / Mohalla<select name="sector" defaultValue={sp.sector}><option value="">All</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>}
           <button className="btn">Apply</button>

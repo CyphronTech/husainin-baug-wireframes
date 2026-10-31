@@ -1,18 +1,21 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useFormStatus } from "react-dom";
 
-/** Switches every date in the app between Misri (Bohri, the default) and English; the choice lives in the `cal` cookie. */
-export function CalToggle({ hijri }: { hijri: boolean }) {
-  const router = useRouter();
-  const set = (v: "hijri" | "en") => {
-    document.cookie = `cal=${v}; path=/; max-age=31536000; samesite=lax`;
-    router.refresh();
-  };
+/** Misri / English segmented control for the header form: which calendar's date comes first. While the save runs (a few seconds), the thumb moves to the clicked one and both are disabled, so nobody clicks twice. */
+export function CalButtons({ hijri }: { hijri: boolean }) {
+  const { pending, data } = useFormStatus();
+  const on = pending && data ? data.get("cal") !== "en" : hijri;
   return (
-    <div className="seg" role="group" aria-label="Calendar">
-      <button type="button" className={`btn${hijri ? " primary" : ""}`} aria-pressed={hijri} onClick={() => set("hijri")}>Misri</button>
-      <button type="button" className={`btn${hijri ? "" : " primary"}`} aria-pressed={!hijri} onClick={() => set("en")}>English</button>
-    </div>
+    <>
+      <svg className="caltoggle-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+      </svg>
+      <span className="caltoggle-track" data-on={on ? "hijri" : "en"}>
+        <span className="caltoggle-thumb" aria-hidden="true" />
+        <button name="cal" value="hijri" aria-pressed={on} disabled={pending} aria-busy={pending && on}>Misri</button>
+        <button name="cal" value="en" aria-pressed={!on} disabled={pending} aria-busy={pending && !on}>English</button>
+      </span>
+    </>
   );
 }

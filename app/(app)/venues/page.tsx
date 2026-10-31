@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { deleteBlockAction, saveBlockAction, saveVenue } from "@/app/actions";
 import { BlockImport } from "../block-import";
+import { DateField } from "@/lib/date-field";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { fmt, inr, SLOT_LABEL, today } from "@/lib/format";
@@ -11,7 +12,7 @@ import { Badge, Msg, type SP } from "@/lib/ui";
 const r = (n?: number) => (n == null ? "—" : inr(n));
 
 export default async function Venues({ searchParams }: { searchParams: SP }) {
-  const { dmy } = await fmt();
+  const { dmy, hijri } = await fmt();
   await requireAdmin();
   const sp = await searchParams;
   const [venues, blockSnap] = await Promise.all([getVenues(), db.collection("blocks").where("to", ">=", today()).get()]);
@@ -80,8 +81,8 @@ export default async function Venues({ searchParams }: { searchParams: SP }) {
               <div className="row">{venues.map((v) => <label key={v.id} className="check"><input type="checkbox" name="venueIds" value={v.id} />{v.name}</label>)}</div>
               <div className="row">
                 <label>Slot<select name="slot"><option value="D">Full day</option><option value="M">Morning</option><option value="E">Evening</option></select></label>
-                <label>From date<input type="date" name="from" required /></label>
-                <label>To date<input type="date" name="to" /></label>
+                <label>From date<DateField hijri={hijri} name="from" required /></label>
+                <label>To date<DateField hijri={hijri} name="to" /></label>
               </div>
               <label>Reason<input name="name" required /></label>
               <div><button className="btn primary">Add block</button></div>

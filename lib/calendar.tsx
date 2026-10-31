@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { datesBetween, isLive } from "./booking";
 import { db } from "./firebase-admin";
-import { fmt, misri, MISRI_MONTHS, SLOT_LABEL, toISODate } from "./format";
+import { fmt, SLOT_LABEL, toISODate } from "./format";
+import { misri, MISRI_MONTHS } from "./misri";
 import type { Lock, Slot, Venue } from "./types";
 
 export const addDays = (iso: string, n: number) => toISODate(new Date(new Date(iso + "T00:00:00Z").getTime() + n * 864e5));
@@ -51,8 +52,9 @@ export async function Calendar(p: {
   };
   const head = (d: string) => {
     const en = new Date(d + "T00:00:00Z").toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", timeZone: "UTC" });
-    if (!hijri) return en;
     const h = misri(d);
+    // Both calendars, the toggle's one on top.
+    if (!hijri) return <span>{en}<div className="muted">{h.d} {MISRI_MONTHS[h.m - 1]} {h.y}</div></span>;
     return <span title={`${en} ${d.slice(0, 4)}`}>{en.split(" ")[0]} {h.d} {MISRI_MONTHS[h.m - 1]}<div className="muted">{h.y} · {en.split(" ").slice(1).join(" ")}</div></span>;
   };
   return (
