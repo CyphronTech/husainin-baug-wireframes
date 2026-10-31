@@ -60,7 +60,7 @@ export default async function BookStep1({ searchParams }: { searchParams: SP }) 
       <div className="card">
         <div className="top mb-2">
           <h2 className="m0">Pick venues and slots</h2>
-          <span><Link className="btn" href={href({ from: addDays(from, -7), to: addDays(to, -7), v: "" })}>← Prev week</Link> <Link className="btn" href={href({ from: addDays(from, 7), to: addDays(to, 7), v: "" })}>Next week →</Link></span>
+          <span><Link prefetch={false} className="btn" href={href({ from: addDays(from, -7), to: addDays(to, -7), v: "" })}>← Prev week</Link> <Link prefetch={false} className="btn" href={href({ from: addDays(from, 7), to: addDays(to, 7), v: "" })}>Next week →</Link></span>
         </div>
         <Legend picked />
         <Calendar

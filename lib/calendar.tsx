@@ -43,10 +43,10 @@ export function Calendar(p: {
     const a11y = { "aria-label": desc, title: desc };
     if (!l) {
       const cls = `pill${picked ? " picked" : ""}`;
-      return p.freeHref ? <Link key={id} className={cls} href={p.freeHref(venueId, date, slot)} {...a11y}>{label}</Link> : <span key={id} className={cls} {...a11y}>{label}</span>;
+      return p.freeHref ? <Link key={id} prefetch={false} className={cls} href={p.freeHref(venueId, date, slot)} {...a11y}>{label}</Link> : <span key={id} className={cls} {...a11y}>{label}</span>;
     }
     const cls = `pill ${l.status}${p.dim?.(l) ? " other" : ""}${p.sel === id ? " sel" : ""}`;
-    return p.takenHref ? <Link key={id} className={cls} href={p.takenHref(id)} {...a11y}>{label}</Link> : <span key={id} className={cls} {...a11y}>{label}</span>;
+    return p.takenHref ? <Link key={id} prefetch={false} className={cls} href={p.takenHref(id)} {...a11y}>{label}</Link> : <span key={id} className={cls} {...a11y}>{label}</span>;
   };
   return (
     <table className="cal">

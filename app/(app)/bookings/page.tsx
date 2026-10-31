@@ -47,7 +47,7 @@ export default async function Bookings({ searchParams }: { searchParams: SP }) {
       <div className="card">
         <div className="top mb-2">
           <h2 className="m0">Availability calendar</h2>
-          <span><Link className="btn" href={q({ start: addDays(start, -7) })}>← Prev week</Link> <Link className="btn" href={q({ start: addDays(start, 7) })}>Next week →</Link></span>
+          <span><Link prefetch={false} className="btn" href={q({ start: addDays(start, -7) })}>← Prev week</Link> <Link prefetch={false} className="btn" href={q({ start: addDays(start, 7) })}>Next week →</Link></span>
         </div>
         <Legend />
         <Calendar
