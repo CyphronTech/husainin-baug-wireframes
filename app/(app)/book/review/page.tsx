@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { bookFromWizard } from "@/app/actions";
 import { HOLD_MINUTES, priceItems } from "@/lib/booking";
 import { getHouseholds, getSectors, getVenues } from "@/lib/data";
-import { dmy, inr, SLOT_LABEL } from "@/lib/format";
+import { fmt, inr, SLOT_LABEL } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Slot } from "@/lib/types";
 import { Msg, Steps, type SP } from "@/lib/ui";
@@ -12,6 +12,7 @@ import { Submit } from "@/lib/submit";
 const PURPOSES = ["Wedding", "Majlis", "Family function", "Meeting", "Other"];
 
 export default async function BookReview({ searchParams }: { searchParams: SP }) {
+  const { dmy } = await fmt();
   const user = await requireUser();
   const sp = await searchParams;
   const state = { t: sp.t ?? "D", from: sp.from ?? "", to: sp.to ?? sp.from ?? "", v: sp.v ?? "" };

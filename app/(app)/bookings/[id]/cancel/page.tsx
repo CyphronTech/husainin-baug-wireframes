@@ -2,12 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requestCancel } from "@/app/actions";
 import { getBooking } from "@/lib/booking";
-import { displayStatus, inr, summary } from "@/lib/format";
+import { displayStatus, fmt, inr } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { Badge, Msg, type SP } from "@/lib/ui";
 import { Submit } from "@/lib/submit";
 
 export default async function CancelBooking({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: SP }) {
+  const { summary } = await fmt();
   const [{ id }, sp, user] = await Promise.all([params, searchParams, requireUser()]);
   const b = await getBooking(id);
   if (!b || (user.role !== "admin" && b.sectorId !== user.sectorId)) notFound();

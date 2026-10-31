@@ -4,7 +4,7 @@ import { releaseBooking, resendLink } from "@/app/actions";
 import { getBooking, messageValues } from "@/lib/booking";
 import { rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
-import { displayStatus, dmy, dmyhm, inr, SLOT_LABEL, summary } from "@/lib/format";
+import { displayStatus, fmt, inr, SLOT_LABEL } from "@/lib/format";
 import { mockPayments } from "@/lib/razorpay";
 import { requireUser } from "@/lib/session";
 import type { Booking, Cancellation } from "@/lib/types";
@@ -21,6 +21,7 @@ const PREVIEW = {
 };
 
 export default async function BookingPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: SP }) {
+  const { dmy, dmyhm, summary } = await fmt();
   const [{ id }, sp, user] = await Promise.all([params, searchParams, requireUser()]);
   const b = await getBooking(id);
   // Household details are scoped to the booking's own Sector / Mohalla — enforced here, not just hidden in the UI.

@@ -3,12 +3,13 @@ import { deleteBlockAction, saveBlockAction } from "@/app/actions";
 import { BlockImport } from "../block-import";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
-import { dmy, SLOT_LABEL } from "@/lib/format";
+import { fmt, SLOT_LABEL } from "@/lib/format";
 import { requireAdmin } from "@/lib/session";
 import type { Block } from "@/lib/types";
 import { Msg, type SP } from "@/lib/ui";
 
 export default async function Miqaats({ searchParams }: { searchParams: SP }) {
+  const { dmy } = await fmt();
   await requireAdmin();
   const sp = await searchParams;
   const [venues, snap] = await Promise.all([getVenues(), db.collection("blocks").where("kind", "==", "miqaat").get()]);
