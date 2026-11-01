@@ -7,6 +7,7 @@ import { audit, cancelPending, createBooking, decideCancellation, deleteBlock, g
 import { displayStatus } from "@/lib/format";
 import { getSectors, getVenues, invalidate } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
+import { dateToIso } from "@/lib/misri";
 import { b2Enabled, uploadPublic } from "@/lib/b2";
 import { createPaymentLink, mockPayments } from "@/lib/razorpay";
 import { endSession, requireAdmin, requireUser, startSession } from "@/lib/session";
@@ -249,19 +250,15 @@ export async function deleteBlockAction(f: FormData) {
   await run(s(f, "back") === "/venues" ? "/venues" : "/miqaats", () => deleteBlock(admin, s(f, "id"))); // never redirect to a posted URL
 }
 
-/** One spreadsheet row: name, from, to, slot (M/E/D), venue codes (; separated), notes. Dates YYYY-MM-DD. */
-export type BlockRow = { name: string; from: string; to: string; slot: string; codes: string; notes: string };
+/** One spreadsheet row: Date (DD/MM/YYYY), Reason. Blocks every active hall for the full day. */
+export type BlockRow = { date: string; reason: string };
 
 async function rowToBlock(kind: Block["kind"], r: BlockRow) {
-  const venues = await getVenues();
-  const codes = r.codes.split(";").map((c) => c.trim().toUpperCase()).filter(Boolean);
-  const unknown = codes.filter((c) => !venues.some((v) => v.code === c));
-  if (!r.name) throw new Error("name missing");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(r.from) || (r.to && !/^\d{4}-\d{2}-\d{2}$/.test(r.to))) throw new Error("dates must be YYYY-MM-DD");
-  if (unknown.length) throw new Error(`unknown venue code ${unknown.join(", ")}`);
-  if (r.slot && !["M", "E", "D"].includes(r.slot.toUpperCase())) throw new Error("slot must be M, E or D");
-  const venueIds = codes.map((c) => venues.find((v) => v.code === c)!.id);
-  return { kind, name: r.name, from: r.from, to: r.to || r.from, slot: (r.slot.toUpperCase() || "D") as Slot, venueIds, notes: r.notes, blocking: true };
+  const date = dateToIso(r.date);
+  if (!date) throw new Error("date must be DD/MM/YYYY");
+  if (!r.reason) throw new Error("reason missing");
+  const venueIds = (await getVenues()).filter((v) => v.active && v.type === "hall").map((v) => v.id);
+  return { kind, name: r.reason, from: date, to: date, slot: "D" as Slot, venueIds, notes: "", blocking: true };
 }
 
 /** Import preview: validates each row and checks clashes without writing anything. */
@@ -289,9 +286,9 @@ export async function importBlocks(f: FormData) {
     for (const r of rows) {
       try {
         const c = await saveBlock(admin, null, await rowToBlock(kind, r));
-        if (c.length) report.push(`${r.name}: skipped ${c.join(", ")}`);
+        if (c.length) report.push(`${r.reason}: skipped ${c.join(", ")}`);
       } catch (e) {
-        report.push(`${r.name}: ${(e as Error).message}`);
+        report.push(`${r.reason}: ${(e as Error).message}`);
       }
     }
     throw new Error(`Imported ${rows.length - report.length} of ${rows.length} rows${report.length ? ` — ${report.join(" | ")}` : ""}`);
