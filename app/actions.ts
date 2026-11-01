@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { audit, cancelPending, createBooking, decideCancellation, deleteBlock, getBooking, markPaid, notify, requestCancellation, saveBlock } from "@/lib/booking";
 import { displayStatus } from "@/lib/format";
-import { getSectors, getVenues, invalidate } from "@/lib/data";
+import { invalidate, readSectors as getSectors, readVenues as getVenues } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { dateToIso } from "@/lib/misri";
 import { b2Enabled, uploadPublic } from "@/lib/b2";

@@ -18,12 +18,14 @@ function cached<T>(key: string, load: () => Promise<T>, ttl = 60_000): Promise<T
 }
 export const invalidate = (key: "venues" | "sectors") => store.delete(key);
 
-export const getVenues = () =>
-  cached("venues", async () =>
-    rows<Venue>(await db.collection("venues").get()).sort((a, b) => a.type.localeCompare(b.type) || b.capacity - a.capacity || a.name.localeCompare(b.name)),
-  );
+// Bookings and saves use these fresh reads, so they never act on a stale rate or code. Pages use the cached getters.
+export const readVenues = async () =>
+  rows<Venue>(await db.collection("venues").get()).sort((a, b) => a.type.localeCompare(b.type) || b.capacity - a.capacity || a.name.localeCompare(b.name));
 
-export const getSectors = () => cached("sectors", async () => rows<Sector>(await db.collection("sectors").get()).sort((a, b) => a.name.localeCompare(b.name)));
+export const readSectors = async () => rows<Sector>(await db.collection("sectors").get()).sort((a, b) => a.name.localeCompare(b.name));
+
+export const getVenues = () => cached("venues", readVenues);
+export const getSectors = () => cached("sectors", readSectors);
 
 // shortcut: households are loaded per sector (or all, for admin) and searched in memory. Fine to ~10k households.
 export const getHouseholds = async (sectorId?: string) =>

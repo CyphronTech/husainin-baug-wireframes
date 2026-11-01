@@ -1,6 +1,6 @@
 import type { DocumentReference, DocumentSnapshot, Transaction } from "firebase-admin/firestore";
 import { cartItems } from "./cart";
-import { getVenues } from "./data";
+import { readVenues as getVenues } from "./data";
 import { db } from "./firebase-admin";
 import { dmy, inr, summary, today } from "./format";
 import { storeReceipt } from "./receipt";
