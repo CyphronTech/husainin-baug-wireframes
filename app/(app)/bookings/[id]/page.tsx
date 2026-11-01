@@ -52,7 +52,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
           <p className="m0">
             {summary(b.items)} · {inr(b.amount)}<br />
             {b.household.name} · HOF {b.household.hof} · {b.household.mobile}<br />
-            <span className="muted">{b.event?.purpose} · {b.event?.guests} guests · {b.sectorName} · by {b.createdByName}</span>
+            <span className="muted">{b.event?.purpose} · {b.event?.guests} guests{b.event?.thaal ? ` · ${b.event.thaal} thaal` : ""} · {b.sectorName} · by {b.createdByName}</span>
           </p>
           <div className="row items-center">
             <Badge s={status === "On hold" ? "On hold" : status} />

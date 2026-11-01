@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Calendar, Legend, loadWeek } from "@/lib/calendar";
 import { getHouseholds, getSectors, getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
-import { displayStatus, fmt, SLOT_LABEL, today } from "@/lib/format";
+import { displayStatus, fmt, slotSummary, today } from "@/lib/format";
 import type { AppUser, Booking } from "@/lib/types";
 import { Badge } from "@/lib/ui";
 
@@ -47,7 +47,7 @@ export async function SectorDashboard({ user }: { user: AppUser }) {
                     <td>{b.household.name}<div className="muted">HOF {b.household.hof}</div></td>
                     <td>{[...new Set(b.items.map((i) => i.venueName))].join(" + ")}</td>
                     <td>{dates.length > 1 ? `${dmy(dates[0])} – ${dmy(dates.at(-1))}` : dmy(dates[0])}</td>
-                    <td>{SLOT_LABEL[b.items[0].slot]}{dates.length > 1 && ` × ${dates.length}`}</td>
+                    <td>{slotSummary(b.items)}</td>
                     <td><Badge s={b.shown} /></td>
                   </tr>
                 );

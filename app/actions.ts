@@ -90,21 +90,18 @@ export async function setCalendar(fd: FormData) {
 
 export async function bookFromWizard(f: FormData) {
   const user = await requireUser();
-  const state = new URLSearchParams({ t: s(f, "t"), from: s(f, "from"), to: s(f, "to"), v: s(f, "v"), h: s(f, "h") });
+  const state = new URLSearchParams({ c: s(f, "c"), from: s(f, "from"), to: s(f, "to"), th: s(f, "thaal"), h: s(f, "h") });
   await run(`/book/review?${state}`, async () => {
     if (!HOF.test(s(f, "h"))) throw new Error("Select a household");
     const hh = (await db.doc(`households/${s(f, "h")}`).get()).data() as Household | undefined;
     if (!hh || (user.role !== "admin" && hh.sectorId !== user.sectorId)) throw new Error("Select a household");
     const sector = (await getSectors()).find((x) => x.id === hh.sectorId)!;
     const id = await createBooking(user, {
-      venueIds: s(f, "v").split(","),
-      from: s(f, "from"),
-      to: s(f, "to") || s(f, "from"),
-      slot: (s(f, "t") === "X" ? "D" : s(f, "t")) as Slot, // validated in createBooking
+      cart: s(f, "c"), // validated in createBooking
       sectorId: sector.id,
       sectorName: sector.name,
       household: { name: hh.name, hof: hh.hof, mobile: hh.mobile, whatsappConsent: hh.whatsappConsent },
-      event: { purpose: s(f, "purpose"), guests: n(f, "guests") ?? 0 },
+      event: { purpose: s(f, "purpose"), guests: n(f, "guests") ?? 0, thaal: n(f, "thaal") ?? 0 },
     });
     await sendLink(id).catch(() => {}); // booking + hold stand even if Razorpay is down; retry from booking page
     return `/bookings/${id}`;
@@ -198,6 +195,7 @@ export async function saveVenue(f: FormData) {
       code: s(f, "code").toUpperCase(),
       type,
       capacity: n(f, "capacity") ?? 0,
+      maxThaal: n(f, "maxThaal") ?? 0,
       morningTime: s(f, "morningTime"),
       eveningTime: s(f, "eveningTime"),
       rates: JSON.parse(JSON.stringify(rates)), // drop undefined (Firestore rejects it)
@@ -206,7 +204,7 @@ export async function saveVenue(f: FormData) {
     if (!data.name || !data.code) throw new Error("Enter the name and code");
     if (type !== "hall" && type !== "room") throw new Error("Pick hall or room");
     const bad = (x: unknown) => typeof x !== "number" || !Number.isFinite(x) || x < 0;
-    if (bad(data.capacity) || Object.values(data.rates).some(bad)) throw new Error("Capacity and rates must be 0 or more");
+    if (bad(data.capacity) || bad(data.maxThaal) || Object.values(data.rates).some(bad)) throw new Error("Capacity, max thaal and rates must be 0 or more");
     if ((await getVenues()).some((v) => v.code === data.code && v.id !== id)) throw new Error(`Code ${data.code} is already used`);
     const ref = id ? db.doc(`venues/${id}`) : db.collection("venues").doc();
     // Bookings snapshot their rate per item at creation, so changing rates here never touches existing bookings.

@@ -13,7 +13,7 @@ initializeApp({ projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID });
 const db = getFirestore();
 const batch = db.batch();
 
-const hall = (code, name, capacity, morning, evening, fullDay) => ({ code, name, type: "hall", capacity, rates: { morning, evening, fullDay }, morningTime: "08:00–15:00", eveningTime: "17:00–23:00", active: true });
+const hall = (code, name, capacity, morning, evening, fullDay) => ({ code, name, type: "hall", capacity, maxThaal: 100, rates: { morning, evening, fullDay }, morningTime: "08:00–15:00", eveningTime: "17:00–23:00", active: true });
 const room = (code, name, perDay) => ({ code, name, type: "room", capacity: 4, rates: { perDay }, morningTime: "", eveningTime: "", active: true });
 for (const v of [hall("MUF", "Muffadal Hall", 500, 15000, 18000, 30000), hall("VAJ", "Vajihi Hall", 300, 10000, 12000, 20000), hall("H3", "Hall 3", 150, 6000, 7000, 12000), hall("H4", "Hall 4", 100, 4000, 5000, 8000), room("R1", "Room 1", 2500), room("R2", "Room 2", 2000)])
   batch.set(db.doc(`venues/${v.code.toLowerCase()}`), v);

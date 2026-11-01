@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { datesBetween, isLive } from "./booking";
+import { datesBetween, isLive, maxThaal } from "./booking";
 import { db } from "./firebase-admin";
 import { fmt, SLOT_LABEL, toISODate } from "./format";
 import { misri, MISRI_MONTHS } from "./misri";
@@ -7,10 +7,10 @@ import type { Lock, Slot, Venue } from "./types";
 
 export const addDays = (iso: string, n: number) => toISODate(new Date(new Date(iso + "T00:00:00Z").getTime() + n * 864e5));
 
-/** 7 days from `start`, with only live locks (lapsed holds dropped). */
-export async function loadWeek(start: string) {
-  const days = datesBetween(start, addDays(start, 6));
-  const snap = await db.collection("locks").where("date", ">=", days[0]).where("date", "<=", days[6]).get();
+/** `start` to `end` (7 days by default), with only live locks (lapsed holds dropped). */
+export async function loadWeek(start: string, end = addDays(start, 6)) {
+  const days = datesBetween(start, end);
+  const snap = await db.collection("locks").where("date", ">=", days[0]).where("date", "<=", days.at(-1)!).get();
   const now = new Date().toISOString();
   return { days, locks: new Map(snap.docs.map((d) => [d.id, d.data() as Lock]).filter(([, l]) => isLive(l as Lock, now)) as [string, Lock][]) };
 }
@@ -34,6 +34,7 @@ export async function Calendar(p: {
   picked?: (venueId: string, date: string, slot: Slot) => boolean;
   dim?: (l: Lock) => boolean;
   sel?: string;
+  keepScroll?: boolean;
 }) {
   const { hijri, dmy } = await fmt();
   const STATUS = { pending: "on hold", confirmed: "booked", block: "unavailable" } as const;
@@ -45,7 +46,7 @@ export async function Calendar(p: {
     const a11y = { "aria-label": desc, title: desc };
     if (!l) {
       const cls = `pill${picked ? " picked" : ""}`;
-      return p.freeHref ? <Link key={id} prefetch={false} className={cls} href={p.freeHref(venueId, date, slot)} {...a11y}>{label}</Link> : <span key={id} className={cls} {...a11y}>{label}</span>;
+      return p.freeHref ? <Link key={id} prefetch={false} scroll={!p.keepScroll} className={cls} href={p.freeHref(venueId, date, slot)} {...a11y}>{label}</Link> : <span key={id} className={cls} {...a11y}>{label}</span>;
     }
     const cls = `pill ${l.status}${p.dim?.(l) ? " other" : ""}${p.sel === id ? " sel" : ""}`;
     return p.takenHref ? <Link key={id} prefetch={false} className={cls} href={p.takenHref(id)} {...a11y}>{label}</Link> : <span key={id} className={cls} {...a11y}>{label}</span>;
@@ -65,7 +66,7 @@ export async function Calendar(p: {
       <tbody>
         {p.venues.map((v) => (
           <tr key={v.id}>
-            <td><b>{v.name}</b><div className="muted">{v.type === "hall" ? "Hall" : "Room"}</div></td>
+            <td><b>{v.name}</b><div className="muted">{v.type === "hall" ? `Hall · max ${maxThaal(v)} thaal` : "Room"}</div></td>
             {p.days.map((d) => <td key={d}>{v.type === "hall" ? [pill(v.name, v.id, d, "M", "M"), pill(v.name, v.id, d, "E", "E")] : pill(v.name, v.id, d, "D", "Day")}</td>)}
           </tr>
         ))}

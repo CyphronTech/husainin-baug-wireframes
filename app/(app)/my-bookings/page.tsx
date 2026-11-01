@@ -3,7 +3,7 @@ import { resendLink } from "@/app/actions";
 import { DateField } from "@/lib/date-field";
 import { getSectors, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
-import { displayStatus, fmt, inr, SLOT_LABEL } from "@/lib/format";
+import { displayStatus, fmt, inr, slotSummary } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Booking } from "@/lib/types";
 import { Badge, Msg, type SP } from "@/lib/ui";
@@ -61,7 +61,7 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
                   <td>{b.household.name}<div className="muted">HOF {b.household.hof}</div></td>
                   <td>{[...new Set(b.items.map((i) => i.venueName))].join(" + ")}</td>
                   <td>{dates.length > 1 ? `${dmy(dates[0])} – ${dmy(dates.at(-1))}` : dmy(dates[0])}</td>
-                  <td>{SLOT_LABEL[b.items[0].slot]}{dates.length > 1 && ` × ${dates.length}`}</td>
+                  <td>{slotSummary(b.items)}</td>
                   <td>{b.shown === "Expired" ? "—" : inr(b.amount)}</td>
                   <td><Badge s={b.shown} /></td>
                   <td>{mine ? "You" : b.createdByName}</td>

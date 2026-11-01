@@ -1,46 +1,44 @@
 import Link from "next/link";
-import { priceItems } from "@/lib/booking";
+import { thaalLimit } from "@/lib/booking";
 import { addDays, Calendar, Legend, loadWeek } from "@/lib/calendar";
+import { cartItems, toCart, toggleSlot } from "@/lib/cart";
 import { DateField } from "@/lib/date-field";
 import { getVenues } from "@/lib/data";
 import { fmt, inr, SLOT_LABEL, today } from "@/lib/format";
 import { requireUser } from "@/lib/session";
-import type { Slot } from "@/lib/types";
+import type { Item, Slot } from "@/lib/types";
 import { Msg, Steps, type SP } from "@/lib/ui";
 
-/** Wizard state lives in the URL: t (D/M/E/X = multiple days), from, to, vt (venue type), v (venue ids). */
+const MAX_DAYS_SHOWN = 60; // loadWeek's datesBetween cap
+
+/** Wizard state lives in the URL: c (cart, see lib/cart.ts), from + to (days shown), hall (calendar filter), th (no. of thaal). */
 export default async function BookStep1({ searchParams }: { searchParams: SP }) {
   const { hijri, dmy } = await fmt();
   await requireUser();
   const sp = await searchParams;
-  const t = sp.t ?? "D";
-  const from = sp.from || today();
-  const to = t === "X" ? sp.to || from : from;
-  const picked = (sp.v ?? "").split(",").filter(Boolean);
-  const slot: Slot = t === "X" ? "D" : (t as Slot);
+  const from = sp.from && sp.from > today() ? sp.from : today();
+  const lastDay = addDays(from, MAX_DAYS_SHOWN - 1);
+  const wanted = sp.to && sp.to >= from ? sp.to : addDays(from, 6);
+  const to = wanted > lastDay ? lastDay : wanted;
 
-  const [allVenues, { days, locks }] = await Promise.all([getVenues(), loadWeek(from)]);
+  const [allVenues, { days, locks }] = await Promise.all([getVenues(), loadWeek(from, to)]);
   const active = allVenues.filter((v) => v.active);
-  const shown = active.filter((v) => !sp.vt || v.type === sp.vt);
-  const selected = active.filter((v) => picked.includes(v.id));
-  let items: ReturnType<typeof priceItems> = [];
-  let error = "";
+  const shown = active.filter((v) => !sp.hall || v.id === sp.hall);
+  let items: Item[] = [];
+  let error = wanted > lastDay ? `Showing the first ${MAX_DAYS_SHOWN} days. Use Next for the rest.` : "";
   try {
-    items = selected.length ? priceItems(selected, from, to, slot) : [];
+    items = cartItems(sp.c ?? "", allVenues);
   } catch (e) {
-    error = (e as Error).message;
+    error = (e as Error).message; // a bad cart starts over
   }
+  const selected = active.filter((v) => items.some((i) => i.venueId === v.id));
 
-  const state = { t, from, to, ...(sp.vt && { vt: sp.vt }), v: picked.join(",") };
+  const state = { from, to, ...(sp.hall && { hall: sp.hall }), ...(sp.th && { th: sp.th }), c: toCart(items) };
   const href = (o: Record<string, string>) => `/book?${new URLSearchParams({ ...state, ...o })}`;
-  const inRange = (d: string) => d >= from && d <= to;
-  // Clicking a free slot picks that venue; on a new date (single-day types) it starts a fresh selection.
-  const freeHref = (venueId: string, date: string, s: Slot) => {
-    const sameDate = t === "X" || date === from;
-    const v = sameDate ? [...new Set([...picked, venueId])] : [venueId];
-    const nt = s === "D" || t === "D" || t === "X" ? t : s;
-    return href({ t: nt, from: t === "X" ? from : date, to: t === "X" ? to : date, v: v.join(",") });
-  };
+  const limit = thaalLimit(selected);
+  const overLimit = limit > 0 && Number(sp.th) > limit;
+  const total = items.reduce((a, i) => a + i.rate, 0);
+  const isPicked = (v: string, d: string, s: Slot) => items.some((i) => i.venueId === v && i.date === d && (i.slot === s || i.slot === "D"));
 
   return (
     <>
@@ -50,57 +48,58 @@ export default async function BookStep1({ searchParams }: { searchParams: SP }) 
       <div className="card">
         <h2>Search</h2>
         <form className="row">
-          <input type="hidden" name="v" value={state.v} />
-          <label>Booking type<select name="t" defaultValue={t}><option value="D">Full day</option><option value="M">Morning slot</option><option value="E">Evening slot</option><option value="X">Multiple days</option></select></label>
+          <input type="hidden" name="c" value={state.c} />
           <label>From date<DateField hijri={hijri} name="from" defaultValue={from} /></label>
-          <label>To date (multiple days)<DateField hijri={hijri} name="to" defaultValue={to} /></label>
-          <label>Venue type<select name="vt" defaultValue={sp.vt}><option value="">Halls &amp; rooms</option><option value="hall">Halls</option><option value="room">Rooms</option></select></label>
+          <label>To date<DateField hijri={hijri} name="to" defaultValue={to} /></label>
+          <label>Hall<select name="hall" defaultValue={sp.hall}><option value="">All halls &amp; rooms</option>{active.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></label>
+          <label>No. of thaal<input name="th" type="number" min={1} defaultValue={sp.th} /></label>
           <button className="btn">Search</button>
         </form>
       </div>
 
       <div className="card">
         <div className="top mb-2">
-          <h2 className="m0">Pick venues and slots</h2>
-          <span><Link prefetch={false} className="btn" href={href({ from: addDays(from, -7), to: addDays(to, -7), v: "" })}>← Prev week</Link> <Link prefetch={false} className="btn" href={href({ from: addDays(from, 7), to: addDays(to, 7), v: "" })}>Next week →</Link></span>
+          <h2 className="m0">Add slots to your cart</h2>
+          <span>
+            <a className="btn" href="#cart">Cart ({items.length}) · {inr(total)}</a>{" "}
+            {from > today() && <Link prefetch={false} className="btn" href={href({ from: addDays(from, -days.length), to: addDays(to, -days.length) })}>← Previous</Link>}{" "}
+            <Link prefetch={false} className="btn" href={href({ from: addDays(from, days.length), to: addDays(to, days.length) })}>Next →</Link>
+          </span>
         </div>
         <Legend picked />
         <Calendar
           venues={shown}
           days={days}
           locks={locks}
-          freeHref={freeHref}
-          picked={(v, d, s) => picked.includes(v) && inRange(d) && (s === "D" || slot === "D" || s === slot)}
+          freeHref={(v, d, s) => href({ c: toggleSlot(items, v, d, s) })}
+          picked={isPicked}
+          keepScroll
         />
       </div>
 
-      <div className="card stack">
-        <h2>Your selection</h2>
-        {!items.length && <p className="muted m0">Click a free slot in the calendar.</p>}
-        {selected.map((v) => {
-          const vi = items.filter((i) => i.venueId === v.id);
-          if (!vi.length) return null;
-          const s = vi[0].slot;
-          return (
-            <div key={v.id}>
-              <b>{v.name}</b> · {from === to ? dmy(from) : `${dmy(from)} to ${dmy(to)}`} ·{" "}
-              {SLOT_LABEL[s]}{v.type === "hall" && s === "D" && " (Morning + Evening)"} · {inr(vi.reduce((a, i) => a + i.rate, 0))}{" "}
-              <Link href={href({ v: picked.filter((x) => x !== v.id).join(",") })}>Remove</Link>
-            </div>
-          );
-        })}
-        <form className="row">
-          {Object.entries(state).filter(([k]) => k !== "v").map(([k, val]) => <input key={k} type="hidden" name={k} value={val} />)}
-          <label>+ Add another hall or room
-            <select name="v" required defaultValue="">
-              <option value="" disabled>Select…</option>
-              {active.filter((v) => !picked.includes(v.id)).map((v) => <option key={v.id} value={[...picked, v.id].join(",")}>{v.name}</option>)}
-            </select>
-          </label>
-          <button className="btn">Add</button>
-        </form>
-        <p className="alert info">For large gatherings, add several halls and rooms. If any one is taken, the booking is not created.</p>
-        <div>{items.length > 0 && <Link className="btn primary" href={`/book/review?${new URLSearchParams(state)}`}>Continue</Link>}</div>
+      <div className="card stack" id="cart">
+        <h2>Your cart</h2>
+        {!items.length && <p className="muted m0">Empty. Click a free slot in the calendar to add it.</p>}
+        {items.length > 0 && (
+          <table>
+            <thead><tr><th>Venue</th><th>Date</th><th>Slot</th><th>Amount</th><th><span className="sr-only">Actions</span></th></tr></thead>
+            <tbody>
+              {items.map((i) => (
+                <tr key={i.venueId + i.date}>
+                  <td>{i.venueName}</td>
+                  <td>{dmy(i.date)}</td>
+                  <td>{SLOT_LABEL[i.slot]}{i.slot === "D" && selected.find((v) => v.id === i.venueId)?.type === "hall" && " (Morning + Evening)"}</td>
+                  <td>{inr(i.rate)}</td>
+                  <td><Link prefetch={false} scroll={false} href={href({ c: toCart(items.filter((x) => x !== i)) })}>Remove</Link></td>
+                </tr>
+              ))}
+              <tr><td colSpan={3}><b>Total</b></td><td><b>{inr(total)}</b></td><td><Link prefetch={false} scroll={false} href={href({ c: "" })}>Empty cart</Link></td></tr>
+            </tbody>
+          </table>
+        )}
+        <p className="alert info">The whole cart is one booking with one payment link. If any line is taken at checkout, nothing is booked. Slots are held only after checkout.</p>
+        {overLimit && <p className="alert warn">Halls in your cart hold up to {limit} thaal, you entered {sp.th}. Add another hall or lower the number.</p>}
+        <div>{items.length > 0 && !overLimit && <Link className="btn primary" href={`/book/review?${new URLSearchParams({ c: state.c, from, to, ...(sp.th && { th: sp.th }) })}`}>Checkout</Link>}</div>
       </div>
     </>
   );

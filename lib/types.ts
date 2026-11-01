@@ -8,6 +8,7 @@ export type Venue = {
   code: string;
   type: "hall" | "room";
   capacity: number;
+  maxThaal?: number; // halls; unset or 0 = DEFAULT_MAX_THAAL
   morningTime: string;
   eveningTime: string;
   rates: { morning?: number; evening?: number; fullDay?: number; multiDay?: number; perDay?: number };
@@ -31,7 +32,7 @@ export type Booking = {
   createdByName: string;
   household: { name: string; hof: string; mobile: string; whatsappConsent: boolean };
   items: Item[];
-  event: { purpose: string; guests: number };
+  event: { purpose: string; guests: number; thaal?: number };
   amount: number;
   status: "pending" | "confirmed" | "cancelled";
   /** Pending only: after this the hold lapses and the slots count as free (lazily — no cron). */

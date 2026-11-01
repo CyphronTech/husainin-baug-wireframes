@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { bookFromWizard } from "@/app/actions";
-import { HOLD_MINUTES, priceItems } from "@/lib/booking";
+import { HOLD_MINUTES, thaalLimit } from "@/lib/booking";
+import { cartItems } from "@/lib/cart";
 import { getHouseholds, getSectors, getVenues } from "@/lib/data";
 import { fmt, inr, SLOT_LABEL } from "@/lib/format";
 import { requireUser } from "@/lib/session";
-import type { Slot } from "@/lib/types";
+import type { Item } from "@/lib/types";
 import { Msg, Steps, type SP } from "@/lib/ui";
 import { Submit } from "@/lib/submit";
 
@@ -15,21 +16,23 @@ export default async function BookReview({ searchParams }: { searchParams: SP })
   const { dmy } = await fmt();
   const user = await requireUser();
   const sp = await searchParams;
-  const state = { t: sp.t ?? "D", from: sp.from ?? "", to: sp.to ?? sp.from ?? "", v: sp.v ?? "" };
-  const back = `/book?${new URLSearchParams(state)}`;
+  const state = { c: sp.c ?? "", ...(sp.from && { from: sp.from }), ...(sp.to && { to: sp.to }), ...(sp.th && { th: sp.th }) };
   const [venues, sectors, households] = await Promise.all([getVenues(), getSectors(), getHouseholds(user.role === "admin" ? undefined : user.sectorId!)]);
-  const selected = venues.filter((v) => v.active && state.v.split(",").includes(v.id));
-  let items;
+  let items: Item[];
   try {
-    items = priceItems(selected, state.from, state.to, state.t === "X" ? "D" : (state.t as Slot));
+    items = cartItems(state.c, venues);
   } catch {
-    redirect(back);
+    redirect("/book");
   }
-  if (!items.length) redirect(back);
+  if (!items.length) redirect("/book");
+  const back = `/book?${new URLSearchParams(state)}`;
+  const selected = venues.filter((v) => items.some((i) => i.venueId === v.id));
   const hh = households.find((h) => h.id === sp.h);
   const term = (sp.q ?? "").toLowerCase();
   const matches = term ? households.filter((h) => `${h.hof} ${h.name} ${h.mobile}`.toLowerCase().includes(term)).slice(0, 8) : [];
   const capacity = selected.filter((v) => v.type === "hall").reduce((s, v) => s + v.capacity, 0);
+  const hasHall = selected.some((v) => v.type === "hall");
+  const thaalMax = thaalLimit(selected);
   const here = (o: Record<string, string>) => `/book/review?${new URLSearchParams({ ...state, ...(sp.h && { h: sp.h }), ...(sp.q && { q: sp.q }), ...o })}`;
   const sectorName = (id: string) => sectors.find((s) => s.id === id)?.name;
 
@@ -61,7 +64,8 @@ export default async function BookReview({ searchParams }: { searchParams: SP })
           <div className="stack">
             <label>Purpose<select name="purpose" form="book" defaultValue="Wedding">{PURPOSES.map((p) => <option key={p}>{p}</option>)}</select></label>
             <label>Expected guests<input name="guests" form="book" type="number" min={1} max={capacity || undefined} required /></label>
-            {capacity > 0 && <p className="alert info m0">Hall capacity for this booking: {capacity} guests.</p>}
+            {hasHall && <label>No. of thaal<input name="thaal" form="book" type="number" min={1} max={thaalMax || undefined} defaultValue={sp.th} required /></label>}
+            {thaalMax > 0 && <p className="alert info m0">Thaal limit for this booking: {thaalMax}.</p>}
           </div>
         </div>
       </div>

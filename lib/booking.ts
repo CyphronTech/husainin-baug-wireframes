@@ -1,4 +1,5 @@
 import type { DocumentReference, DocumentSnapshot, Transaction } from "firebase-admin/firestore";
+import { cartItems } from "./cart";
 import { getVenues } from "./data";
 import { db } from "./firebase-admin";
 import { dmy, inr, summary, today } from "./format";
@@ -38,22 +39,12 @@ const itemLockRefs = (items: Item[], venues: Venue[]) =>
 export const isLive = (l: Lock | undefined, now = new Date().toISOString()) => !!l && !(l.status === "pending" && l.holdUntil! < now);
 const liveSnap = (s: DocumentSnapshot) => s.exists && isLive(s.data() as Lock);
 
-function rateFor(v: Venue, slot: Slot, multiDay: boolean) {
-  const r = v.rates;
-  const rate = v.type === "room" ? r.perDay : slot === "M" ? r.morning : slot === "E" ? r.evening : multiDay && r.multiDay ? r.multiDay : r.fullDay;
-  if (rate == null) throw new Error(`No rate set for ${v.name}`);
-  return rate;
-}
+export const DEFAULT_MAX_THAAL = 100;
+export const maxThaal = (v: Venue) => v.maxThaal || DEFAULT_MAX_THAAL;
 
-/** Venues × dates → priced items. Used for the review screen and for the booking itself. */
-export function priceItems(venues: Venue[], from: string, to: string, slot: Slot): Item[] {
-  const dates = datesBetween(from, to);
-  return venues.flatMap((v) =>
-    dates.map((date) => {
-      const s: Slot = v.type === "room" ? "D" : slot;
-      return { venueId: v.id, venueName: v.name, date, slot: s, rate: rateFor(v, s, dates.length > 1) };
-    }),
-  );
+/** Thaal the selected halls hold together. 0 = no limit (no halls selected). */
+export function thaalLimit(venues: Venue[]) {
+  return venues.filter((v) => v.type === "hall").reduce((a, v) => a + maxThaal(v), 0);
 }
 
 /** Must be called before any tx writes (Firestore: all reads first). */
@@ -78,16 +69,23 @@ const describe = (l: Lock, venues: Venue[]) => `${venues.find((v) => v.id === l.
 
 export async function createBooking(
   user: AppUser,
-  input: { venueIds: string[]; from: string; to: string; slot: Slot; sectorId: string; sectorName: string; household: Booking["household"]; event: Booking["event"] },
+  input: { cart: string; sectorId: string; sectorName: string; household: Booking["household"]; event: Booking["event"] },
 ) {
-  assertSlot(input.slot);
-  if (input.from < today()) throw new Error("Date is in the past");
   if (!Number.isInteger(input.event.guests) || input.event.guests < 1) throw new Error("Enter the expected guests");
-  const venues = (await getVenues()).filter((v) => v.active && input.venueIds.includes(v.id));
-  if (!venues.length) throw new Error("Select at least one venue");
+  const all = await getVenues();
+  const items = cartItems(input.cart, all);
+  if (!items.length) throw new Error("Select at least one venue");
+  const past = items.find((i) => i.date < today());
+  if (past) throw new Error(`${past.venueName} ${dmy(past.date)} is in the past. Remove it from the cart`);
+  const venues = all.filter((v) => items.some((i) => i.venueId === v.id));
   const capacity = venues.filter((v) => v.type === "hall").reduce((s, v) => s + v.capacity, 0);
   if (capacity && input.event.guests > capacity) throw new Error(`Expected guests exceed hall capacity of ${capacity}`);
-  const items = priceItems(venues, input.from, input.to, input.slot);
+  if (venues.some((v) => v.type === "hall")) {
+    const thaal = input.event.thaal ?? 0;
+    if (!Number.isInteger(thaal) || thaal < 1) throw new Error("Enter the number of thaal");
+    const limit = thaalLimit(venues);
+    if (limit && thaal > limit) throw new Error(`Thaal exceed the hall limit of ${limit}`);
+  }
   const refs = itemLockRefs(items, venues);
   const bookingRef = db.collection("bookings").doc();
   const holdUntil = new Date(Date.now() + HOLD_MINUTES * 60_000).toISOString();

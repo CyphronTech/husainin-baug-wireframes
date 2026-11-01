@@ -56,7 +56,7 @@ export default async function Bookings({ searchParams }: { searchParams: SP }) {
           days={days}
           locks={locks}
           sel={sp.sel}
-          freeHref={(v, d, s) => `/book?${new URLSearchParams({ t: s, from: d, to: d, v })}`}
+          freeHref={(v, d, s) => `/book?${new URLSearchParams({ from: d, c: `${v}_${d}_${s}` })}`}
           takenHref={(id) => q({ sel: id })}
           dim={(l) => !!sp.sector && l.kind === "booking" && l.sectorId !== sp.sector}
         />

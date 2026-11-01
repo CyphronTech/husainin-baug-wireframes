@@ -46,7 +46,7 @@ export function formatters(hijri = true) {
     const venues = [...new Set(items.map((i) => i.venueName))].join(", ");
     const dates = [...new Set(items.map((i) => i.date))].sort();
     const range = dates.length > 1 ? `${dmy(dates[0])} to ${dmy(dates.at(-1))}` : dmy(dates[0]);
-    return `${venues} · ${range} · ${SLOT_LABEL[items[0].slot]}${dates.length > 1 ? ` × ${dates.length}` : ""}`;
+    return `${venues} · ${range} · ${slotSummary(items)}`;
   };
   return { hijri, dmy, dmyhm, summary, monthStart, monthLabel };
 }
@@ -55,6 +55,13 @@ export const { dmy, dmyhm, summary } = formatters();
 /** Formatters for the viewer's calendar choice (users/{uid}.cal, set by the header toggle). Server components only. */
 // Kept on the user doc, not a cookie: Firebase's CDN forwards only the `__session` cookie to the app.
 export const fmt = cache(async () => formatters((await getUser())?.cal !== "en"));
+
+/** "Morning × 3", or "Morning + Full day" when a cart mixed slots. */
+export function slotSummary(items: Item[]) {
+  const slots = [...new Set(items.map((i) => SLOT_LABEL[i.slot]))];
+  const days = new Set(items.map((i) => i.date)).size;
+  return slots.join(" + ") + (slots.length === 1 && days > 1 ? ` × ${days}` : "");
+}
 
 export const toISODate = (d: Date) => d.toISOString().slice(0, 10);
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { deleteBlockAction, saveBlockAction, saveVenue } from "@/app/actions";
 import { BlockImport } from "../block-import";
+import { DEFAULT_MAX_THAAL, maxThaal } from "@/lib/booking";
 import { DateField } from "@/lib/date-field";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
@@ -26,11 +27,11 @@ export default async function Venues({ searchParams }: { searchParams: SP }) {
       <div className="card">
         <h2>Halls and rooms</h2>
         <table>
-          <thead><tr><th>Name</th><th>Type</th><th>Capacity</th><th>Morning rate</th><th>Evening rate</th><th>Full-day rate</th><th>Per day (rooms)</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
+          <thead><tr><th>Name</th><th>Type</th><th>Capacity</th><th>Max thaal</th><th>Morning rate</th><th>Evening rate</th><th>Full-day rate</th><th>Per day (rooms)</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr></thead>
           <tbody>
             {venues.map((v) => (
               <tr key={v.id}>
-                <td>{v.name}</td><td>{v.type === "hall" ? "Hall" : "Room"}</td><td>{v.capacity}</td>
+                <td>{v.name}</td><td>{v.type === "hall" ? "Hall" : "Room"}</td><td>{v.capacity}</td><td>{v.type === "hall" ? maxThaal(v) : "—"}</td>
                 <td>{r(v.rates.morning)}</td><td>{r(v.rates.evening)}</td><td>{r(v.rates.fullDay)}</td><td>{r(v.rates.perDay)}</td>
                 <td><Badge s={v.active ? "active" : "inactive"} /></td>
                 <td><Link href={`?edit=${v.id}#edit`}>Edit</Link></td>
@@ -53,6 +54,7 @@ export default async function Venues({ searchParams }: { searchParams: SP }) {
             <div className="row">
               <label>Type<select name="type" defaultValue={e.type}><option value="hall">Hall</option><option value="room">Room</option></select></label>
               <label>Capacity (guests)<input name="capacity" type="number" defaultValue={e.capacity} /></label>
+              <label>Max thaal (halls)<input name="maxThaal" type="number" min={0} defaultValue={e.maxThaal || DEFAULT_MAX_THAAL} /></label>
             </div>
             <div className="row">
               <label>Morning slot time<input name="morningTime" defaultValue={e.morningTime} /></label>

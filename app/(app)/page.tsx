@@ -3,7 +3,7 @@ import { datesBetween, isLive } from "@/lib/booking";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { addDays } from "@/lib/calendar";
-import { fmt, inr, istMidnight, SLOT_LABEL, today } from "@/lib/format";
+import { fmt, inr, istMidnight, slotSummary, today } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Block, Booking, Lock } from "@/lib/types";
 import { Badge } from "@/lib/ui";
@@ -58,7 +58,7 @@ export default async function Dashboard() {
                 <tr key={b.id}>
                   <td>{dmy(b.items[0].date)}</td>
                   <td><Link href={`/bookings/${b.id}`}>{[...new Set(b.items.map((i) => i.venueName))].join(", ")}</Link></td>
-                  <td>{SLOT_LABEL[b.items[0].slot]}{b.items.length > 1 && ` × ${b.items.length}`}</td>
+                  <td>{slotSummary(b.items)}</td>
                   <td>{b.household.name}<div className="muted">HOF {b.household.hof}</div></td>
                   <td>{b.sectorName}</td>
                   <td><Badge s={b.status === "pending" ? "On hold" : b.status} /></td>
