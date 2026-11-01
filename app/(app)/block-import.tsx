@@ -23,7 +23,7 @@ export function BlockImport({ kind, label }: { kind: "miqaat" | "maintenance"; l
               if (!f) return;
               setBusy(true);
               const { readRows } = await import("@/lib/sheet"); // Excel parser only downloads when a file is picked
-              const parsed = (await readRows(f)).slice(1).map(([name = "", from = "", to = "", slot = "", codes = "", notes = ""]) => ({ name, from, to, slot, codes, notes }));
+              const parsed = (await readRows(f)).slice(1).map(([date = "", reason = ""]) => ({ date, reason }));
               const results = await previewBlocks(kind, parsed);
               setRows(parsed.map((r, i) => ({ ...r, result: results[i] })));
               setBusy(false);
@@ -35,10 +35,10 @@ export function BlockImport({ kind, label }: { kind: "miqaat" | "maintenance"; l
       {rows.length > 0 && (
         <>
           <table>
-            <thead><tr><th>Row</th><th>Name</th><th>From</th><th>To</th><th>Slot</th><th>Venues</th><th>Result</th></tr></thead>
-            <tbody>{rows.map((r, i) => <tr key={i}><td>{i + 1}</td><td>{r.name || "—"}</td><td>{r.from}</td><td>{r.to}</td><td>{r.slot}</td><td>{r.codes}</td><td>{r.result}</td></tr>)}</tbody>
+            <thead><tr><th>Row</th><th>Date</th><th>Reason</th><th>Result</th></tr></thead>
+            <tbody>{rows.map((r, i) => <tr key={i}><td>{i + 1}</td><td>{r.date}</td><td>{r.reason || "—"}</td><td>{r.result}</td></tr>)}</tbody>
           </table>
-          <p className="alert info m0">Rows that clash with a booking or another block are rejected and not imported.</p>
+          <p className="alert info m0">Each row blocks all active halls for the full day. Rows that clash with a booking or another block are rejected and not imported.</p>
           <form action={importBlocks} className="row">
             <input type="hidden" name="kind" value={kind} />
             <input type="hidden" name="rows" value={JSON.stringify(ok.map(({ result, ...r }) => r))} />

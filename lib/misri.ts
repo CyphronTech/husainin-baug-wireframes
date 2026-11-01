@@ -26,6 +26,14 @@ export function fromMisri(y: number, m: number, d = 1) {
   return new Date((n + d - 1 - EPOCH) * 864e5).toISOString().slice(0, 10);
 }
 
+/** DD/MM/YYYY (or YYYY-MM-DD, from Excel date cells) → YYYY-MM-DD; "" if not a real date. */
+export function dateToIso(s: string) {
+  const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  const iso = m ? `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}` : s;
+  const d = new Date(`${iso}T00:00:00Z`);
+  return !isNaN(+d) && d.toISOString().slice(0, 10) === iso ? iso : "";
+}
+
 /** English month names, fixed (Intl's en-GB gives "Sept", and server and browser could differ). */
 export const EN_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 /** YYYY-MM-DD → "01 Nov 2026". */
