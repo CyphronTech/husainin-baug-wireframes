@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Select } from "@/lib/dropdown";
 import { deleteBlockAction, saveBlockAction } from "@/app/actions";
 import { BlockImport } from "../block-import";
 import { DateField } from "@/lib/date-field";
@@ -55,7 +56,7 @@ export default async function Miqaats({ searchParams }: { searchParams: SP }) {
             <label>Miqaat name<input name="name" required defaultValue={e.name} /></label>
             <label>From date<DateField hijri={hijri} name="from" required defaultValue={e.from} /></label>
             <label>To date<DateField hijri={hijri} name="to" defaultValue={e.to} /></label>
-            <label>Slot<select name="slot" defaultValue={e.slot}><option value="D">Full day</option><option value="M">Morning</option><option value="E">Evening</option></select></label>
+            <Select label="Slot" name="slot" defaultValue={e.slot}><option value="D">Full day</option><option value="M">Morning</option><option value="E">Evening</option></Select>
           </div>
           <div className="row">{venues.map((v) => <label key={v.id} className="check"><input type="checkbox" name="venueIds" value={v.id} defaultChecked={e.venueIds?.includes(v.id)} />{v.name}</label>)}</div>
           <label>Notes<textarea name="notes" rows={2} defaultValue={e.notes} /></label>

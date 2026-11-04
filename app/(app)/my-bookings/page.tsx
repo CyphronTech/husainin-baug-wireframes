@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { Select } from "@/lib/dropdown";
 import { resendLink } from "@/app/actions";
 import { DateField } from "@/lib/date-field";
 import { getSectors, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { displayStatus, fmt, inr, slotSummary } from "@/lib/format";
 import { requireUser } from "@/lib/session";
-import type { Booking } from "@/lib/types";
+import type { Booking, Cancellation } from "@/lib/types";
 import { Badge, Msg, type SP } from "@/lib/ui";
 
 const STATUSES = ["On hold", "Confirmed", "Cancellation requested", "Cancelled", "Completed", "Expired", "Refund due"];
@@ -18,7 +19,9 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
   const isAdmin = user.role === "admin";
   const sectorId = isAdmin ? sp.sector : user.sectorId!;
   // shortcut: equality filter + in-memory filter/sort (no composite indexes); fine to a few thousand bookings per sector.
-  const all = rows<Booking>(await (sectorId ? db.collection("bookings").where("sectorId", "==", sectorId) : db.collection("bookings")).get());
+  const scoped = (name: string) => (sectorId ? db.collection(name).where("sectorId", "==", sectorId) : db.collection(name));
+  const [all, requests] = await Promise.all([scoped("bookings").get().then(rows<Booking>), scoped("cancellations").get().then(rows<Cancellation>)]);
+  requests.sort((a, b) => a.requestedAt.localeCompare(b.requestedAt));
   const sectors = isAdmin ? await getSectors() : [];
   const term = (sp.q ?? "").toLowerCase();
   const list = all
@@ -51,8 +54,8 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
           <label>Search<input name="q" defaultValue={sp.q} placeholder="Booking, household, HOF, venue" /></label>
           <label>From date<DateField hijri={hijri} name="from" defaultValue={sp.from} /></label>
           <label>To date<DateField hijri={hijri} name="to" defaultValue={sp.to} /></label>
-          <label>Status<select name="status" defaultValue={sp.status}><option value="">All</option>{STATUSES.map((s) => <option key={s}>{s}</option>)}</select></label>
-          {isAdmin && <label>Sector / Mohalla<select name="sector" defaultValue={sp.sector}><option value="">All</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>}
+          <Select label="Status" name="status" defaultValue={sp.status}><option value="">All</option>{STATUSES.map((s) => <option key={s}>{s}</option>)}</Select>
+          {isAdmin && <Select label="Sector / Mohalla" name="sector" defaultValue={sp.sector}><option value="">All</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select>}
           <button className="btn">Apply</button>
         </form>
       </div>
@@ -64,6 +67,7 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
             {list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((b) => {
               const dates = [...new Set(b.items.map((i) => i.date))];
               const mine = b.createdBy === user.uid;
+              const crs = requests.filter((c) => c.bookingId === b.id);
               return (
                 <tr key={b.id}>
                   <td><Link href={`/bookings/${b.id}`}>{b.no}</Link></td>
@@ -72,12 +76,18 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
                   <td>{dates.length > 1 ? `${dmy(dates[0])} – ${dmy(dates.at(-1))}` : dmy(dates[0])}</td>
                   <td>{slotSummary(b.items)}</td>
                   <td>{b.shown === "Expired" ? "—" : inr(b.amount)}</td>
-                  <td><Badge s={b.shown} /></td>
+                  <td>
+                    <Badge s={b.shown} />
+                    {crs.map((c) => (
+                      <div key={c.id} className="muted">{c.no}: {c.status === "awaiting" ? "Awaiting approval" : c.status} · by {c.requestedByName}{c.adminComment && ` — Admin: ${c.adminComment}`}</div>
+                    ))}
+                  </td>
                   <td>{mine ? "You" : b.createdByName}</td>
                   <td>
                     {b.receiptNo && <a href={b.receiptUrl ?? `/r/${b.id}/pdf`}>Receipt</a>}{" "}
                     {b.shown === "On hold" && <form className="inline" action={resendLink}><input type="hidden" name="id" value={b.id} /><button className="link">Resend link</button></form>}{" "}
-                    {b.shown === "Confirmed" && (mine || isAdmin) && <Link href={`/bookings/${b.id}/cancel`}>Request cancellation</Link>}
+                    {b.shown === "Confirmed" && (mine || isAdmin) && <Link href={`/bookings/${b.id}/cancel`}>Request cancellation</Link>}{" "}
+                    {isAdmin && crs.some((c) => c.status === "awaiting") && <Link href={`/bookings/${b.id}/cancel`}>Review</Link>}
                   </td>
                 </tr>
               );

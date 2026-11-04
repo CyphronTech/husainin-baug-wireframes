@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Select } from "@/lib/dropdown";
 import { saveHousehold } from "@/app/actions";
 import { getHouseholds, getSectors, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
@@ -6,6 +7,8 @@ import { requireUser } from "@/lib/session";
 import type { Booking, Household } from "@/lib/types";
 import { Msg, type SP } from "@/lib/ui";
 import { HouseholdImport } from "./import";
+
+const PAGE_SIZE = 20;
 
 export default async function Households({ searchParams }: { searchParams: SP }) {
   const user = await requireUser();
@@ -22,6 +25,13 @@ export default async function Households({ searchParams }: { searchParams: SP })
   const e: Partial<Household> = households.find((h) => h.id === sp.edit) ?? { whatsappConsent: true };
   const sectorName = sectors.find((s) => s.id === sectorId)?.name;
   const keep = (o: Record<string, string>) => `?${new URLSearchParams({ ...(sp.sector && { sector: sp.sector }), ...(sp.back && { back: sp.back }), ...o })}`;
+  const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  const page = Math.min(Math.max(1, Math.floor(Number(sp.page)) || 1), pages);
+  const first = (page - 1) * PAGE_SIZE;
+  const shown = list.slice(first, first + PAGE_SIZE);
+  const inList = (o: Record<string, string>) => keep({ ...(sp.q && { q: sp.q }), ...(page > 1 && { page: String(page) }), ...o });
+  const step = (to: number, label: string) =>
+    to < 1 || to > pages ? <button className="btn" disabled>{label}</button> : <Link prefetch={false} scroll={false} className="btn" href={inList({ page: String(to) })}>{label}</Link>;
 
   return (
     <>
@@ -29,7 +39,7 @@ export default async function Households({ searchParams }: { searchParams: SP })
       <Msg msg={sp.msg} />
       {isAdmin && (
         <div className="card">
-          <form className="row">{sp.back && <input type="hidden" name="back" value={sp.back} />}<label>Sector / Mohalla<select name="sector" defaultValue={sp.sector}><option value="">Select…</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label><button className="btn">Open</button></form>
+          <form className="row">{sp.back && <input type="hidden" name="back" value={sp.back} />}<Select label="Sector / Mohalla" name="sector" defaultValue={sp.sector}><option value="">Select…</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select><button className="btn">Open</button></form>
         </div>
       )}
       {sectorId && (
@@ -62,15 +72,21 @@ export default async function Households({ searchParams }: { searchParams: SP })
             <table>
               <thead><tr><th>HOF ID</th><th>Name</th><th>Mobile</th><th>WhatsApp consent</th><th>Bookings</th><th><span className="sr-only">Actions</span></th></tr></thead>
               <tbody>
-                {list.map((h) => (
+                {shown.map((h) => (
                   <tr key={h.id}>
                     <td>{h.hof}</td><td>{h.name}</td><td>{h.mobile}</td><td>{h.whatsappConsent ? "Yes" : "No"}</td>
                     <td>{bookings.filter((b) => b.household.hof === h.hof).length}</td>
-                    <td><Link href={keep({ edit: h.id })}>Edit</Link></td>
+                    <td><Link href={inList({ edit: h.id })}>Edit</Link></td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            {pages > 1 && (
+              <nav className="top m0 mt-3" aria-label="Household pages">
+                <span className="muted">{first + 1}–{first + shown.length} of {list.length}</span>
+                <span className="row items-center">{step(page - 1, "← Prev")}<span>Page {page} of {pages}</span>{step(page + 1, "Next →")}</span>
+              </nav>
+            )}
           </div>
         </>
       )}

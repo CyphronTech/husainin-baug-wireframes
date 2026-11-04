@@ -73,7 +73,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
           {status === "Expired" && <p className="alert info m0">The hold lapsed without payment. <Link href="/book">Start a new booking</Link>.</p>}
           {status === "Refund due" && <p className="alert warn m0">Paid after the hold expired and the slot was taken. Refund {inr(b.amount)} manually (Razorpay {b.payment?.paymentId}).</p>}
           {canAct && status === "Confirmed" && <div><Link className="btn danger" href={`/bookings/${id}/cancel`}>Request cancellation</Link></div>}
-          {crs.map((c) => <p key={c.id} className="muted m0">{c.no}: <Badge s={c.status} /> {c.reason}{c.adminComment && ` — Admin: ${c.adminComment}`}</p>)}
+          {crs.map((c) => <p key={c.id} className="muted m0">{c.no}: <Badge s={c.status} /> {c.reason}{c.adminComment && ` — Admin: ${c.adminComment}`}{user.role === "admin" && c.status === "awaiting" && <> <Link href={`/bookings/${id}/cancel`}>Review</Link></>}</p>)}
         </div>
 
         <div className="card">

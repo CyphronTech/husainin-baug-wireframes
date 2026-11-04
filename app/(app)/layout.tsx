@@ -2,10 +2,11 @@ import { Fragment } from "react";
 import { logout, setCalendar } from "@/app/actions";
 import { CalButtons } from "@/lib/cal-toggle";
 import { getSectors } from "@/lib/data";
+import { TrackPage } from "@/lib/modal";
 import { requireUser } from "@/lib/session";
 import { Nav } from "./nav";
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({ children, modal }: { children: React.ReactNode; modal: React.ReactNode }) {
   const [user, sectors] = await Promise.all([requireUser(), getSectors()]);
   const sector = user.sectorId ? sectors.find((s) => s.id === user.sectorId)?.name : null;
   const hijri = user.cal !== "en";
@@ -27,6 +28,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
         {/* Remount on toggle so uncontrolled fields (month selects, date pickers) pick up the new calendar. */}
         <Fragment key={hijri ? "hijri" : "en"}>{children}</Fragment>
+        {modal}
+        <TrackPage />
       </div>
     </div>
   );

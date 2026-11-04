@@ -192,3 +192,52 @@ a.pill:hover { border-color: var(--text); }
 .skel-short { width: 40%; }
 @keyframes skel { to { opacity: 0.45; } }
 @media (prefers-reduced-motion: reduce) { .skel, .caltoggle-track:has(:disabled) .caltoggle-thumb { animation: none; } .caltoggle-thumb { transition: none; } }
+
+/* Booking popups (lib/modal.tsx) */
+html:has(dialog.modal[open]) { overflow: hidden; }
+dialog.modal { width: min(1040px, calc(100vw - 2 * var(--space-4))); max-width: none; max-height: calc(100dvh - 2 * var(--space-4)); margin: auto; padding: var(--space-5); background: var(--bg); color: var(--text); border: 0; border-radius: var(--radius-lg); overflow-y: auto; }
+dialog.modal::backdrop { background: rgb(0 0 0 / 0.5); }
+/* Short form popups: narrower, one surface instead of a card inside the dialog */
+dialog.modal:has(> .modal-form) { width: min(640px, calc(100vw - 2 * var(--space-4))); background: var(--surface); }
+.modal-form h2 { min-height: var(--control-h); margin-bottom: var(--space-2); }
+.modal-form > form { gap: var(--space-5); }
+.modal-form fieldset { border: 0; padding: 0; min-width: 0; }
+.modal-form legend { padding: 0 0 var(--space-2); font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--text); }
+.modal-form:has(input[name="type"][value="room"]:checked) .hall-only, .modal-form:has(input[name="type"][value="hall"]:checked) .room-only { display: none; }
+.modal-actions { position: sticky; bottom: calc(-1 * var(--space-5)); z-index: 1; margin-bottom: calc(-1 * var(--space-5)) !important; padding: var(--space-3) 0 var(--space-5); background: var(--surface); border-top: 1px solid var(--line); }
+.req { color: var(--danger); }
+.pill.incart { background: var(--warn-bg); border-color: var(--highlight); color: var(--text); }
+/* View-only calendar: free slots look flat, not like buttons */
+.cal-view .pill:not(.pending, .confirmed, .block) { background: var(--muted-bg); border-color: var(--muted-bg); color: var(--muted-fg); }
+
+/* Collapsible (lib/ui.tsx) */
+.collapsible > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 44px; cursor: pointer; border-radius: var(--radius); }
+.collapsible > summary::-webkit-details-marker { display: none; }
+.collapsible > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.collapsible > summary > * { margin: 0; }
+.collapsible > summary > h3 { font-size: var(--text-base); }
+.collapsible > summary::after { content: ""; flex: none; width: 8px; height: 8px; margin-right: var(--space-1); border: solid var(--text-muted); border-width: 0 2px 2px 0; transform: rotate(45deg); transition: transform 0.15s ease-out; }
+.collapsible[open] > summary::after { transform: rotate(-135deg); }
+.collapsible[open] > summary { margin-bottom: var(--space-3); }
+.collapsible .collapsible { margin-top: var(--space-4); padding-top: var(--space-2); border-top: 1px solid var(--line); }
+@media (prefers-reduced-motion: reduce) { .collapsible > summary::after { transition: none; } }
+/* Dropdowns (lib/dropdown.tsx) */
+.ms[aria-busy="true"] summary { opacity: 0.6; }
+.ms-panel label.check:has(:checked) { font-weight: var(--weight-semibold); }
+.ms-panel input { accent-color: var(--accent); }
+.row > .ms-field { flex: 1 1 160px; min-width: 0; }
+.ms-field { display: grid; gap: var(--space-1); font-size: var(--text-sm); color: var(--text-muted); }
+.ms { position: relative; }
+.ms summary { list-style: none; display: flex; align-items: center; min-height: var(--control-h); padding: var(--space-2) 36px var(--space-2) 10px; border: 1px solid var(--border-strong); border-radius: var(--radius); color: var(--text); font-size: var(--text-base); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235f6362' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E") no-repeat right 12px center; }
+.ms summary::-webkit-details-marker { display: none; }
+.ms summary:hover { border-color: var(--text); }
+.ms summary:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgb(31 94 87 / 0.25); }
+.ms-panel { position: absolute; z-index: 5; top: calc(100% + var(--space-1)); left: 0; min-width: 100%; max-width: calc(100vw - 2 * var(--space-5)); max-height: 360px; overflow-y: auto; display: grid; gap: var(--space-1); padding: var(--space-2); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 8px 24px rgb(0 0 0 / 0.14); }
+.ms-panel label.check { min-height: 36px; padding: 0 var(--space-2); border-radius: var(--radius-sm); cursor: pointer; white-space: nowrap; }
+.ms-panel label.check:hover { background: var(--muted-bg); }
+.card:has(.ms[open]) { overflow: visible; } /* .card clips overflow, which would cut the open panel */
+.checkoutbar { position: sticky; bottom: 0; z-index: 1; display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); margin-bottom: 0; }
+dialog.modal .checkoutbar { bottom: calc(-1 * var(--space-5)); border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+dialog.modal .top { flex-wrap: wrap; }
+dialog.modal .top > span { white-space: nowrap; }
+.modal-x { position: sticky; top: 0; float: right; z-index: 1; width: var(--control-h); height: var(--control-h); font-size: var(--text-xl); line-height: 1; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: var(--radius-full); cursor: pointer; }

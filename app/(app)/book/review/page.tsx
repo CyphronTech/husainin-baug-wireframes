@@ -1,3 +1,5 @@
+import Form from "next/form";
+import { Select } from "@/lib/dropdown";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { bookFromWizard } from "@/app/actions";
@@ -16,7 +18,7 @@ export default async function BookReview({ searchParams }: { searchParams: SP })
   const { dmy } = await fmt();
   const user = await requireUser();
   const sp = await searchParams;
-  const state = { c: sp.c ?? "", ...(sp.from && { from: sp.from }), ...(sp.to && { to: sp.to }), ...(sp.th && { th: sp.th }) };
+  const state = { c: sp.c ?? "", ...(sp.from && { from: sp.from }), ...(sp.to && { to: sp.to }), ...(sp.hall && { hall: sp.hall }), ...(sp.th && { th: sp.th }) };
   const [venues, sectors, households] = await Promise.all([getVenues(), getSectors(), getHouseholds(user.role === "admin" ? undefined : user.sectorId!)]);
   let items: Item[];
   try {
@@ -25,7 +27,7 @@ export default async function BookReview({ searchParams }: { searchParams: SP })
     redirect("/book");
   }
   if (!items.length) redirect("/book");
-  const back = `/book?${new URLSearchParams(state)}`;
+  const back = `/book/slots?${new URLSearchParams(state)}`;
   const selected = venues.filter((v) => items.some((i) => i.venueId === v.id));
   const hh = households.find((h) => h.id === sp.h);
   const term = (sp.q ?? "").toLowerCase();
@@ -39,17 +41,17 @@ export default async function BookReview({ searchParams }: { searchParams: SP })
   return (
     <>
       <div className="top"><h1>New booking · household and review</h1></div>
-      <Steps on={hh ? 4 : 2} />
+      <Steps on={hh ? 4 : 3} />
       <Msg msg={sp.msg} />
       <div className="grid g2e mb-5">
         <div className="card">
-          <h2>2. Select household</h2>
-          <form className="row mb-3">
+          <h2>Select household</h2>
+          <Form action="/book/review" className="row mb-3">
             {Object.entries(state).map(([k, val]) => <input key={k} type="hidden" name={k} value={val} />)}
             {sp.h && <input type="hidden" name="h" value={sp.h} />}
             <label>Search household (HOF ID, name or mobile)<input name="q" defaultValue={sp.q} /></label>
             <button className="btn">Search</button>
-          </form>
+          </Form>
           {[...(hh ? [hh] : []), ...matches.filter((m) => m.id !== hh?.id)].map((h) => (
             <Link key={h.id} className={`pick${h.id === hh?.id ? " on" : ""}`} href={here({ h: h.id })}>
               <b>{h.name}</b><br />HOF {h.hof} · Mobile {h.mobile}<br />{sectorName(h.sectorId)} · WhatsApp consent: {h.whatsappConsent ? "Yes" : "No"}
@@ -60,9 +62,9 @@ export default async function BookReview({ searchParams }: { searchParams: SP })
         </div>
 
         <div className="card">
-          <h2>3. Event details</h2>
+          <h2>Event details</h2>
           <div className="stack">
-            <label>Purpose<select name="purpose" form="book" defaultValue="Wedding">{PURPOSES.map((p) => <option key={p}>{p}</option>)}</select></label>
+            <Select label="Purpose" name="purpose" form="book" defaultValue="Wedding">{PURPOSES.map((p) => <option key={p}>{p}</option>)}</Select>
             <label>Expected guests<input name="guests" form="book" type="number" min={1} max={capacity || undefined} required /></label>
             {hasHall && <label>No. of thaal<input name="thaal" form="book" type="number" min={1} max={thaalMax || undefined} defaultValue={sp.th} required /></label>}
             {thaalMax > 0 && <p className="alert info m0">Thaal limit for this booking: {thaalMax}.</p>}
@@ -71,7 +73,7 @@ export default async function BookReview({ searchParams }: { searchParams: SP })
       </div>
 
       <div className="card">
-        <h2>4. Review</h2>
+        <h2>Review</h2>
         <table>
           <thead><tr><th>Venue</th><th>Date</th><th>Slot</th><th>Amount</th></tr></thead>
           <tbody>

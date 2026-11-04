@@ -2,6 +2,16 @@ export type Role = "admin" | "sector";
 /** M = morning, E = evening, D = full day (both hall slots, or a room day) */
 export type Slot = "M" | "E" | "D";
 
+/** Spreadsheet Morning/Evening cells (Y = that slot is blocked). Both blank = full day, so two-column sheets keep working. Y/N on neither = recorded, blocks nothing. */
+export function slotFromCells(morning: string, evening: string): { slot: Slot; blocking: boolean } | null {
+  const m = morning.trim().toUpperCase();
+  const e = evening.trim().toUpperCase();
+  if (!m && !e) return { slot: "D", blocking: true };
+  if (!["Y", "N"].includes(m) || !["Y", "N"].includes(e)) return null;
+  if (m === "N" && e === "N") return { slot: "D", blocking: false };
+  return { slot: m === "N" ? "E" : e === "N" ? "M" : "D", blocking: true };
+}
+
 export type Venue = {
   id: string;
   name: string;
