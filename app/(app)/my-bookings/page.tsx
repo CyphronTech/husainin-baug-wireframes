@@ -9,6 +9,7 @@ import type { Booking } from "@/lib/types";
 import { Badge, Msg, type SP } from "@/lib/ui";
 
 const STATUSES = ["On hold", "Confirmed", "Cancellation requested", "Cancelled", "Completed", "Expired", "Refund due"];
+const PAGE_SIZE = 25;
 
 export default async function MyBookings({ searchParams }: { searchParams: SP }) {
   const { dmy, hijri } = await fmt();
@@ -32,6 +33,14 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
       );
     })
     .sort((a, b) => b.items[0].date.localeCompare(a.items[0].date));
+  const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  const page = Math.min(Math.max(1, parseInt(sp.page ?? "") || 1), pages);
+  const pageHref = (n: number) => {
+    const q = new URLSearchParams(sp as Record<string, string>);
+    q.delete("msg");
+    q.set("page", String(n));
+    return `/my-bookings?${q}`;
+  };
 
   return (
     <>
@@ -52,7 +61,7 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
         <table>
           <thead><tr><th>Booking</th><th>Household</th><th>Venue(s)</th><th>Date(s)</th><th>Slot</th><th>Amount</th><th>Status</th><th>Created by</th><th><span className="sr-only">Actions</span></th></tr></thead>
           <tbody>
-            {list.map((b) => {
+            {list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((b) => {
               const dates = [...new Set(b.items.map((i) => i.date))];
               const mine = b.createdBy === user.uid;
               return (
@@ -75,6 +84,13 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
             })}
           </tbody>
         </table>
+        {pages > 1 && (
+          <nav className="row items-center justify-end mt-3" aria-label="Pagination">
+            {page > 1 ? <Link className="btn" href={pageHref(page - 1)}>Previous</Link> : <button className="btn" disabled>Previous</button>}
+            <span className="muted">Page {page} of {pages}</span>
+            {page < pages ? <Link className="btn" href={pageHref(page + 1)}>Next</Link> : <button className="btn" disabled>Next</button>}
+          </nav>
+        )}
         <p className="alert info">You can request cancellation only for bookings you created.</p>
       </div>
     </>
