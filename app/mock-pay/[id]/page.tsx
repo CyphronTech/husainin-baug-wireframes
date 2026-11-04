@@ -12,11 +12,12 @@ import { Submit } from "@/lib/submit";
 // Signed-in staff only: on a public deployment anyone holding a link could otherwise mark a booking paid.
 export default async function MockPay({ params }: { params: Promise<{ id: string }> }) {
   if (!mockPayments) notFound();
-  await requireUser();
+  const user = await requireUser();
   const { id } = await params;
   const q = await db.collection("bookings").where("payment.linkId", "==", id).limit(1).get();
   if (q.empty) notFound();
   const b = q.docs[0].data() as Booking;
+  if (user.role !== "admin" && b.sectorId !== user.sectorId) notFound();
 
   return (
     <main className="login">

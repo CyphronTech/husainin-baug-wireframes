@@ -4,6 +4,7 @@ import { DateField } from "@/lib/date-field";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { fmt, inr, today } from "@/lib/format";
+import { dateToIso } from "@/lib/misri";
 import { requireAdmin } from "@/lib/session";
 import { EXPENSE_CATEGORIES, type Booking, type Expense } from "@/lib/types";
 import { Msg, type SP } from "@/lib/ui";
@@ -14,7 +15,7 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
   await requireAdmin();
   const sp = await searchParams;
   // Month (Misri or English, per the header toggle) as its first day; old YYYY-MM links still work.
-  const month = monthStart(sp.month?.length === 7 ? `${sp.month}-01` : sp.month || today());
+  const month = monthStart(dateToIso(sp.month?.length === 7 ? `${sp.month}-01` : sp.month ?? "") || today());
   const end = monthStart(month, 1);
   const inRange = (d: string) => d >= month && d < end;
   const months = Array.from({ length: 15 }, (_, i) => monthStart(today(), i - 12));

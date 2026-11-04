@@ -32,7 +32,7 @@ export default async function Payments({ searchParams }: { searchParams: SP }) {
           <label>From date<DateField hijri={hijri} name="from" defaultValue={sp.from} /></label>
           <label>To date<DateField hijri={hijri} name="to" defaultValue={sp.to} /></label>
           <label>Sector / Mohalla<select name="sector" defaultValue={sp.sector}><option value="">All</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
-          <label>Status<select name="status" defaultValue={sp.status}><option value="">All</option><option value="paid">Paid</option><option value="pending">Pending link</option><option value="refunded">Refunded</option></select></label>
+          <label>Status<select name="status" defaultValue={sp.status}><option value="">All</option><option value="paid">Paid</option><option value="pending">Pending link</option><option value="refunded">Refunded</option><option value="refund due">Refund due</option></select></label>
           <button className="btn">Apply</button>
         </form>
       </div>

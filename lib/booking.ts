@@ -152,7 +152,7 @@ export async function markPaid(linkId: string, paymentId: string, method: string
     tx.update(ref, { ...pay, status: "confirmed", receiptNo: no });
     lockRefs.forEach((l) => tx.update(l, { status: "confirmed" }));
     audit(tx, null, "booking.paid", { bookingId: b.id, paymentId, receiptNo: no });
-    return { ...b, receiptNo: no };
+    return { ...b, receiptNo: no, payment: { ...b.payment!, paymentId, method, paidAt } }; // the receipt PDF prints these
   });
   if (!booking) return;
   const receiptUrl = await storeReceipt(booking);
@@ -240,7 +240,7 @@ export async function decideCancellation(admin: AppUser, crId: string, approve: 
     tx.update(crRef, { status: approve ? "approved" : "rejected", adminComment: comment, ...(approve && refund ? { refund: { ...refund, recordedBy: admin.name } } : {}) });
     if (approve) itemLockRefs(b.items, venues).forEach((l) => tx.delete(l)); // confirmed locks are never overwritten, so these are ours
     tx.update(bRef, { cancelRequested: false, ...(approve ? { status: "cancelled" } : {}) });
-    audit(tx, admin, approve ? "cancellation.approve" : "cancellation.reject", { crId, bookingId: b.id, comment, refund });
+    audit(tx, admin, approve ? "cancellation.approve" : "cancellation.reject", { crId, bookingId: b.id, comment, refund: (approve && refund) || null }); // Firestore rejects undefined
     return approve ? b : null;
   });
   if (booking) await notify(booking, "cancelled", refund?.amount);

@@ -5,6 +5,7 @@ import { cartItems, toCart, toggleSlot } from "@/lib/cart";
 import { DateField } from "@/lib/date-field";
 import { getVenues } from "@/lib/data";
 import { fmt, inr, SLOT_LABEL, today } from "@/lib/format";
+import { dateToIso } from "@/lib/misri";
 import { requireUser } from "@/lib/session";
 import type { Item, Slot } from "@/lib/types";
 import { Msg, Steps, type SP } from "@/lib/ui";
@@ -16,9 +17,11 @@ export default async function BookStep1({ searchParams }: { searchParams: SP }) 
   const { hijri, dmy } = await fmt();
   await requireUser();
   const sp = await searchParams;
-  const from = sp.from && sp.from > today() ? sp.from : today();
+  const fromDate = dateToIso(sp.from ?? ""); // URL values: a bad date falls back
+  const from = fromDate > today() ? fromDate : today();
   const lastDay = addDays(from, MAX_DAYS_SHOWN - 1);
-  const wanted = sp.to && sp.to >= from ? sp.to : addDays(from, 6);
+  const toDate = dateToIso(sp.to ?? "");
+  const wanted = toDate >= from ? toDate : addDays(from, 6);
   const to = wanted > lastDay ? lastDay : wanted;
 
   const [allVenues, { days, locks }] = await Promise.all([getVenues(), loadWeek(from, to)]);
