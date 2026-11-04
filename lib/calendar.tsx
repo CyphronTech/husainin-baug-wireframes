@@ -17,9 +17,9 @@ export async function loadWeek(start: string) {
 export function Legend({ picked }: { picked?: boolean }) {
   return (
     <div className="legend">
-      {picked && <span className="pill picked">Selected</span>}
-      <span className="pill">Available</span><span className="pill pending">On hold (payment pending)</span>
-      <span className="pill confirmed">Booked</span><span className="pill block">Unavailable / Miqaat</span>
+      <span className="pill">Free</span>{picked && <span className="pill picked">✓ Your choice</span>}
+      <span className="pill pending">Waiting for payment</span>
+      <span className="pill confirmed">Booked</span><span className="pill block">Closed / Miqaat</span>
     </div>
   );
 }
@@ -38,11 +38,14 @@ export function Calendar(p: {
     const id = `${venueId}_${date}_${slot}`;
     const l = p.locks.get(id);
     if (!l) {
-      const cls = `pill${p.picked?.(venueId, date, slot) ? " picked" : ""}`;
-      return p.freeHref ? <Link key={id} className={cls} href={p.freeHref(venueId, date, slot)}>{label}</Link> : <span key={id} className={cls}>{label}</span>;
+      const on = p.picked?.(venueId, date, slot);
+      const cls = `pill${on ? " picked" : ""}`;
+      const text = on ? `✓ ${label}` : label;
+      return p.freeHref ? <Link key={id} className={cls} href={p.freeHref(venueId, date, slot)}>{text}</Link> : <span key={id} className={cls}>{text}</span>;
     }
     const cls = `pill ${l.status}${p.dim?.(l) ? " other" : ""}${p.sel === id ? " sel" : ""}`;
-    return p.takenHref ? <Link key={id} className={cls} href={p.takenHref(id)}>{label}</Link> : <span key={id} className={cls}>{label}</span>;
+    const title = l.status === "pending" ? "Waiting for payment" : l.status === "confirmed" ? "Booked" : "Closed";
+    return p.takenHref ? <Link key={id} className={cls} href={p.takenHref(id)} title={title}>{label}</Link> : <span key={id} className={cls} title={title}>{label}</span>;
   };
   return (
     <table className="cal">
@@ -53,7 +56,7 @@ export function Calendar(p: {
         {p.venues.map((v) => (
           <tr key={v.id}>
             <td><b>{v.name}</b><div className="muted">{v.type === "hall" ? "Hall" : "Room"}</div></td>
-            {p.days.map((d) => <td key={d}>{v.type === "hall" ? [pill(v.id, d, "M", "M"), pill(v.id, d, "E", "E")] : pill(v.id, d, "D", "Day")}</td>)}
+            {p.days.map((d) => <td key={d}>{v.type === "hall" ? [pill(v.id, d, "M", "Morning"), pill(v.id, d, "E", "Evening")] : pill(v.id, d, "D", "Full day")}</td>)}
           </tr>
         ))}
       </tbody>

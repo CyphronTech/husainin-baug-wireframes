@@ -51,7 +51,7 @@ export async function logout() {
 
 export async function bookFromWizard(f: FormData) {
   const user = await requireUser();
-  const state = new URLSearchParams({ t: s(f, "t"), from: s(f, "from"), to: s(f, "to"), v: s(f, "v"), h: s(f, "h") });
+  const state = new URLSearchParams({ t: s(f, "t"), from: s(f, "from"), to: s(f, "to"), v: s(f, "v"), h: s(f, "h"), p: s(f, "p"), g: s(f, "g") });
   await run(`/book/review?${state}`, async () => {
     const hh = (await db.doc(`households/${s(f, "h")}`).get()).data() as Household | undefined;
     if (!hh || (user.role !== "admin" && hh.sectorId !== user.sectorId)) throw new Error("Select a household");
@@ -64,7 +64,7 @@ export async function bookFromWizard(f: FormData) {
       sectorId: sector.id,
       sectorName: sector.name,
       household: { name: hh.name, hof: hh.hof, mobile: hh.mobile, whatsappConsent: hh.whatsappConsent },
-      event: { purpose: s(f, "purpose"), guests: n(f, "guests") ?? 0 },
+      event: { purpose: s(f, "p"), guests: n(f, "g") ?? 0 },
     });
     await sendLink(id).catch(() => {}); // booking + hold stand even if Razorpay is down; retry from booking page
     return `/bookings/${id}`;

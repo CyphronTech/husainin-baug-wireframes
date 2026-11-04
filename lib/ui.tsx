@@ -6,7 +6,7 @@ export function Msg({ msg }: { msg?: string }) {
 export const Badge = ({ s }: { s: string }) => <span className={`badge ${s.toLowerCase().replace(/ /g, "-")}`}>{s[0].toUpperCase() + s.slice(1)}</span>;
 export type SP = Promise<Record<string, string | undefined>>;
 
-const STEPS = ["Venue & date", "Household", "Event details", "Review & payment link"];
+const STEPS = ["When & where", "Who is it for", "Check & confirm"];
 export const Steps = ({ on }: { on: number }) => (
   <div className="card steps">
     {STEPS.map((label, i) => (

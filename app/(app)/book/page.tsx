@@ -1,67 +1,90 @@
 import Link from "next/link";
-import { priceItems } from "@/lib/booking";
 import { addDays, Calendar, Legend, loadWeek } from "@/lib/calendar";
+import { AutoForm } from "@/lib/client";
 import { getVenues } from "@/lib/data";
-import { dmy, inr, SLOT_LABEL, today } from "@/lib/format";
+import { dmy, inr, SLOT_LABEL } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Slot } from "@/lib/types";
 import { Msg, Steps, type SP } from "@/lib/ui";
+import { qs, readWizard, slotOf, wizardItems } from "@/lib/wizard";
 
-/** Wizard state lives in the URL: t (D/M/E/X = multiple days), from, to, vt (venue type), v (venue ids). */
+const TYPES: [string, string][] = [["M", "Morning"], ["E", "Evening"], ["D", "Full day"], ["X", "Several days"]];
+
+/** Step 1 — when & where. Wizard state lives in the URL (lib/wizard.ts); w = first day of the visible week, vt = venue filter. */
 export default async function BookStep1({ searchParams }: { searchParams: SP }) {
   await requireUser();
   const sp = await searchParams;
-  const t = sp.t ?? "D";
-  const from = sp.from || today();
-  const to = t === "X" ? sp.to || from : from;
-  const picked = (sp.v ?? "").split(",").filter(Boolean);
-  const slot: Slot = t === "X" ? "D" : (t as Slot);
+  const w = readWizard(sp);
+  const week = sp.w || w.from;
+  const picked = w.v.split(",").filter(Boolean);
+  const slot = slotOf(w);
 
-  const [allVenues, { days, locks }] = await Promise.all([getVenues(), loadWeek(from)]);
-  const active = allVenues.filter((v) => v.active);
-  const shown = active.filter((v) => !sp.vt || v.type === sp.vt);
-  const selected = active.filter((v) => picked.includes(v.id));
-  let items: ReturnType<typeof priceItems> = [];
+  const [allVenues, { days, locks }] = await Promise.all([getVenues(), loadWeek(week)]);
+  const shown = allVenues.filter((v) => v.active && (!sp.vt || v.type === sp.vt));
+  let items: ReturnType<typeof wizardItems>["items"] = [];
+  let selected: ReturnType<typeof wizardItems>["selected"] = [];
   let error = "";
   try {
-    items = selected.length ? priceItems(selected, from, to, slot) : [];
+    ({ items, selected } = wizardItems(w, allVenues));
   } catch (e) {
     error = (e as Error).message;
   }
 
-  const state = { t, from, to, ...(sp.vt && { vt: sp.vt }), v: picked.join(",") };
-  const href = (o: Record<string, string>) => `/book?${new URLSearchParams({ ...state, ...o })}`;
-  const inRange = (d: string) => d >= from && d <= to;
+  const base = { t: w.t, from: w.from, to: w.to, v: w.v, vt: sp.vt, w: week };
+  const href = (o: Record<string, string | undefined>) => `/book?${qs({ ...base, ...o })}`;
+  const inRange = (d: string) => d >= w.from && d <= w.to;
   // Clicking a free slot picks that venue; on a new date (single-day types) it starts a fresh selection.
   const freeHref = (venueId: string, date: string, s: Slot) => {
-    const sameDate = t === "X" || date === from;
+    const sameDate = w.t === "X" || date === w.from;
     const v = sameDate ? [...new Set([...picked, venueId])] : [venueId];
-    const nt = s === "D" || t === "D" || t === "X" ? t : s;
-    return href({ t: nt, from: t === "X" ? from : date, to: t === "X" ? to : date, v: v.join(",") });
+    const nt = s === "D" || w.t === "D" || w.t === "X" ? w.t : s;
+    return href({ t: nt, from: w.t === "X" ? w.from : date, to: w.t === "X" ? w.to : date, v: v.join(",") });
   };
+  const total = items.reduce((a, i) => a + i.rate, 0);
+  const when = w.from === w.to ? dmy(w.from) : `${dmy(w.from)} to ${dmy(w.to)}`;
 
   return (
     <>
       <div className="top"><h1>New booking</h1></div>
       <Steps on={1} />
       <Msg msg={sp.msg || error} />
-      <div className="card">
-        <h2>Search</h2>
-        <form className="row">
-          <input type="hidden" name="v" value={state.v} />
-          <label>Booking type<select name="t" defaultValue={t}><option value="D">Full day</option><option value="M">Morning slot</option><option value="E">Evening slot</option><option value="X">Multiple days</option></select></label>
-          <label>From date<input type="date" name="from" defaultValue={from} /></label>
-          <label>To date (multiple days)<input type="date" name="to" defaultValue={to} /></label>
-          <label>Venue type<select name="vt" defaultValue={sp.vt}><option value="">Halls &amp; rooms</option><option value="hall">Halls</option><option value="room">Rooms</option></select></label>
-          <button className="btn">Search</button>
-        </form>
+
+      <div className="card when">
+        <div>
+        <h2>1. What time of day?</h2>
+        <div className="toggles">
+          {TYPES.map(([k, label]) => (
+            <Link key={k} className={`toggle${w.t === k ? " on" : ""}`} href={href({ t: k, to: k === "X" ? w.to : w.from })}>{label}</Link>
+          ))}
+        </div>
+        </div>
+        <div>
+        <h2>2. Which date?</h2>
+        <AutoForm className="row">
+          {Object.entries({ t: w.t, vt: sp.vt, ...(w.t !== "X" && { v: "" }) }).map(([k, val]) => val !== undefined && <input key={k} type="hidden" name={k} value={val} />)}
+          <label>{w.t === "X" ? "First day" : "Date"}<input type="date" name="from" defaultValue={w.from} /></label>
+          {w.t === "X" && <label>Last day<input type="date" name="to" defaultValue={w.to} /></label>}
+          {w.t === "X" && <input type="hidden" name="v" value={w.v} />}
+        </AutoForm>
+        </div>
       </div>
 
       <div className="card">
-        <div className="top" style={{ marginBottom: 8 }}>
-          <h2 style={{ margin: 0 }}>Pick venues and slots</h2>
-          <span><Link className="btn" href={href({ from: addDays(from, -7), to: addDays(to, -7), v: "" })}>← Prev week</Link> <Link className="btn" href={href({ from: addDays(from, 7), to: addDays(to, 7), v: "" })}>Next week →</Link></span>
+        <div className="top" style={{ marginBottom: 12 }}>
+          <h2 style={{ margin: 0 }}>3. Tap a free hall or room</h2>
+          <span className="row" style={{ alignItems: "center" }}>
+            <Link className="btn" href={href({ w: addDays(week, -7) })}>‹ Earlier</Link>
+            <Link className="btn" href={href({ w: addDays(week, 7) })}>Later ›</Link>
+          </span>
         </div>
+        <details className="filter" open={!!sp.vt}>
+          <summary>Show only halls or rooms</summary>
+          <div className="toggles">
+            {([["", "All"], ["hall", "Halls"], ["room", "Rooms"]] as const).map(([k, label]) => (
+              <Link key={k} className={`toggle small${(sp.vt ?? "") === k ? " on" : ""}`} href={href({ vt: k || undefined })}>{label}</Link>
+            ))}
+          </div>
+        </details>
         <Legend picked />
         <Calendar
           venues={shown}
@@ -70,35 +93,29 @@ export default async function BookStep1({ searchParams }: { searchParams: SP }) 
           freeHref={freeHref}
           picked={(v, d, s) => picked.includes(v) && inRange(d) && (s === "D" || slot === "D" || s === slot)}
         />
+        {selected.length > 1 && <p className="note">If any one of these is taken, the whole booking is not made.</p>}
       </div>
 
-      <div className="card stack">
-        <h2>Your selection</h2>
-        {!items.length && <p className="muted" style={{ margin: 0 }}>Click a free slot in the calendar.</p>}
-        {selected.map((v) => {
-          const vi = items.filter((i) => i.venueId === v.id);
-          if (!vi.length) return null;
-          const s = vi[0].slot;
-          return (
-            <div key={v.id}>
-              <b>{v.name}</b> · {from === to ? dmy(from) : `${dmy(from)} to ${dmy(to)}`} ·{" "}
-              {SLOT_LABEL[s]}{v.type === "hall" && s === "D" && " (Morning + Evening)"} · {inr(vi.reduce((a, i) => a + i.rate, 0))}{" "}
-              <Link href={href({ v: picked.filter((x) => x !== v.id).join(",") })}>Remove</Link>
+      <div className="sticky">
+        {items.length ? (
+          <>
+            <div className="sticky-sum">
+              {selected.map((v) => {
+                const vi = items.filter((i) => i.venueId === v.id);
+                return (
+                  <div key={v.id}>
+                    <b>{v.name}</b> · {when} · {SLOT_LABEL[vi[0].slot]} · {inr(vi.reduce((a, i) => a + i.rate, 0))}{" "}
+                    <Link href={href({ v: picked.filter((x) => x !== v.id).join(",") })}>Remove</Link>
+                  </div>
+                );
+              })}
+              {selected.length > 1 && <div><b>Total {inr(total)}</b></div>}
             </div>
-          );
-        })}
-        <form className="row">
-          {Object.entries(state).filter(([k]) => k !== "v").map(([k, val]) => <input key={k} type="hidden" name={k} value={val} />)}
-          <label>+ Add another hall or room
-            <select name="v" required defaultValue="">
-              <option value="" disabled>Select…</option>
-              {active.filter((v) => !picked.includes(v.id)).map((v) => <option key={v.id} value={[...picked, v.id].join(",")}>{v.name}</option>)}
-            </select>
-          </label>
-          <button className="btn">Add</button>
-        </form>
-        <p className="note">For large gatherings, add several halls and rooms. If any one is taken, the booking is not created.</p>
-        <div>{items.length > 0 && <Link className="btn primary" href={`/book/review?${new URLSearchParams(state)}`}>Continue</Link>}</div>
+            <Link className="btn primary big" href={`/book/who?${qs({ t: w.t, from: w.from, to: w.to, v: w.v })}`}>Continue →</Link>
+          </>
+        ) : (
+          <span className="muted">Nothing chosen yet. Tap a free slot above.</span>
+        )}
       </div>
     </>
   );

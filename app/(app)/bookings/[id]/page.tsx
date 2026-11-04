@@ -8,6 +8,7 @@ import { displayStatus, dmy, dmyhm, inr, SLOT_LABEL, summary } from "@/lib/forma
 import { mockPayments } from "@/lib/razorpay";
 import { requireUser } from "@/lib/session";
 import type { Booking, Cancellation } from "@/lib/types";
+import { Countdown } from "@/lib/client";
 import { Badge, Msg, type SP } from "@/lib/ui";
 
 const hm = (iso?: string) => (iso ? new Date(iso).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kolkata" }) : "");
@@ -54,7 +55,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
           </p>
           <div className="row" style={{ alignItems: "center" }}>
             <Badge s={status === "On hold" ? "On hold" : status} />
-            {status === "On hold" && <b>Hold expires at {hm(b.holdUntil)}</b>}
+            {status === "On hold" && <><Countdown until={b.holdUntil} /> <span className="muted">(until {hm(b.holdUntil)})</span></>}
           </div>
           {status === "On hold" && (
             <>
