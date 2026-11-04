@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Select } from "@/lib/dropdown";
 import { deleteExpense, saveExpense } from "@/app/actions";
 import { DateField } from "@/lib/date-field";
 import { getVenues, rows } from "@/lib/data";
@@ -48,10 +49,10 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
             <input type="hidden" name="id" value={editing?.id ?? ""} />
             <div className="row">
               <label>Expense date<DateField hijri={hijri} name="date" required defaultValue={editing?.date ?? today()} /></label>
-              <label>Venue<select name="venueId" defaultValue={editing?.venueId ?? ""}><option value="">All / general</option>{venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></label>
+              <Select label="Venue" name="venueId" defaultValue={editing?.venueId ?? ""}><option value="">All / general</option>{venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</Select>
             </div>
             <div className="row">
-              <label>Category<select name="category" defaultValue={editing?.category}>{EXPENSE_CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select></label>
+              <Select label="Category" name="category" defaultValue={editing?.category}>{EXPENSE_CATEGORIES.map((c) => <option key={c}>{c}</option>)}</Select>
               <label>Amount (₹)<input type="number" name="amount" min={1} required defaultValue={editing?.amount} /></label>
             </div>
             <label>Paid to<input name="paidTo" required defaultValue={editing?.paidTo} /></label>
@@ -63,7 +64,7 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
         <div className="card">
           <div className="top mb-2">
             <h2 className="m0">Income vs expenses</h2>
-            <form className="row"><select name="month" defaultValue={month} aria-label="Month">{!months.includes(month) && <option value={month}>{monthLabel(month)}</option>}{months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}</select><button className="btn">Show</button></form>
+            <form className="row"><Select name="month" defaultValue={month} aria-label="Month">{!months.includes(month) && <option value={month}>{monthLabel(month)}</option>}{months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}</Select><button className="btn">Show</button></form>
           </div>
           <table>
             <thead><tr><th>Venue</th><th className="text-right">Income</th><th className="text-right">Expenses</th><th className="text-right">Net</th></tr></thead>

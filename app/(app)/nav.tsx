@@ -5,11 +5,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 const ADMIN = [
-  ["/", "Dashboard"], ["/bookings", "Booking options"], ["/book", "New booking"], ["/my-bookings", "All bookings"], ["/venues", "Halls & Rooms"],
-  ["/sectors", "Sectors / Mohallas"], ["/households", "Households"], ["/payments", "Payments"], ["/users", "Users"],
-  ["/cancellations", "Cancellation approval"], ["/miqaats", "Miqaat details"], ["/expenses", "Expenses"],
+  ["/", "Dashboard"], ["/book", "New booking"], ["/my-bookings", "All bookings"], ["/venues", "Halls, Rooms & Sectors"],
+  ["/households", "Households"], ["/payments", "Payments"], ["/users", "Users"],
+  ["/miqaats", "Miqaat details"], ["/expenses", "Expenses"],
 ];
-const SECTOR = [["/", "Dashboard"], ["/book", "New booking"], ["/my-bookings", "My bookings"], ["/households", "Households"], ["/cancellations", "Cancellations"]];
+const SECTOR = [["/", "Dashboard"], ["/book", "New booking"], ["/my-bookings", "My bookings"], ["/households", "Households"]];
 
 export function Nav({ admin }: { admin: boolean }) {
   const path = usePathname();

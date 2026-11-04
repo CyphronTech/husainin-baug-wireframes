@@ -1,4 +1,12 @@
-import { Fragment } from "react";
+import { Fragment, type ComponentProps, type ReactNode } from "react";
+
+/** Native details/summary: keyboard and screen-reader support built in, works in server components. */
+export const Collapsible = ({ title, className = "", children, ...props }: { title: ReactNode } & Omit<ComponentProps<"details">, "title">) => (
+  <details className={`collapsible ${className}`} {...props}>
+    <summary>{title}</summary>
+    {children}
+  </details>
+);
 
 export function Msg({ msg }: { msg?: string }) {
   return msg ? <p className="alert notice" role="status">{msg}</p> : null;
@@ -13,7 +21,7 @@ export const Badge = ({ s }: { s: string }) => {
 };
 export type SP = Promise<Record<string, string | undefined>>;
 
-const STEPS = ["Venue & date", "Household", "Event details", "Review & payment link"];
+const STEPS = ["Basic details", "Dates & slots", "Household & event", "Review & payment link"];
 export const Steps = ({ on }: { on: number }) => (
   <div className="card steps">
     {STEPS.map((label, i) => (

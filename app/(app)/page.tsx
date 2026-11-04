@@ -45,7 +45,7 @@ export default async function Dashboard() {
         <div className="card"><div className="muted">Bookings this month</div><div className="stat">{new Set(ml.map((l) => l.refId)).size}</div></div>
         <div className="card"><div className="muted">Upcoming events (next 7 days)</div><div className="stat">{upcomingIds.length}</div></div>
         <div className="card"><div className="muted">Collections this month</div><div className="stat">{inr(collected)}</div><Link href="/payments">View</Link></div>
-        <div className="card"><div className="muted">Pending cancellation approvals</div><div className="stat">{pendingCr.data().count}</div><Link href="/cancellations">View</Link></div>
+        <div className="card"><div className="muted">Pending cancellation approvals</div><div className="stat">{pendingCr.data().count}</div><Link href="/my-bookings?status=Cancellation+requested">View</Link></div>
       </div>
 
       <div className="grid g2 mb-5">
@@ -96,9 +96,9 @@ export default async function Dashboard() {
           <h2>Quick actions</h2>
           <div className="row">
             <Link className="btn primary" href="/book">New booking</Link>
-            <Link className="btn" href="/venues#block">Block dates</Link>
+            <Link className="btn" href="/venues?open=block#block">Block dates</Link>
             <Link className="btn" href="/users">Add user</Link>
-            <Link className="btn" href="/cancellations">Review cancellations</Link>
+            <Link className="btn" href="/my-bookings?status=Cancellation+requested">Review cancellations</Link>
           </div>
         </div>
       </div>

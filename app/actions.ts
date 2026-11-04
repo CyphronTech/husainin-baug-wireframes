@@ -11,7 +11,7 @@ import { dateToIso } from "@/lib/misri";
 import { b2Enabled, uploadPublic } from "@/lib/b2";
 import { createPaymentLink, mockPayments } from "@/lib/razorpay";
 import { endSession, requireAdmin, requireUser, startSession } from "@/lib/session";
-import { EXPENSE_CATEGORIES, type AppUser, type Block, type Household, type Slot } from "@/lib/types";
+import { EXPENSE_CATEGORIES, slotFromCells, type AppUser, type Block, type Household, type Slot } from "@/lib/types";
 
 const s = (f: FormData, k: string) => String(f.get(k) ?? "").trim();
 const n = (f: FormData, k: string) => (s(f, k) === "" ? undefined : Number(s(f, k)));
@@ -91,7 +91,7 @@ export async function setCalendar(fd: FormData) {
 
 export async function bookFromWizard(f: FormData) {
   const user = await requireUser();
-  const state = new URLSearchParams({ c: s(f, "c"), from: s(f, "from"), to: s(f, "to"), th: s(f, "thaal"), h: s(f, "h") });
+  const state = new URLSearchParams({ c: s(f, "c"), from: s(f, "from"), to: s(f, "to"), hall: s(f, "hall"), th: s(f, "thaal"), h: s(f, "h") });
   await run(`/book/review?${state}`, async () => {
     if (!HOF.test(s(f, "h"))) throw new Error("Select a household");
     const hh = (await db.doc(`households/${s(f, "h")}`).get()).data() as Household | undefined;
@@ -172,15 +172,16 @@ export async function mockPay(f: FormData) {
 
 export async function decideCancel(f: FormData) {
   const admin = await requireAdmin();
-  await run("/cancellations", () =>
-    decideCancellation(
+  await run(`/bookings/${s(f, "bookingId")}/cancel`, async () => {
+    await decideCancellation(
       admin,
       s(f, "id"),
       s(f, "decision") === "approve",
       s(f, "comment"),
       n(f, "refundAmount") ? { amount: n(f, "refundAmount")!, date: s(f, "refundDate"), mode: s(f, "refundMode"), reference: s(f, "refundRef") } : undefined,
-    ),
-  );
+    );
+    return "/my-bookings?status=Cancellation+requested";
+  });
 }
 
 // ── Admin: venues ───────────────────────────────────────────────────────────
@@ -239,7 +240,7 @@ const clashMsg = (c: string[]) => (c.length ? `Saved. Skipped (already booked): 
 export async function saveBlockAction(f: FormData) {
   const admin = await requireAdmin();
   const kind = s(f, "kind") as Block["kind"];
-  const back = kind === "miqaat" ? "/miqaats" : "/venues";
+  const back = kind === "miqaat" ? "/miqaats" : "/venues?open=block";
   await run(back, async () => {
     const c = await saveBlock(admin, s(f, "id") || null, blockFrom(f, kind));
     if (c.length) throw new Error(clashMsg(c));
@@ -248,18 +249,21 @@ export async function saveBlockAction(f: FormData) {
 
 export async function deleteBlockAction(f: FormData) {
   const admin = await requireAdmin();
-  await run(s(f, "back") === "/venues" ? "/venues" : "/miqaats", () => deleteBlock(admin, s(f, "id"))); // never redirect to a posted URL
+  await run(s(f, "back") === "/venues" ? "/venues?open=block" : "/miqaats", () => deleteBlock(admin, s(f, "id"))); // never redirect to a posted URL
 }
 
-/** One spreadsheet row: Date (DD/MM/YYYY), Reason. Blocks every active hall for the full day. */
-export type BlockRow = { date: string; reason: string };
+/** One spreadsheet row: Date (DD/MM/YYYY), Reason, Morning (Y/N), Evening (Y/N). Blocks those slots on every active hall. */
+export type BlockRow = { date: string; reason: string; morning: string; evening: string };
 
 async function rowToBlock(kind: Block["kind"], r: BlockRow) {
   const date = dateToIso(r.date);
   if (!date) throw new Error("date must be DD/MM/YYYY");
   if (!r.reason) throw new Error("reason missing");
+  const slots = slotFromCells(r.morning, r.evening);
+  if (!slots) throw new Error("Morning and Evening must be Y or N");
+  if (kind === "maintenance" && !slots.blocking) throw new Error("maintenance must block a slot");
   const venueIds = (await getVenues()).filter((v) => v.active && v.type === "hall").map((v) => v.id);
-  return { kind, name: r.reason, from: date, to: date, slot: "D" as Slot, venueIds, notes: "", blocking: true };
+  return { kind, name: r.reason, from: date, to: date, venueIds, notes: "", ...slots };
 }
 
 /** Import preview: validates each row and checks clashes without writing anything. */
@@ -281,7 +285,7 @@ export async function previewBlocks(kind: Block["kind"], rows: BlockRow[]) {
 export async function importBlocks(f: FormData) {
   const admin = await requireAdmin();
   const kind = s(f, "kind") as Block["kind"];
-  await run(kind === "miqaat" ? "/miqaats" : "/venues", async () => {
+  await run(kind === "miqaat" ? "/miqaats" : "/venues?open=block", async () => {
     const rows = JSON.parse(s(f, "rows")) as BlockRow[];
     const report: string[] = [];
     for (const r of rows) {
@@ -300,7 +304,7 @@ export async function importBlocks(f: FormData) {
 
 export async function saveSector(f: FormData) {
   const admin = await requireAdmin();
-  await run("/sectors", async () => {
+  await run("/venues?open=sectors", async () => {
     const id = s(f, "id");
     const ref = id ? db.doc(`sectors/${id}`) : db.collection("sectors").doc();
     const data = { name: s(f, "name").toUpperCase(), code: s(f, "code").toUpperCase(), contactName: s(f, "contactName"), contactMobile: s(f, "contactMobile"), active: f.get("active") === "on" };

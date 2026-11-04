@@ -15,10 +15,11 @@ export async function loadWeek(start: string, end = addDays(start, 6)) {
   return { days, locks: new Map(snap.docs.map((d) => [d.id, d.data() as Lock]).filter(([, l]) => isLive(l as Lock, now)) as [string, Lock][]) };
 }
 
-export function Legend({ picked }: { picked?: boolean }) {
+export function Legend({ picked, cart }: { picked?: boolean; cart?: boolean }) {
   return (
     <div className="legend">
       {picked && <span className="pill picked">Selected</span>}
+      {cart && <span className="pill incart">In cart</span>}
       <span className="pill">Available</span><span className="pill pending">On hold (payment pending)</span>
       <span className="pill confirmed">Booked</span><span className="pill block">Unavailable / Miqaat</span>
     </div>
@@ -32,6 +33,7 @@ export async function Calendar(p: {
   freeHref?: (venueId: string, date: string, slot: Slot) => string;
   takenHref?: (lockId: string) => string;
   picked?: (venueId: string, date: string, slot: Slot) => boolean;
+  inCart?: (venueId: string, date: string, slot: Slot) => boolean;
   dim?: (l: Lock) => boolean;
   sel?: string;
   keepScroll?: boolean;
@@ -42,10 +44,11 @@ export async function Calendar(p: {
     const id = `${venueId}_${date}_${slot}`;
     const l = p.locks.get(id);
     const picked = !l && p.picked?.(venueId, date, slot);
-    const desc = `${venueName}, ${dmy(date)}, ${SLOT_LABEL[slot]}, ${l ? STATUS[l.status] : picked ? "selected" : "available"}`;
+    const inCart = !l && p.inCart?.(venueId, date, slot);
+    const desc = `${venueName}, ${dmy(date)}, ${SLOT_LABEL[slot]}, ${l ? STATUS[l.status] : inCart ? "in cart" : picked ? "selected" : "available"}`;
     const a11y = { "aria-label": desc, title: desc };
     if (!l) {
-      const cls = `pill${picked ? " picked" : ""}`;
+      const cls = `pill${inCart ? " incart" : picked ? " picked" : ""}`;
       return p.freeHref ? <Link key={id} prefetch={false} scroll={!p.keepScroll} className={cls} href={p.freeHref(venueId, date, slot)} {...a11y}>{label}</Link> : <span key={id} className={cls} {...a11y}>{label}</span>;
     }
     const cls = `pill ${l.status}${p.dim?.(l) ? " other" : ""}${p.sel === id ? " sel" : ""}`;
