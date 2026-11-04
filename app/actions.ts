@@ -91,7 +91,7 @@ export async function setCalendar(fd: FormData) {
 
 export async function bookFromWizard(f: FormData) {
   const user = await requireUser();
-  const state = new URLSearchParams({ c: s(f, "c"), from: s(f, "from"), to: s(f, "to"), th: s(f, "thaal"), h: s(f, "h") });
+  const state = new URLSearchParams({ c: s(f, "c"), from: s(f, "from"), to: s(f, "to"), th: s(f, "thaal"), h: s(f, "h"), p: s(f, "purpose"), g: s(f, "guests") });
   await run(`/book/review?${state}`, async () => {
     if (!HOF.test(s(f, "h"))) throw new Error("Select a household");
     const hh = (await db.doc(`households/${s(f, "h")}`).get()).data() as Household | undefined;

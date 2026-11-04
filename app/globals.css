@@ -19,9 +19,10 @@
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-7: 32px;
   --radius-sm: 4px; --radius: 8px; --radius-lg: 12px; --radius-full: 999px;
   --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --text-xs: 11px; --text-sm: 12px; --text-md: 13px; --text-base: 14px; --text-lg: 17px; --text-xl: 19px; --text-2xl: 26px;
+  /* Sized for staff aged 50–60: 17px body, nothing under 13px. */
+  --text-xs: 13px; --text-sm: 15px; --text-md: 16px; --text-base: 17px; --text-lg: 21px; --text-xl: 22px; --text-2xl: 30px;
   --weight-semibold: 600; --weight-bold: 700;
-  --control-h: 38px;
+  --control-h: 48px; --control-h-lg: 56px;
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────────────────────────────────────── */
@@ -36,7 +37,7 @@ th { text-align: left; font-size: var(--text-sm); color: var(--text-muted); font
 td { padding: var(--space-2); border-bottom: 1px solid var(--line); vertical-align: top; }
 
 /* ── Layout ───────────────────────────────────────────────────────────────────────────────────────────── */
-.shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
 .side { background: var(--sidebar-bg); color: var(--white); padding: var(--space-6) var(--space-3); }
 .side :focus-visible { outline-color: var(--white); }
 .side .brand { padding: 0 var(--space-3) var(--space-5); }
@@ -99,8 +100,8 @@ details.inline { display: inline-block; margin-left: var(--space-2); } details.i
 .stat { font-size: var(--text-2xl); font-weight: var(--weight-bold); }
 .muted { color: var(--text-muted); font-size: var(--text-md); }
 
-label { display: grid; gap: var(--space-1); font-size: var(--text-sm); color: var(--text-muted); }
-label.check { display: flex; align-items: center; gap: var(--space-2); color: var(--text); font-size: var(--text-base); }
+label { display: grid; gap: 6px; font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--text); }
+label.check { display: flex; align-items: center; gap: var(--space-2); color: var(--text); font-size: var(--text-base); font-weight: normal; }
 input, select, textarea { font: inherit; padding: var(--space-2) 10px; border: 1px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); }
 input:not([type="checkbox"], [type="radio"], [type="file"]), select { min-height: var(--control-h); }
 /* Native select (keeps keyboard + mobile pickers), drawn to match the date field: own chevron, hover, focus ring */
@@ -136,7 +137,7 @@ input:disabled, select:disabled, textarea:disabled, input:read-only:not([type="c
 
 .legend { display: flex; gap: var(--space-2); margin-bottom: var(--space-3); flex-wrap: wrap; }
 .cal td { white-space: nowrap; }
-.pill { display: inline-block; min-width: 32px; min-height: 26px; line-height: 24px; text-align: center; border: 1px solid var(--border-strong); border-radius: var(--radius-full); padding: 0 var(--space-2); font-size: var(--text-sm); font-weight: var(--weight-semibold); margin-right: var(--space-1); text-decoration: none; color: var(--text); background: var(--surface); }
+.pill { display: inline-block; min-width: 92px; min-height: 40px; line-height: 38px; text-align: center; border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 0 var(--space-2); font-size: var(--text-sm); font-weight: var(--weight-semibold); margin: 0 var(--space-1) var(--space-1) 0; text-decoration: none; color: var(--text); background: var(--surface); }
 a.pill:hover { border-color: var(--text); }
 /* Non-colour markers too: hold = dashed border, unavailable = struck through */
 .pill.pending { background: var(--status-warn-bg); color: var(--status-warn-fg); border: 1px dashed var(--text); }
@@ -153,7 +154,7 @@ a.pill:hover { border-color: var(--text); }
 
 .steps { display: flex; gap: var(--space-3); align-items: center; }
 .steps span { display: flex; gap: var(--space-2); align-items: center; color: var(--text-muted); }
-.steps span::before { content: attr(data-n); display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: var(--radius-full); background: var(--muted-bg); color: var(--text); font-size: var(--text-sm); font-weight: var(--weight-bold); }
+.steps span::before { content: attr(data-n); display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: var(--radius-full); background: var(--muted-bg); color: var(--text); font-size: var(--text-sm); font-weight: var(--weight-bold); }
 .steps span.done::before { background: var(--accent); color: var(--on-accent); }
 .steps span.on { color: var(--text); font-weight: var(--weight-semibold); }
 .steps span.on::before { background: var(--highlight); color: var(--white); }
@@ -161,13 +162,30 @@ a.pill:hover { border-color: var(--text); }
 
 .pick { display: block; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); text-decoration: none; color: var(--text); margin-bottom: var(--space-2); }
 .pick:hover { border-color: var(--border-strong); }
-.pick.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); } /* shadow, not a 2px border: no layout shift */
+.pick.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); background: var(--info-bg); } /* shadow, not a 2px border: no layout shift */
 
 .chat { background: var(--chat-bg); border-radius: var(--radius-lg); padding: var(--space-3); display: grid; gap: 10px; }
 .chat .bubble { background: var(--surface); border-radius: var(--radius); padding: 10px var(--space-3); white-space: pre-line; font-size: var(--text-md); }
 .receipt { border: 1px dashed var(--border-strong); border-radius: var(--radius); padding: var(--space-4); line-height: 1.8; }
 .timeline { margin: 0; padding-left: var(--space-5); line-height: 2; }
 .timeline .todo { color: var(--text-muted); }
+
+/* Booking wizard: big choices, summary always in view, one main button */
+.cal td { vertical-align: top; } .cal .pill { display: block; }
+.cal th:first-child, .cal td:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); box-shadow: 1px 0 0 var(--line); }
+.cal th:first-child::before, .cal td:first-child::before { content: ""; position: absolute; top: 0; bottom: 0; right: 100%; width: var(--space-5); background: var(--surface); } /* hides days scrolling under the card padding */ /* venue name stays put when the days scroll */
+.toggles { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.toggle { display: inline-flex; align-items: center; min-height: var(--control-h); padding: 0 var(--space-4); border: 2px solid var(--border-strong); border-radius: var(--radius); background: var(--surface); color: var(--text); text-decoration: none; font-weight: var(--weight-semibold); }
+.toggle:hover { border-color: var(--text); }
+.toggle.on { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+.filter summary { cursor: pointer; color: var(--accent); font-weight: var(--weight-semibold); margin-bottom: var(--space-3); }
+.btn.big { min-height: var(--control-h-lg); padding: 0 var(--space-7); font-size: var(--text-lg); font-weight: var(--weight-bold); }
+.sticky { position: sticky; bottom: 0; z-index: 5; display: flex; gap: var(--space-4); align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius-lg); padding: var(--space-3) var(--space-5); box-shadow: 0 -4px 16px rgb(0 0 0 / 0.08); }
+.sticky.in-card { margin: var(--space-2) calc(-1 * var(--space-5)) calc(-1 * var(--space-5)); border-width: 2px 0 0; border-radius: 0 0 var(--radius-lg) var(--radius-lg); box-shadow: none; }
+.summary { display: grid; grid-template-columns: max-content 1fr max-content; gap: var(--space-4) var(--space-5); margin: 0; font-size: var(--text-lg); }
+.summary dt { color: var(--text-muted); } .summary dd { margin: 0; } .summary .total { font-size: var(--text-2xl); font-weight: var(--weight-bold); }
+.countdown { font-size: var(--text-xl); color: var(--highlight); } .countdown.over { font-size: var(--text-base); }
+@media (max-width: 600px) { .cal td:first-child { white-space: normal; min-width: 96px; max-width: 120px; } .summary { grid-template-columns: 1fr max-content; } .summary dt { grid-column: 1 / -1; margin-bottom: calc(-1 * var(--space-3)); } .btn.big { width: 100%; } }
 
 /* ── Responsive / print (last, so they override the rules above) ──────────────────────────────────────── */
 @media (max-width: 900px) {
@@ -179,7 +197,6 @@ a.pill:hover { border-color: var(--text); }
   .shell { grid-template-rows: auto 1fr; } /* short pages: spare height goes to the content, not the header */
   .g4, .g2, .g2e { grid-template-columns: 1fr 1fr; }
   .main { padding: var(--space-4); }
-  .pill { min-height: 32px; line-height: 30px; }
   .caltoggle button { min-height: 38px; }
   input, select, textarea, .datefield-btn { font-size: 16px; } /* under 16px, iPhone Safari zooms in on focus */
 }

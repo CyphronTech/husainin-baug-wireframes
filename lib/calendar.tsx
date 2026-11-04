@@ -18,9 +18,9 @@ export async function loadWeek(start: string, end = addDays(start, 6)) {
 export function Legend({ picked }: { picked?: boolean }) {
   return (
     <div className="legend">
-      {picked && <span className="pill picked">Selected</span>}
-      <span className="pill">Available</span><span className="pill pending">On hold (payment pending)</span>
-      <span className="pill confirmed">Booked</span><span className="pill block">Unavailable / Miqaat</span>
+      <span className="pill">Free</span>{picked && <span className="pill picked">✓ Chosen</span>}
+      <span className="pill pending">Waiting for payment</span>
+      <span className="pill confirmed">Booked</span><span className="pill block">Closed / Miqaat</span>
     </div>
   );
 }
@@ -46,7 +46,8 @@ export async function Calendar(p: {
     const a11y = { "aria-label": desc, title: desc };
     if (!l) {
       const cls = `pill${picked ? " picked" : ""}`;
-      return p.freeHref ? <Link key={id} prefetch={false} scroll={!p.keepScroll} className={cls} href={p.freeHref(venueId, date, slot)} {...a11y}>{label}</Link> : <span key={id} className={cls} {...a11y}>{label}</span>;
+      const text = picked ? `✓ ${label}` : label;
+      return p.freeHref ? <Link key={id} prefetch={false} scroll={!p.keepScroll} className={cls} href={p.freeHref(venueId, date, slot)} {...a11y}>{text}</Link> : <span key={id} className={cls} {...a11y}>{text}</span>;
     }
     const cls = `pill ${l.status}${p.dim?.(l) ? " other" : ""}${p.sel === id ? " sel" : ""}`;
     return p.takenHref ? <Link key={id} prefetch={false} className={cls} href={p.takenHref(id)} {...a11y}>{label}</Link> : <span key={id} className={cls} {...a11y}>{label}</span>;
@@ -67,7 +68,7 @@ export async function Calendar(p: {
         {p.venues.map((v) => (
           <tr key={v.id}>
             <td><b>{v.name}</b><div className="muted">{v.type === "hall" ? `Hall · max ${maxThaal(v)} thaal` : "Room"}</div></td>
-            {p.days.map((d) => <td key={d}>{v.type === "hall" ? [pill(v.name, v.id, d, "M", "M"), pill(v.name, v.id, d, "E", "E")] : pill(v.name, v.id, d, "D", "Day")}</td>)}
+            {p.days.map((d) => <td key={d}>{v.type === "hall" ? [pill(v.name, v.id, d, "M", "Morning"), pill(v.name, v.id, d, "E", "Evening")] : pill(v.name, v.id, d, "D", "Full day")}</td>)}
           </tr>
         ))}
       </tbody>

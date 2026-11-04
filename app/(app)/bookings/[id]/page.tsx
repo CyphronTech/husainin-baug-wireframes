@@ -8,6 +8,7 @@ import { displayStatus, fmt, inr, SLOT_LABEL } from "@/lib/format";
 import { mockPayments } from "@/lib/razorpay";
 import { requireUser } from "@/lib/session";
 import type { Booking, Cancellation } from "@/lib/types";
+import { Countdown } from "@/lib/countdown";
 import { Badge, Msg, type SP } from "@/lib/ui";
 import { Submit } from "@/lib/submit";
 
@@ -56,7 +57,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
           </p>
           <div className="row items-center">
             <Badge s={status === "On hold" ? "On hold" : status} />
-            {status === "On hold" && <b>Hold expires at {hm(b.holdUntil)}</b>}
+            {status === "On hold" && <><Countdown until={b.holdUntil} /> <span className="muted">(until {hm(b.holdUntil)})</span></>}
           </div>
           {status === "On hold" && (
             <>

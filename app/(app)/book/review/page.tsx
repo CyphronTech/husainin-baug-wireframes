@@ -3,92 +3,77 @@ import { redirect } from "next/navigation";
 import { bookFromWizard } from "@/app/actions";
 import { HOLD_MINUTES, thaalLimit } from "@/lib/booking";
 import { cartItems } from "@/lib/cart";
-import { getHouseholds, getSectors, getVenues } from "@/lib/data";
+import { getHouseholds, getVenues } from "@/lib/data";
 import { fmt, inr, SLOT_LABEL } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Item } from "@/lib/types";
 import { Msg, Steps, type SP } from "@/lib/ui";
 import { Submit } from "@/lib/submit";
 
-const PURPOSES = ["Wedding", "Majlis", "Family function", "Meeting", "Other"];
-
+/** Step 3 — check & confirm: everything on one page, one button. */
 export default async function BookReview({ searchParams }: { searchParams: SP }) {
   const { dmy } = await fmt();
   const user = await requireUser();
   const sp = await searchParams;
-  const state = { c: sp.c ?? "", ...(sp.from && { from: sp.from }), ...(sp.to && { to: sp.to }), ...(sp.th && { th: sp.th }) };
-  const [venues, sectors, households] = await Promise.all([getVenues(), getSectors(), getHouseholds(user.role === "admin" ? undefined : user.sectorId!)]);
+  const cart = { c: sp.c ?? "", from: sp.from ?? "", to: sp.to ?? "" };
+  const event = { ...(sp.p && { p: sp.p }), ...(sp.g && { g: sp.g }), ...(sp.th && { th: sp.th }) };
+  const [venues, households] = await Promise.all([getVenues(), getHouseholds(user.role === "admin" ? undefined : user.sectorId!)]);
   let items: Item[];
   try {
-    items = cartItems(state.c, venues);
+    items = cartItems(cart.c, venues);
   } catch {
     redirect("/book");
   }
   if (!items.length) redirect("/book");
-  const back = `/book?${new URLSearchParams(state)}`;
+  const step1 = `/book?${new URLSearchParams(cart)}`;
+  const step2 = `/book/who?${new URLSearchParams({ ...cart, ...event, ...(sp.h && { h: sp.h }) })}`;
+  const fix = (msg: string) => redirect(`${step2}&msg=${encodeURIComponent(msg)}`);
   const selected = venues.filter((v) => items.some((i) => i.venueId === v.id));
-  const hh = households.find((h) => h.id === sp.h);
-  const term = (sp.q ?? "").toLowerCase();
-  const matches = term ? households.filter((h) => `${h.hof} ${h.name} ${h.mobile}`.toLowerCase().includes(term)).slice(0, 8) : [];
-  const capacity = selected.filter((v) => v.type === "hall").reduce((s, v) => s + v.capacity, 0);
-  const hasHall = selected.some((v) => v.type === "hall");
   const thaalMax = thaalLimit(selected);
-  const here = (o: Record<string, string>) => `/book/review?${new URLSearchParams({ ...state, ...(sp.h && { h: sp.h }), ...(sp.q && { q: sp.q }), ...o })}`;
-  const sectorName = (id: string) => sectors.find((s) => s.id === id)?.name;
+  const hh = households.find((h) => h.id === sp.h);
+  if (!hh) fix("Choose who this booking is for.");
+  if (!sp.g) fix("Enter how many guests are coming.");
+  if (thaalMax && !sp.th) fix("Enter how many thaal are needed.");
+  if (thaalMax && Number(sp.th) > thaalMax) fix(`The chosen halls hold up to ${thaalMax} thaal. Add another hall or lower the number.`);
+  const total = items.reduce((s, i) => s + i.rate, 0);
 
   return (
     <>
-      <div className="top"><h1>New booking · household and review</h1></div>
-      <Steps on={hh ? 4 : 2} />
+      <div className="top"><h1>New booking</h1></div>
+      <Steps on={3} />
       <Msg msg={sp.msg} />
-      <div className="grid g2e mb-5">
-        <div className="card">
-          <h2>2. Select household</h2>
-          <form className="row mb-3">
-            {Object.entries(state).map(([k, val]) => <input key={k} type="hidden" name={k} value={val} />)}
-            {sp.h && <input type="hidden" name="h" value={sp.h} />}
-            <label>Search household (HOF ID, name or mobile)<input name="q" defaultValue={sp.q} /></label>
-            <button className="btn">Search</button>
-          </form>
-          {[...(hh ? [hh] : []), ...matches.filter((m) => m.id !== hh?.id)].map((h) => (
-            <Link key={h.id} className={`pick${h.id === hh?.id ? " on" : ""}`} href={here({ h: h.id })}>
-              <b>{h.name}</b><br />HOF {h.hof} · Mobile {h.mobile}<br />{sectorName(h.sectorId)} · WhatsApp consent: {h.whatsappConsent ? "Yes" : "No"}
-            </Link>
-          ))}
-          {term && !matches.length && <p className="muted">No household found.</p>}
-          <Link href={`/households?back=${encodeURIComponent(here({}))}`}>+ Add new household</Link>
-        </div>
-
-        <div className="card">
-          <h2>3. Event details</h2>
-          <div className="stack">
-            <label>Purpose<select name="purpose" form="book" defaultValue="Wedding">{PURPOSES.map((p) => <option key={p}>{p}</option>)}</select></label>
-            <label>Expected guests<input name="guests" form="book" type="number" min={1} max={capacity || undefined} required /></label>
-            {hasHall && <label>No. of thaal<input name="thaal" form="book" type="number" min={1} max={thaalMax || undefined} defaultValue={sp.th} required /></label>}
-            {thaalMax > 0 && <p className="alert info m0">Thaal limit for this booking: {thaalMax}.</p>}
-          </div>
-        </div>
-      </div>
-
       <div className="card">
-        <h2>4. Review</h2>
-        <table>
-          <thead><tr><th>Venue</th><th>Date</th><th>Slot</th><th>Amount</th></tr></thead>
-          <tbody>
-            {items.map((i) => <tr key={i.venueId + i.date}><td>{i.venueName}</td><td>{dmy(i.date)}</td><td>{SLOT_LABEL[i.slot]}</td><td>{inr(i.rate)}</td></tr>)}
-            <tr><td colSpan={3}><b>Total payable (full amount)</b></td><td><b>{inr(items.reduce((s, i) => s + i.rate, 0))}</b></td></tr>
-          </tbody>
-        </table>
-        <p className="alert warn">
-          Creating the booking holds the venue for {HOLD_MINUTES} minutes and sends a Razorpay payment link to the household on WhatsApp
-          {hh && !hh.whatsappConsent && " (no WhatsApp consent, so it goes by SMS)"}.
+        <h2>Please check before confirming</h2>
+        <dl className="summary">
+          <dt>For</dt>
+          <dd><b>{hh!.name}</b> · HOF {hh!.hof} · {hh!.mobile}</dd>
+          <dd><Link href={step2}>Change</Link></dd>
+
+          <dt>Hall / room</dt>
+          <dd>{items.map((i) => <div key={i.venueId + i.date}>{i.venueName} · {dmy(i.date)} · {SLOT_LABEL[i.slot]} · {inr(i.rate)}</div>)}</dd>
+          <dd><Link href={step1}>Change</Link></dd>
+
+          <dt>Event</dt>
+          <dd>{sp.p} · {sp.g} guests{sp.th && ` · ${sp.th} thaal`}</dd>
+          <dd><Link href={step2}>Change</Link></dd>
+
+          <dt>Total to pay</dt>
+          <dd className="total">{inr(total)}</dd>
+          <dd />
+        </dl>
+
+        <p className="alert info">
+          This will be reserved for {hh!.name} for {HOLD_MINUTES} minutes. The payment link goes to them by{" "}
+          {hh!.whatsappConsent ? "WhatsApp" : "SMS (they have not agreed to WhatsApp)"}.
         </p>
-        <form id="book" action={bookFromWizard} className="row">
-          {Object.entries(state).map(([k, val]) => <input key={k} type="hidden" name={k} value={val} />)}
-          <input type="hidden" name="h" value={hh?.id ?? ""} />
-          <Submit className="btn primary" disabled={!hh}>Create booking &amp; send payment link</Submit>
-          <Link className="btn" href={back}>Back</Link>
-          {!hh && <span className="muted">Select a household first.</span>}
+
+        <form action={bookFromWizard} className="stack mt-4">
+          {Object.entries({ ...cart, h: hh!.id }).map(([k, val]) => val && <input key={k} type="hidden" name={k} value={val} />)}
+          <input type="hidden" name="purpose" value={sp.p ?? ""} />
+          <input type="hidden" name="guests" value={sp.g ?? ""} />
+          {sp.th && <input type="hidden" name="thaal" value={sp.th} />}
+          <Submit className="btn primary big w-full">Reserve &amp; send payment link</Submit>
+          <Link href={step2}>‹ Back</Link>
         </form>
       </div>
     </>
