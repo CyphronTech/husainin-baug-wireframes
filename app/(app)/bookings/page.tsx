@@ -3,6 +3,7 @@ import { addDays, Calendar, Legend, loadWeek } from "@/lib/calendar";
 import { getSectors, getVenues } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { fmt, inr, SLOT_LABEL, today } from "@/lib/format";
+import { dateToIso } from "@/lib/misri";
 import { requireUser } from "@/lib/session";
 import type { Block, Booking } from "@/lib/types";
 import { Badge, Msg, type SP } from "@/lib/ui";
@@ -13,7 +14,7 @@ export default async function Bookings({ searchParams }: { searchParams: SP }) {
   const user = await requireUser();
   const isAdmin = user.role === "admin";
   // Month filter jumps to the 1st of that month (Misri or English, per the header toggle); prev/next week links carry `start`.
-  const start = sp.start || (sp.month?.length === 7 ? `${sp.month}-01` : sp.month) || today();
+  const start = dateToIso(sp.start ?? "") || dateToIso(sp.month?.length === 7 ? `${sp.month}-01` : sp.month ?? "") || today();
   const months = Array.from({ length: 15 }, (_, i) => monthStart(today(), i - 2));
   const curMonth = monthStart(start);
   const [allVenues, sectors, { days, locks }] = await Promise.all([getVenues(), getSectors(), loadWeek(start)]);

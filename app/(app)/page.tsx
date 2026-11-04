@@ -54,16 +54,19 @@ export default async function Dashboard() {
           <table>
             <thead><tr><th>Date</th><th>Venue</th><th>Slot</th><th>Household</th><th>Sector / Mohalla</th><th>Status</th></tr></thead>
             <tbody>
-              {upcoming.map((b) => (
+              {upcoming.map((b) => {
+                const days = new Set(b.items.map((i) => i.date)).size;
+                return (
                 <tr key={b.id}>
                   <td>{dmy(b.items[0].date)}</td>
                   <td><Link href={`/bookings/${b.id}`}>{[...new Set(b.items.map((i) => i.venueName))].join(", ")}</Link></td>
-                  <td>{SLOT_LABEL[b.items[0].slot]}{b.items.length > 1 && ` × ${b.items.length}`}</td>
+                  <td>{SLOT_LABEL[b.items[0].slot]}{days > 1 && ` × ${days}`}</td>
                   <td>{b.household.name}<div className="muted">HOF {b.household.hof}</div></td>
                   <td>{b.sectorName}</td>
                   <td><Badge s={b.status === "pending" ? "On hold" : b.status} /></td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

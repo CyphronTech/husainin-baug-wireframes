@@ -125,17 +125,16 @@ async function sendLink(id: string) {
 }
 
 /** Sector users may only touch their own sector's bookings, whatever id they post. */
-async function scoped(id: string) {
-  const user = await requireUser();
+async function scoped(user: AppUser, id: string) {
   const b = await getBooking(id);
   if (!b || (user.role !== "admin" && b.sectorId !== user.sectorId)) throw new Error("Not found");
-  return user;
 }
 
 export async function resendLink(f: FormData) {
   const id = s(f, "id");
-  await scoped(id);
+  const user = await requireUser(); // outside run(): its login redirect must not be caught there
   await run(`/bookings/${id}`, async () => {
+    await scoped(user, id);
     await sendLink(id);
     return `/bookings/${id}?msg=${encodeURIComponent("Payment link sent on WhatsApp")}`;
   });
@@ -143,14 +142,18 @@ export async function resendLink(f: FormData) {
 
 export async function releaseBooking(f: FormData) {
   const id = s(f, "id");
-  const user = await scoped(id);
-  await run(`/bookings/${id}`, () => cancelPending(user, id));
+  const user = await requireUser();
+  await run(`/bookings/${id}`, async () => {
+    await scoped(user, id);
+    await cancelPending(user, id);
+  });
 }
 
 export async function requestCancel(f: FormData) {
   const id = s(f, "id");
-  const user = await scoped(id);
+  const user = await requireUser();
   await run(`/bookings/${id}/cancel`, async () => {
+    await scoped(user, id);
     if (f.get("informed") !== "on") throw new Error("Confirm the household has been informed about the refund policy");
     await requestCancellation(user, id, [s(f, "reason"), s(f, "details")].filter(Boolean).join(": "));
     return `/bookings/${id}/cancel`;
@@ -159,11 +162,11 @@ export async function requestCancel(f: FormData) {
 
 export async function mockPay(f: FormData) {
   if (!mockPayments) throw new Error("Mock payments disabled");
-  await requireUser();
+  const user = await requireUser();
   const linkId = s(f, "linkId");
   const found = await db.collection("bookings").where("payment.linkId", "==", linkId).limit(1).get();
   if (found.empty) throw new Error("Not found");
-  await scoped(found.docs[0].id); // sector users pay only their own sector's bookings
+  await scoped(user, found.docs[0].id); // sector users pay only their own sector's bookings
   await markPaid(linkId, `pay_mock_${Date.now()}`, s(f, "method"));
   redirect(`/r/${found.docs[0].id}`);
 }
@@ -303,6 +306,8 @@ export async function saveSector(f: FormData) {
     const id = s(f, "id");
     const ref = id ? db.doc(`sectors/${id}`) : db.collection("sectors").doc();
     const data = { name: s(f, "name").toUpperCase(), code: s(f, "code").toUpperCase(), contactName: s(f, "contactName"), contactMobile: s(f, "contactMobile"), active: f.get("active") === "on" };
+    if (!data.name || !data.code) throw new Error("Enter the name and code");
+    if ((await getSectors()).some((x) => x.code === data.code && x.id !== id)) throw new Error(`Code ${data.code} is already used`);
     await db.runTransaction(async (tx) => {
       tx.set(ref, data);
       audit(tx, admin, id ? "sector.update" : "sector.create", { sectorId: ref.id, ...data });
@@ -333,6 +338,7 @@ export async function saveUser(f: FormData) {
       ...(password && { password: hashPassword(password) }), // blank on edit = keep current password
     };
     if (role === "sector" && !data.sectorId) throw new Error("Select a Sector / Mohalla");
+    if (editing === admin.uid && (!data.active || role !== "admin")) throw new Error("You can't deactivate or demote your own account");
     await db.runTransaction(async (tx) => {
       const exists = (await tx.get(ref)).exists;
       if (!editing && exists) throw new Error(`Username ${username} is taken`);
@@ -347,6 +353,12 @@ export async function saveUser(f: FormData) {
 // ── Households ──────────────────────────────────────────────────────────────
 
 type HouseholdInput = Omit<Household, "id">;
+
+/** Back to the Households page; Admin stays on the sector being worked on. */
+const householdsUrl = (user: AppUser, f: FormData, back = "") => {
+  const q = new URLSearchParams({ ...(user.role === "admin" && s(f, "sectorId") && { sector: s(f, "sectorId") }), ...(back && { back }) }).toString();
+  return q ? `/households?${q}` : "/households";
+};
 
 /** HOF ID is the doc id: unique across all sectors. A HOF registered to another sector is never overwritten. */
 async function upsertHousehold(user: AppUser, h: HouseholdInput) {
@@ -375,7 +387,7 @@ const householdFrom = (user: AppUser, f: FormData): HouseholdInput => ({
 export async function saveHousehold(f: FormData) {
   const user = await requireUser();
   const back = s(f, "back");
-  await run(back ? `/households?back=${encodeURIComponent(back)}` : "/households", async () => {
+  await run(householdsUrl(user, f, back), async () => {
     const h = householdFrom(user, f);
     await upsertHousehold(user, h);
     // Came from the booking wizard: return there with the new household selected.
@@ -386,7 +398,7 @@ export async function saveHousehold(f: FormData) {
 /** Rows were parsed and previewed in the browser; everything is validated again here. */
 export async function importHouseholds(f: FormData) {
   const user = await requireUser();
-  await run("/households", async () => {
+  await run(householdsUrl(user, f), async () => {
     const rows = JSON.parse(s(f, "rows")) as Omit<HouseholdInput, "sectorId">[];
     const sectorId = user.role === "admin" ? s(f, "sectorId") : user.sectorId!;
     if (!sectorId) throw new Error("Select a Sector / Mohalla");
@@ -408,6 +420,7 @@ export async function saveExpense(f: FormData) {
     const amount = n(f, "amount");
     if (!amount || amount <= 0) throw new Error("Enter the amount");
     if (!EXPENSE_CATEGORIES.includes(s(f, "category"))) throw new Error("Pick a category");
+    if (!dateToIso(s(f, "date"))) throw new Error("Pick the expense date");
     const ref = id ? db.doc(`expenses/${id}`) : db.collection("expenses").doc();
     const bill = f.get("bill") as File | null;
     let billUrl: string | undefined;

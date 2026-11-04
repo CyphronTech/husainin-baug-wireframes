@@ -29,7 +29,7 @@ export default async function Households({ searchParams }: { searchParams: SP })
       <Msg msg={sp.msg} />
       {isAdmin && (
         <div className="card">
-          <form className="row"><label>Sector / Mohalla<select name="sector" defaultValue={sp.sector}><option value="">Select…</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label><button className="btn">Open</button></form>
+          <form className="row">{sp.back && <input type="hidden" name="back" value={sp.back} />}<label>Sector / Mohalla<select name="sector" defaultValue={sp.sector}><option value="">Select…</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label><button className="btn">Open</button></form>
         </div>
       )}
       {sectorId && (
@@ -57,7 +57,7 @@ export default async function Households({ searchParams }: { searchParams: SP })
           <div className="card">
             <div className="top mb-2">
               <h2 className="m0">Households · {sectorName} ({households.length})</h2>
-              <form className="row">{sp.sector && <input type="hidden" name="sector" value={sp.sector} />}<input name="q" defaultValue={sp.q} placeholder="Search" /><button className="btn">Search</button></form>
+              <form className="row">{sp.sector && <input type="hidden" name="sector" value={sp.sector} />}{sp.back && <input type="hidden" name="back" value={sp.back} />}<input name="q" defaultValue={sp.q} placeholder="Search" /><button className="btn">Search</button></form>
             </div>
             <table>
               <thead><tr><th>HOF ID</th><th>Name</th><th>Mobile</th><th>WhatsApp consent</th><th>Bookings</th><th><span className="sr-only">Actions</span></th></tr></thead>

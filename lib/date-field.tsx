@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { englishLabel, fromMisri, misri, MISRI_MONTHS, misriLabel } from "./misri";
+import { dateToIso, englishLabel, fromMisri, misri, MISRI_MONTHS, misriLabel } from "./misri";
 
 type Props = { hijri: boolean; name: string; defaultValue?: string; required?: boolean };
 
 /** Date picker in the header toggle's calendar (Misri or English month grid), the other calendar's date shown under it. Submits YYYY-MM-DD either way. */
 export function DateField(p: Props) {
   // key: same-route navigations keep the component, so a new server value must remount it.
-  return <DatePicker key={p.defaultValue} {...p} />;
+  return <DatePicker key={p.defaultValue} {...p} defaultValue={dateToIso(p.defaultValue ?? "")} />; // values can come from the URL
 }
 
 const DAY = 864e5;

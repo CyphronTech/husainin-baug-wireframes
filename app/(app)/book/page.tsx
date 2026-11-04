@@ -4,6 +4,7 @@ import { addDays, Calendar, Legend, loadWeek } from "@/lib/calendar";
 import { DateField } from "@/lib/date-field";
 import { getVenues } from "@/lib/data";
 import { fmt, inr, SLOT_LABEL, today } from "@/lib/format";
+import { dateToIso } from "@/lib/misri";
 import { requireUser } from "@/lib/session";
 import type { Slot } from "@/lib/types";
 import { Msg, Steps, type SP } from "@/lib/ui";
@@ -14,8 +15,8 @@ export default async function BookStep1({ searchParams }: { searchParams: SP }) 
   await requireUser();
   const sp = await searchParams;
   const t = sp.t ?? "D";
-  const from = sp.from || today();
-  const to = t === "X" ? sp.to || from : from;
+  const from = dateToIso(sp.from ?? "") || today();
+  const to = t === "X" ? dateToIso(sp.to ?? "") || from : from;
   const picked = (sp.v ?? "").split(",").filter(Boolean);
   const slot: Slot = t === "X" ? "D" : (t as Slot);
 
@@ -38,7 +39,9 @@ export default async function BookStep1({ searchParams }: { searchParams: SP }) 
   const freeHref = (venueId: string, date: string, s: Slot) => {
     const sameDate = t === "X" || date === from;
     const v = sameDate ? [...new Set([...picked, venueId])] : [venueId];
-    const nt = s === "D" || t === "D" || t === "X" ? t : s;
+    // Full day needs both slots: if the other one is taken, the clicked slot is all that can be booked.
+    const otherFree = !locks.has(`${venueId}_${date}_${s === "M" ? "E" : "M"}`);
+    const nt = s === "D" || t === "X" || (t === "D" && otherFree) ? t : s;
     return href({ t: nt, from: t === "X" ? from : date, to: t === "X" ? to : date, v: v.join(",") });
   };
 

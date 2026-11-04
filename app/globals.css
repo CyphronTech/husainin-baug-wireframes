@@ -50,6 +50,7 @@ td { padding: var(--space-2); border-bottom: 1px solid var(--line); vertical-ali
 .grid { display: grid; gap: var(--space-5); }
 .g4 { grid-template-columns: repeat(4, 1fr); } .g2 { grid-template-columns: 1.6fr 1fr; } .g2e { grid-template-columns: 1fr 1fr; }
 .grid > .card { margin-bottom: 0; }
+.grid > * { min-width: 0; } /* a wide table scrolls inside its card instead of stretching the page on phones */
 .stack { display: grid; gap: var(--space-3); }
 .stack > * { margin: 0; }
 .row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: end; }
@@ -67,7 +68,7 @@ details.inline { display: inline-block; margin-left: var(--space-2); } details.i
 .page-narrow { max-width: 720px; margin: 40px auto; padding: var(--space-4); }
 
 /* ── Components ───────────────────────────────────────────────────────────────────────────────────────── */
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-5); overflow-x: auto; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: var(--space-5); margin-bottom: var(--space-5); overflow-x: auto; position: relative; /* clips absolute children (.sr-only in table heads), which would otherwise widen the page */ }
 .chip { border: 1px solid var(--line); border-radius: var(--radius-full); padding: 6px var(--space-3); background: var(--surface); font-size: var(--text-md); display: flex; gap: 10px; align-items: center; }
 /* Misri date picker (lib/date-field.tsx): looks like an input, opens a month grid */
 .datefield { position: relative; display: block; }
@@ -169,6 +170,7 @@ a.pill:hover { border-color: var(--text); }
   .side .brand { padding: 0 0 var(--space-2); }
   .side nav { display: flex; gap: var(--space-1); overflow-x: auto; position: relative; padding-inline: 16px 24px; margin-inline: calc(-1 * var(--space-3)); /* fade the edges: hints the strip scrolls; padding keeps end links clear of the fade */ mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 24px), transparent); }
   .side nav a { white-space: nowrap; margin: 0; }
+  .shell { grid-template-rows: auto 1fr; } /* short pages: spare height goes to the content, not the header */
   .g4, .g2, .g2e { grid-template-columns: 1fr 1fr; }
   .main { padding: var(--space-4); }
   .pill { min-height: 32px; line-height: 30px; }
