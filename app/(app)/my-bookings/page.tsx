@@ -1,3 +1,4 @@
+import { Icon } from "@/lib/icons";
 import Link from "next/link";
 import { Select } from "@/lib/dropdown";
 import { resendLink } from "@/app/actions";
@@ -56,7 +57,7 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
           <label>To date<DateField hijri={hijri} name="to" defaultValue={sp.to} /></label>
           <Select label="Status" name="status" defaultValue={sp.status}><option value="">All</option>{STATUSES.map((s) => <option key={s}>{s}</option>)}</Select>
           {isAdmin && <Select label="Sector / Mohalla" name="sector" defaultValue={sp.sector}><option value="">All</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select>}
-          <button className="btn">Apply</button>
+          <button className="btn btn-icon"><Icon name="filter" />Apply</button>
         </form>
       </div>
       <div className="card">
@@ -85,7 +86,7 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
                   <td>{mine ? "You" : b.createdByName}</td>
                   <td>
                     {b.receiptNo && <a href={b.receiptUrl ?? `/r/${b.id}/pdf`}>Receipt</a>}{" "}
-                    {b.shown === "On hold" && <form className="inline" action={resendLink}><input type="hidden" name="id" value={b.id} /><button className="link">Resend link</button></form>}{" "}
+                    {b.shown === "On hold" && <form className="inline" action={resendLink}><input type="hidden" name="id" value={b.id} /><button className="link btn-icon"><Icon name="send" size={16} />Resend link</button></form>}{" "}
                     {b.shown === "Confirmed" && (mine || isAdmin) && <Link href={`/bookings/${b.id}/cancel`}>Request cancellation</Link>}{" "}
                     {isAdmin && crs.some((c) => c.status === "awaiting") && <Link href={`/bookings/${b.id}/cancel`}>Review</Link>}
                   </td>
@@ -96,9 +97,9 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
         </table>
         {pages > 1 && (
           <nav className="row items-center justify-end mt-3" aria-label="Pagination">
-            {page > 1 ? <Link className="btn" href={pageHref(page - 1)}>Previous</Link> : <button className="btn" disabled>Previous</button>}
+            {page > 1 ? <Link className="btn btn-icon" href={pageHref(page - 1)}><Icon name="back" />Previous</Link> : <button className="btn btn-icon" disabled><Icon name="back" />Previous</button>}
             <span className="muted">Page {page} of {pages}</span>
-            {page < pages ? <Link className="btn" href={pageHref(page + 1)}>Next</Link> : <button className="btn" disabled>Next</button>}
+            {page < pages ? <Link className="btn btn-icon" href={pageHref(page + 1)}>Next<Icon name="next" /></Link> : <button className="btn btn-icon" disabled>Next<Icon name="next" /></button>}
           </nav>
         )}
         <p className="alert info">You can request cancellation only for bookings you created.</p>

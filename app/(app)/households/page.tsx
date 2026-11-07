@@ -1,3 +1,4 @@
+import { Icon } from "@/lib/icons";
 import Link from "next/link";
 import { Select } from "@/lib/dropdown";
 import { saveHousehold } from "@/app/actions";
@@ -39,7 +40,7 @@ export default async function Households({ searchParams }: { searchParams: SP })
       <Msg msg={sp.msg} />
       {isAdmin && (
         <div className="card">
-          <form className="row">{sp.back && <input type="hidden" name="back" value={sp.back} />}<Select label="Sector / Mohalla" name="sector" defaultValue={sp.sector}><option value="">Select…</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select><button className="btn">Open</button></form>
+          <form className="row">{sp.back && <input type="hidden" name="back" value={sp.back} />}<Select label="Sector / Mohalla" name="sector" defaultValue={sp.sector}><option value="">Select…</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select><button className="btn btn-icon">Open<Icon name="next" /></button></form>
         </div>
       )}
       {sectorId && (
@@ -56,7 +57,7 @@ export default async function Households({ searchParams }: { searchParams: SP })
                 <label>Address<input name="address" defaultValue={e.address} /></label>
                 <label>Sector / Mohalla<input value={sectorName} disabled /></label>
                 <label className="check"><input type="checkbox" name="whatsappConsent" defaultChecked={e.whatsappConsent} />Household agrees to receive WhatsApp messages</label>
-                <div className="row"><button className="btn primary">Save household</button><Link className="btn" href={keep({})}>Clear</Link>{sp.back?.startsWith("/book/") && <Link className="btn" href={sp.back}>Back to booking</Link>}</div>
+                <div className="row"><button className="btn primary btn-icon"><Icon name="check" />Save household</button><Link className="btn btn-icon" href={keep({})}><Icon name="x" />Clear</Link>{sp.back?.startsWith("/book/") && <Link className="btn btn-icon" href={sp.back}><Icon name="back" />Back to booking</Link>}</div>
               </form>
             </div>
             <div className="card">
@@ -67,7 +68,7 @@ export default async function Households({ searchParams }: { searchParams: SP })
           <div className="card">
             <div className="top mb-2">
               <h2 className="m0">Households · {sectorName} ({households.length})</h2>
-              <form className="row">{sp.sector && <input type="hidden" name="sector" value={sp.sector} />}{sp.back && <input type="hidden" name="back" value={sp.back} />}<input name="q" defaultValue={sp.q} placeholder="Search" /><button className="btn">Search</button></form>
+              <form className="row">{sp.sector && <input type="hidden" name="sector" value={sp.sector} />}{sp.back && <input type="hidden" name="back" value={sp.back} />}<input name="q" defaultValue={sp.q} placeholder="Search" /><button className="btn btn-icon"><Icon name="search" />Search</button></form>
             </div>
             <table>
               <thead><tr><th>HOF ID</th><th>Name</th><th>Mobile</th><th>WhatsApp consent</th><th>Bookings</th><th><span className="sr-only">Actions</span></th></tr></thead>
@@ -76,7 +77,7 @@ export default async function Households({ searchParams }: { searchParams: SP })
                   <tr key={h.id}>
                     <td>{h.hof}</td><td>{h.name}</td><td>{h.mobile}</td><td>{h.whatsappConsent ? "Yes" : "No"}</td>
                     <td>{bookings.filter((b) => b.household.hof === h.hof).length}</td>
-                    <td><Link href={inList({ edit: h.id })}>Edit</Link></td>
+                    <td><Link className="link btn-icon" href={inList({ edit: h.id })}><Icon name="pencil" size={16} />Edit</Link></td>
                   </tr>
                 ))}
               </tbody>

@@ -1,3 +1,4 @@
+import { Icon } from "@/lib/icons";
 import Link from "next/link";
 import { Select } from "@/lib/dropdown";
 import { deleteExpense, saveExpense } from "@/app/actions";
@@ -58,13 +59,13 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
             <label>Paid to<input name="paidTo" required defaultValue={editing?.paidTo} /></label>
             <label>{editing?.billName ? `Replace bill (current: ${editing.billName})` : "Bill / invoice (PDF or photo, max 10 MB)"}<input type="file" name="bill" accept=".pdf,image/*" /></label>
             <label>Notes<textarea name="notes" rows={2} defaultValue={editing?.notes} /></label>
-            <div className="row"><Submit className="btn primary">Save expense</Submit>{editing && <Link className="btn" href={`/expenses?month=${month}`}>Cancel</Link>}</div>
+            <div className="row"><Submit className="btn primary btn-icon"><Icon name="check" />Save expense</Submit>{editing && <Link className="btn btn-icon" href={`/expenses?month=${month}`}><Icon name="x" />Cancel</Link>}</div>
           </form>
         </div>
         <div className="card">
           <div className="top mb-2">
             <h2 className="m0">Income vs expenses</h2>
-            <form className="row"><Select name="month" defaultValue={month} aria-label="Month">{!months.includes(month) && <option value={month}>{monthLabel(month)}</option>}{months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}</Select><button className="btn">Show</button></form>
+            <form className="row"><Select name="month" defaultValue={month} aria-label="Month">{!months.includes(month) && <option value={month}>{monthLabel(month)}</option>}{months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}</Select><button className="btn btn-icon"><Icon name="filter" />Show</button></form>
           </div>
           <table>
             <thead><tr><th>Venue</th><th className="text-right">Income</th><th className="text-right">Expenses</th><th className="text-right">Net</th></tr></thead>
@@ -88,10 +89,10 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
                 <td>{dmy(e.date)}</td><td>{venueName(e.venueId)}</td><td>{e.category}</td><td className="text-right">{inr(e.amount)}</td><td>{e.paidTo}</td>
                 <td>{e.billUrl ? <a href={e.billUrl} target="_blank" rel="noreferrer">{e.billName}</a> : "—"}</td><td>{e.notes}</td>
                 <td>
-                  <Link href={`/expenses?month=${month}&edit=${e.id}`}>Edit</Link>
+                  <Link className="link btn-icon" href={`/expenses?month=${month}&edit=${e.id}`}><Icon name="pencil" size={16} />Edit</Link>
                   {/* Native two-step confirm: open, then confirm. No JS. */}
-                  <details className="inline"><summary className="link">Delete</summary>
-                    <form action={deleteExpense}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="month" value={month} /><button className="btn danger mt-3">Confirm delete</button></form>
+                  <details className="inline"><summary className="link btn-icon"><Icon name="trash" size={16} />Delete</summary>
+                    <form action={deleteExpense}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="month" value={month} /><button className="btn danger mt-3 btn-icon"><Icon name="trash" />Confirm delete</button></form>
                   </details>
                 </td>
               </tr>

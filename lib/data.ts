@@ -16,7 +16,11 @@ function cached<T>(key: string, load: () => Promise<T>, ttl = 60_000): Promise<T
   value.catch(() => store.delete(key)); // never cache a failure
   return value;
 }
-export const invalidate = (key: "venues" | "sectors") => store.delete(key);
+export function cachedFor<T>(key: string, ttl: number, load: () => Promise<T>) {
+  return cached(key, load, ttl);
+}
+/** Drops a cache entry; a key ending in ":" drops every entry starting with it. */
+export const invalidate = (key: string) => (key.endsWith(":") ? [...store.keys()].filter((k) => k.startsWith(key)).forEach((k) => store.delete(k)) : store.delete(key));
 
 // Bookings and saves use these fresh reads, so they never act on a stale rate or code. Pages use the cached getters.
 export const readVenues = async () =>
@@ -28,7 +32,10 @@ export const getVenues = () => cached("venues", readVenues);
 export const getSectors = () => cached("sectors", readSectors);
 
 // shortcut: households are loaded per sector (or all, for admin) and searched in memory. Fine to ~10k households.
-export const getHouseholds = async (sectorId?: string) =>
-  rows<Household>(await (sectorId ? db.collection("households").where("sectorId", "==", sectorId) : db.collection("households")).get()).sort((a, b) =>
-    a.name.localeCompare(b.name),
+// Cached like venues (same per-process limits); upsertHousehold clears it.
+export const getHouseholds = (sectorId?: string) =>
+  cached(`households:${sectorId ?? "all"}`, async () =>
+    rows<Household>(await (sectorId ? db.collection("households").where("sectorId", "==", sectorId) : db.collection("households")).get()).sort((a, b) =>
+      a.name.localeCompare(b.name),
+    ),
   );

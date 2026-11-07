@@ -7,7 +7,7 @@ export function Submit({ children, disabled, ...p }: React.ButtonHTMLAttributes<
   const { pending } = useFormStatus();
   return (
     <button {...p} disabled={disabled || pending} aria-busy={pending}>
-      {pending ? "Please wait…" : children}
+      {pending ? <><span className="spinner" aria-hidden="true" />Please wait…</> : children}
     </button>
   );
 }

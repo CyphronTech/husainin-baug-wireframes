@@ -1,3 +1,4 @@
+import { Icon } from "@/lib/icons";
 import Link from "next/link";
 import { Select } from "@/lib/dropdown";
 import { deleteBlockAction, saveBlockAction, saveSector, saveVenue } from "@/app/actions";
@@ -45,12 +46,12 @@ export default async function Venues({ searchParams }: { searchParams: SP }) {
                 <td>{v.name}</td><td>{v.type === "hall" ? "Hall" : "Room"}</td><td>{v.capacity}</td><td>{v.type === "hall" ? maxThaal(v) : "—"}</td>
                 <td>{r(v.rates.morning)}</td><td>{r(v.rates.evening)}</td><td>{r(v.rates.fullDay)}</td><td>{r(v.rates.perDay)}</td>
                 <td><Badge s={v.active ? "active" : "inactive"} /></td>
-                <td><Link href={`?edit=${v.id}`} scroll={false}>Edit</Link></td>
+                <td><Link className="link btn-icon" href={`?edit=${v.id}`} scroll={false}><Icon name="pencil" size={16} />Edit</Link></td>
               </tr>
             ))}
           </tbody>
         </table>
-        <div className="mt-4"><Link className="btn primary" href="?add=1" scroll={false}>+ Add hall or room</Link></div>
+        <div className="mt-4"><Link className="btn primary btn-icon" href="?add=1" scroll={false}><Icon name="plus" />Add hall or room</Link></div>
         {(sp.add || e.id) && <Modal label={venueTitle} close="/venues"><div className="modal-form"><h2>{venueTitle}</h2>
           <form action={saveVenue} className="stack">
             <input type="hidden" name="id" value={e.id ?? ""} />
@@ -87,7 +88,7 @@ export default async function Venues({ searchParams }: { searchParams: SP }) {
               <label className="room-only">Rate per day (₹)<input name="perDay" type="number" min={0} defaultValue={e.rates?.perDay} /></label>
               <p className="alert info">Rate changes apply only to bookings made after the change.</p>
             </fieldset>
-            <div className="row modal-actions"><button className="btn primary">Save</button><Link className="btn" href="/venues" scroll={false}>Cancel</Link></div>
+            <div className="row modal-actions"><button className="btn primary btn-icon"><Icon name="check" />Save</button><Link className="btn btn-icon" href="/venues" scroll={false}><Icon name="x" />Cancel</Link></div>
           </form>
         </div></Modal>}
       </Collapsible>
@@ -102,7 +103,7 @@ export default async function Venues({ searchParams }: { searchParams: SP }) {
             <label>To date<DateField hijri={hijri} name="to" /></label>
           </div>
           <label>Reason<input name="name" required /></label>
-          <div><button className="btn primary">Add block</button></div>
+          <div><button className="btn primary btn-icon"><Icon name="plus" />Add block</button></div>
         </form>
         <table className="mt-3">
           <tbody>
@@ -110,7 +111,7 @@ export default async function Venues({ searchParams }: { searchParams: SP }) {
               <tr key={b.id}>
                 <td>{b.name}</td><td>{dmy(b.from)}{b.to !== b.from && ` – ${dmy(b.to)}`}</td><td>{SLOT_LABEL[b.slot]}</td>
                 <td>{b.venueIds.map((id) => venues.find((v) => v.id === id)?.name).join(", ")}</td>
-                <td><form action={deleteBlockAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value="/venues" /><button className="link">Remove</button></form></td>
+                <td><form action={deleteBlockAction}><input type="hidden" name="id" value={b.id} /><input type="hidden" name="back" value="/venues" /><button className="link btn-icon"><Icon name="trash" size={16} />Remove</button></form></td>
               </tr>
             ))}
           </tbody>
@@ -129,12 +130,12 @@ export default async function Venues({ searchParams }: { searchParams: SP }) {
                 <td>{s.name}</td><td>{s.code}</td><td>{users.filter((u) => u.sectorId === s.id).length}</td><td><Link href={`/households?sector=${s.id}`}>{households.filter((h) => h.sectorId === s.id).length}</Link></td>
                 <td>{s.contactName}<div className="muted">{s.contactMobile}</div></td>
                 <td><Badge s={s.active ? "active" : "inactive"} /></td>
-                <td><Link href={`?editSector=${s.id}`} scroll={false}>Edit</Link></td>
+                <td><Link className="link btn-icon" href={`?editSector=${s.id}`} scroll={false}><Icon name="pencil" size={16} />Edit</Link></td>
               </tr>
             ))}
           </tbody>
         </table>
-        <div className="mt-4"><Link className="btn primary" href="?addSector=1" scroll={false}>+ Add Sector / Mohalla</Link></div>
+        <div className="mt-4"><Link className="btn primary btn-icon" href="?addSector=1" scroll={false}><Icon name="plus" />Add Sector / Mohalla</Link></div>
         {(sp.addSector || es.id) && <Modal label={sectorTitle} close="/venues?open=sectors"><div className="modal-form"><h2>{sectorTitle}</h2>
           <form action={saveSector} className="stack">
             <input type="hidden" name="id" value={es.id ?? ""} />
@@ -154,7 +155,7 @@ export default async function Venues({ searchParams }: { searchParams: SP }) {
               </div>
             </fieldset>
             <p className="alert info">Users are linked to one Sector / Mohalla. Bookings are visible to all on the calendar; household details only to their own Sector / Mohalla.</p>
-            <div className="row modal-actions"><button className="btn primary">Save</button><Link className="btn" href="/venues?open=sectors" scroll={false}>Cancel</Link></div>
+            <div className="row modal-actions"><button className="btn primary btn-icon"><Icon name="check" />Save</button><Link className="btn btn-icon" href="/venues?open=sectors" scroll={false}><Icon name="x" />Cancel</Link></div>
           </form>
         </div></Modal>}
       </Collapsible>

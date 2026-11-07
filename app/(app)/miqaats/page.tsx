@@ -1,3 +1,4 @@
+import { Icon } from "@/lib/icons";
 import Link from "next/link";
 import { Select } from "@/lib/dropdown";
 import { deleteBlockAction, saveBlockAction } from "@/app/actions";
@@ -36,8 +37,8 @@ export default async function Miqaats({ searchParams }: { searchParams: SP }) {
                 <td>{m.blocking === false ? "Not blocked" : "Blocked"}</td>
                 <td className="muted">{m.clashes.join(", ") || "—"}</td>
                 <td>
-                  <Link href={`?edit=${m.id}#edit`}>Edit</Link>{" "}
-                  <form className="inline" action={deleteBlockAction}><input type="hidden" name="id" value={m.id} /><input type="hidden" name="back" value="/miqaats" /><button className="link">Delete</button></form>
+                  <Link className="link btn-icon" href={`?edit=${m.id}#edit`}><Icon name="pencil" size={16} />Edit</Link>{" "}
+                  <form className="inline" action={deleteBlockAction}><input type="hidden" name="id" value={m.id} /><input type="hidden" name="back" value="/miqaats" /><button className="link btn-icon"><Icon name="trash" size={16} />Delete</button></form>
                 </td>
               </tr>
             ))}
@@ -61,7 +62,7 @@ export default async function Miqaats({ searchParams }: { searchParams: SP }) {
           <div className="row">{venues.map((v) => <label key={v.id} className="check"><input type="checkbox" name="venueIds" value={v.id} defaultChecked={e.venueIds?.includes(v.id)} />{v.name}</label>)}</div>
           <label>Notes<textarea name="notes" rows={2} defaultValue={e.notes} /></label>
           <label className="check"><input type="checkbox" name="blocking" defaultChecked={e.blocking !== false} />Block these venues for booking</label>
-          <div className="row"><button className="btn primary">Save Miqaat</button><Link className="btn" href="/miqaats">Cancel</Link></div>
+          <div className="row"><button className="btn primary btn-icon"><Icon name="check" />Save Miqaat</button><Link className="btn btn-icon" href="/miqaats"><Icon name="x" />Cancel</Link></div>
         </form>
       </div>
     </>

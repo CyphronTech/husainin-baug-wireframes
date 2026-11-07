@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/lib/icons";
 import { useState } from "react";
 import { type BlockRow, importBlocks, previewBlocks } from "@/app/actions";
 
@@ -12,7 +13,7 @@ export function BlockImport({ kind, label }: { kind: "miqaat" | "maintenance"; l
   return (
     <div className="stack">
       <div className="row items-center">
-        <a className="btn" href="/blocks-template.csv" download>Download template</a>
+        <a className="btn btn-icon" href="/blocks-template.csv" download><Icon name="download" />Download template</a>
         <label>{label}
           <input
             type="file"
@@ -43,7 +44,7 @@ export function BlockImport({ kind, label }: { kind: "miqaat" | "maintenance"; l
             <input type="hidden" name="kind" value={kind} />
             <input type="hidden" name="rows" value={JSON.stringify(ok.map(({ result, ...r }) => r))} />
             <button className="btn primary" disabled={!ok.length}>Import {ok.length} valid rows</button>
-            <button type="button" className="btn" onClick={() => setRows([])}>Cancel</button>
+            <button type="button" className="btn btn-icon" onClick={() => setRows([])}><Icon name="x" />Cancel</button>
           </form>
         </>
       )}

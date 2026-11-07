@@ -15,13 +15,12 @@ export async function loadWeek(start: string, end = addDays(start, 6)) {
   return { days, locks: new Map(snap.docs.map((d) => [d.id, d.data() as Lock]).filter(([, l]) => isLive(l as Lock, now)) as [string, Lock][]) };
 }
 
-export function Legend({ picked, cart }: { picked?: boolean; cart?: boolean }) {
+/** Colour key: a small swatch styled like the slot it stands for, then its name. */
+export function Legend({ cart }: { cart?: boolean }) {
+  const keys: [string, string][] = [...(cart ? [["incart", "In cart"]] as [string, string][] : []), ["", "Available"], ["pending", "On hold (payment pending)"], ["confirmed", "Booked"], ["block", "Unavailable / Miqaat"]];
   return (
     <div className="legend">
-      {picked && <span className="pill picked">Selected</span>}
-      {cart && <span className="pill incart">In cart</span>}
-      <span className="pill">Available</span><span className="pill pending">On hold (payment pending)</span>
-      <span className="pill confirmed">Booked</span><span className="pill block">Unavailable / Miqaat</span>
+      {keys.map(([cls, label]) => <span key={label} className="lg"><i className={`pill ${cls}`} aria-hidden="true" />{label}</span>)}
     </div>
   );
 }
@@ -32,23 +31,22 @@ export async function Calendar(p: {
   locks: Map<string, Lock>;
   freeHref?: (venueId: string, date: string, slot: Slot) => string;
   takenHref?: (lockId: string) => string;
-  picked?: (venueId: string, date: string, slot: Slot) => boolean;
   inCart?: (venueId: string, date: string, slot: Slot) => boolean;
   dim?: (l: Lock) => boolean;
   sel?: string;
   keepScroll?: boolean;
+  removeHref?: (venueId: string) => string | undefined;
 }) {
   const { hijri, dmy } = await fmt();
   const STATUS = { pending: "on hold", confirmed: "booked", block: "unavailable" } as const;
   const pill = (venueName: string, venueId: string, date: string, slot: Slot, label: string) => {
     const id = `${venueId}_${date}_${slot}`;
     const l = p.locks.get(id);
-    const picked = !l && p.picked?.(venueId, date, slot);
     const inCart = !l && p.inCart?.(venueId, date, slot);
-    const desc = `${venueName}, ${dmy(date)}, ${SLOT_LABEL[slot]}, ${l ? STATUS[l.status] : inCart ? "in cart" : picked ? "selected" : "available"}`;
+    const desc = `${venueName}, ${dmy(date)}, ${SLOT_LABEL[slot]}, ${l ? STATUS[l.status] : inCart ? "in cart" : "available"}`;
     const a11y = { "aria-label": desc, title: desc };
     if (!l) {
-      const cls = `pill${inCart ? " incart" : picked ? " picked" : ""}`;
+      const cls = `pill${inCart ? " incart" : ""}`;
       return p.freeHref ? <Link key={id} prefetch={false} scroll={!p.keepScroll} className={cls} href={p.freeHref(venueId, date, slot)} {...a11y}>{label}</Link> : <span key={id} className={cls} {...a11y}>{label}</span>;
     }
     const cls = `pill ${l.status}${p.dim?.(l) ? " other" : ""}${p.sel === id ? " sel" : ""}`;
@@ -64,13 +62,14 @@ export async function Calendar(p: {
   return (
     <table className="cal">
       <thead>
-        <tr><th>Venue</th>{p.days.map((d) => <th key={d}>{head(d)}</th>)}</tr>
+        <tr><th>Venue</th>{p.days.map((d) => <th key={d}>{head(d)}</th>)}{p.removeHref && <th><span className="sr-only">Remove</span></th>}</tr>
       </thead>
       <tbody>
         {p.venues.map((v) => (
           <tr key={v.id}>
             <td><b>{v.name}</b><div className="muted">{v.type === "hall" ? `Hall · max ${maxThaal(v)} thaal` : "Room"}</div></td>
             {p.days.map((d) => <td key={d}>{v.type === "hall" ? [pill(v.name, v.id, d, "M", "M"), pill(v.name, v.id, d, "E", "E")] : pill(v.name, v.id, d, "D", "Day")}</td>)}
+            {p.removeHref && <td className="cal-end">{p.removeHref(v.id) && <Link prefetch={false} scroll={false} className="cal-remove" href={p.removeHref(v.id)!} aria-label={`Remove ${v.name} from the calendar`} title={`Remove ${v.name}`}>×</Link>}</td>}
           </tr>
         ))}
       </tbody>

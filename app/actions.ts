@@ -80,18 +80,11 @@ export async function logout() {
   redirect("/login");
 }
 
-/** Header toggle: Misri (default) or English dates, saved per user. */
-export async function setCalendar(fd: FormData) {
-  const user = await requireUser();
-  await db.doc(`users/${user.uid}`).update({ cal: fd.get("cal") === "en" ? "en" : "hijri" });
-  revalidatePath("/", "layout"); // every page shows dates
-}
-
 // ── Bookings ────────────────────────────────────────────────────────────────
 
 export async function bookFromWizard(f: FormData) {
   const user = await requireUser();
-  const state = new URLSearchParams({ c: s(f, "c"), from: s(f, "from"), to: s(f, "to"), hall: s(f, "hall"), th: s(f, "thaal"), h: s(f, "h") });
+  const state = new URLSearchParams({ c: s(f, "c"), from: s(f, "from"), to: s(f, "to"), hall: s(f, "hall"), th: s(f, "thaal"), h: s(f, "h"), purpose: s(f, "purpose"), purposeOther: s(f, "purposeOther") });
   await run(`/book/review?${state}`, async () => {
     if (!HOF.test(s(f, "h"))) throw new Error("Select a household");
     const hh = (await db.doc(`households/${s(f, "h")}`).get()).data() as Household | undefined;
@@ -102,7 +95,7 @@ export async function bookFromWizard(f: FormData) {
       sectorId: sector.id,
       sectorName: sector.name,
       household: { name: hh.name, hof: hh.hof, mobile: hh.mobile, whatsappConsent: hh.whatsappConsent },
-      event: { purpose: s(f, "purpose"), guests: n(f, "guests") ?? 0, thaal: n(f, "thaal") ?? 0 },
+      event: { purpose: s(f, "purpose") === "Other" ? s(f, "purposeOther") : s(f, "purpose"), thaal: n(f, "thaal") ?? 0 },
     });
     await sendLink(id).catch(() => {}); // booking + hold stand even if Razorpay is down; retry from booking page
     return `/bookings/${id}`;
@@ -349,6 +342,7 @@ export async function saveUser(f: FormData) {
       const { password: _, ...logged } = data;
       audit(tx, admin, editing ? "user.update" : "user.create", { uid: username, ...logged });
     });
+    invalidate(`user:${username}`);
   });
 }
 
@@ -375,6 +369,7 @@ async function upsertHousehold(user: AppUser, h: HouseholdInput) {
     tx.set(ref, h);
     audit(tx, user, existing ? "household.update" : "household.create", { hof: h.hof });
   });
+  invalidate("households:");
 }
 
 const householdFrom = (user: AppUser, f: FormData): HouseholdInput => ({

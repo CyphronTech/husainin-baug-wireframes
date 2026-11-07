@@ -1,3 +1,4 @@
+import { Icon } from "@/lib/icons";
 import Link from "next/link";
 import { Select } from "@/lib/dropdown";
 import { notFound } from "next/navigation";
@@ -51,8 +52,8 @@ export default async function CancelBooking({ params, searchParams }: { params: 
                 <label>Reference<input name="refundRef" /></label>
               </div>
               <div className="row">
-                <Submit className="btn primary" name="decision" value="approve">Approve cancellation</Submit>
-                <Submit className="btn" name="decision" value="reject">Reject</Submit>
+                <Submit className="btn primary btn-icon" name="decision" value="approve"><Icon name="check" />Approve cancellation</Submit>
+                <Submit className="btn btn-icon" name="decision" value="reject"><Icon name="x" />Reject</Submit>
               </div>
             </form>
           ) : status === "Confirmed" && mine ? (
@@ -61,7 +62,7 @@ export default async function CancelBooking({ params, searchParams }: { params: 
               <Select label="Reason" name="reason">{["Event postponed", "Event cancelled", "Venue change", "Other"].map((r) => <option key={r}>{r}</option>)}</Select>
               <label>Details<textarea name="details" rows={3} /></label>
               <label className="check"><input type="checkbox" name="informed" required />Household informed that refund follows the trust&apos;s cancellation policy</label>
-              <div className="row"><Submit className="btn primary">Submit cancellation request</Submit><Link className="btn" href={`/bookings/${id}`}>Back</Link></div>
+              <div className="row"><Submit className="btn primary btn-icon"><Icon name="send" />Submit cancellation request</Submit><Link className="btn btn-icon" href={`/bookings/${id}`}><Icon name="back" />Back</Link></div>
             </form>
           ) : (
             <p className="alert info m0">
