@@ -1,3 +1,4 @@
+import { Icon } from "@/lib/icons";
 import Link from "next/link";
 import { datesBetween, isLive } from "@/lib/booking";
 import { getVenues, rows } from "@/lib/data";
@@ -6,13 +7,15 @@ import { addDays } from "@/lib/calendar";
 import { fmt, inr, istMidnight, slotSummary, today } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Block, Booking, Lock } from "@/lib/types";
-import { Badge } from "@/lib/ui";
+import { Badge, type SP } from "@/lib/ui";
+import { Availability, availabilityData } from "./availability";
 import { SectorDashboard } from "./sector-dashboard";
 
-export default async function Dashboard() {
-  const { dmy } = await fmt();
-  const user = await requireUser();
-  if (user.role !== "admin") return <SectorDashboard user={user} />;
+export default async function Dashboard({ searchParams }: { searchParams: SP }) {
+  const sp = await searchParams;
+  const avail = availabilityData(sp); // calendar reads run alongside this page's own reads
+  const [user, { dmy }] = await Promise.all([requireUser(), fmt()]);
+  if (user.role !== "admin") return <SectorDashboard user={user} sp={sp} avail={avail} />;
 
   const t = today();
   const monthStart = t.slice(0, 8) + "01";
@@ -83,6 +86,8 @@ export default async function Dashboard() {
         </div>
       </div>
 
+      <Availability sp={sp} data={avail} />
+
       <div className="grid g2e">
         <div className="card">
           <h2>Upcoming Miqaat blocks</h2>
@@ -95,10 +100,10 @@ export default async function Dashboard() {
         <div className="card">
           <h2>Quick actions</h2>
           <div className="row">
-            <Link className="btn primary" href="/book">New booking</Link>
-            <Link className="btn" href="/venues?open=block#block">Block dates</Link>
-            <Link className="btn" href="/users">Add user</Link>
-            <Link className="btn" href="/my-bookings?status=Cancellation+requested">Review cancellations</Link>
+            <Link className="btn primary btn-icon" href="/book"><Icon name="plus" />New booking</Link>
+            <Link className="btn btn-icon" href="/venues?open=block#block"><Icon name="calendarPlus" />Block dates</Link>
+            <Link className="btn btn-icon" href="/users"><Icon name="userPlus" />Add user</Link>
+            <Link className="btn btn-icon" href="/my-bookings?status=Cancellation+requested"><Icon name="list" />Review cancellations</Link>
           </div>
         </div>
       </div>

@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { Icon, type IconName } from "@/lib/icons";
 
-const ADMIN = [
-  ["/", "Dashboard"], ["/book", "New booking"], ["/my-bookings", "All bookings"], ["/venues", "Halls, Rooms & Sectors"],
-  ["/households", "Households"], ["/payments", "Payments"], ["/users", "Users"],
-  ["/miqaats", "Miqaat details"], ["/expenses", "Expenses"],
+const ADMIN: [string, string, IconName][] = [
+  ["/", "Dashboard", "home"], ["/book", "New booking", "calendarPlus"], ["/my-bookings", "All bookings", "list"], ["/venues", "Halls, Rooms & Sectors", "building"],
+  ["/households", "Households", "family"], ["/payments", "Payments", "wallet"], ["/users", "Users", "user"],
+  ["/miqaats", "Miqaat details", "star"], ["/expenses", "Expenses", "receipt"],
 ];
-const SECTOR = [["/", "Dashboard"], ["/book", "New booking"], ["/my-bookings", "My bookings"], ["/households", "Households"]];
+const SECTOR: [string, string, IconName][] = [["/", "Dashboard", "home"], ["/book", "New booking", "calendarPlus"], ["/my-bookings", "My bookings", "list"], ["/households", "Households", "family"]];
 
 export function Nav({ admin }: { admin: boolean }) {
   const path = usePathname();
@@ -21,8 +22,8 @@ export function Nav({ admin }: { admin: boolean }) {
   }, [path]);
   return (
     <nav ref={nav}>
-      {(admin ? ADMIN : SECTOR).map(([href, label]) => (
-        <Link key={href} href={href} aria-current={(href === "/" ? path === "/" : path === href || path.startsWith(href + "/")) ? "page" : undefined}>{label}</Link>
+      {(admin ? ADMIN : SECTOR).map(([href, label, icon]) => (
+        <Link key={href} href={href} aria-current={(href === "/" ? path === "/" : path === href || path.startsWith(href + "/")) ? "page" : undefined}><Icon name={icon} />{label}</Link>
       ))}
     </nav>
   );

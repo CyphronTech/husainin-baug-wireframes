@@ -1,20 +1,19 @@
+import { Icon } from "@/lib/icons";
 import Link from "next/link";
-import { Calendar, Legend, loadWeek } from "@/lib/calendar";
-import { getHouseholds, getSectors, getVenues, rows } from "@/lib/data";
+import { getHouseholds, getSectors, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { displayStatus, fmt, slotSummary, today } from "@/lib/format";
 import type { AppUser, Booking } from "@/lib/types";
-import { Badge } from "@/lib/ui";
+import { Badge, type SP } from "@/lib/ui";
+import { Availability, type availabilityData } from "./availability";
 
-export async function SectorDashboard({ user }: { user: AppUser }) {
+export async function SectorDashboard({ user, sp, avail }: { user: AppUser; sp: Awaited<SP>; avail: ReturnType<typeof availabilityData> }) {
   const { dmy } = await fmt();
   const t = today();
-  const [bookings, households, crs, venues, week, sectors] = await Promise.all([
+  const [bookings, households, crs, sectors] = await Promise.all([
     db.collection("bookings").where("sectorId", "==", user.sectorId).get().then(rows<Booking>),
     getHouseholds(user.sectorId!),
     db.collection("cancellations").where("sectorId", "==", user.sectorId).get(),
-    getVenues(),
-    loadWeek(t),
     getSectors(),
   ]);
   const shown = bookings.map((b) => ({ ...b, shown: displayStatus(b) }));
@@ -58,18 +57,13 @@ export async function SectorDashboard({ user }: { user: AppUser }) {
         <div className="card">
           <h2>Quick actions</h2>
           <div className="row">
-            <Link className="btn primary" href="/book">New booking</Link>
-            <Link className="btn" href="/households">Add household</Link>
-            <Link className="btn" href="/my-bookings">My bookings</Link>
+            <Link className="btn primary btn-icon" href="/book"><Icon name="plus" />New booking</Link>
+            <Link className="btn btn-icon" href="/households"><Icon name="userPlus" />Add household</Link>
+            <Link className="btn btn-icon" href="/my-bookings"><Icon name="list" />My bookings</Link>
           </div>
         </div>
       </div>
-      <div className="card">
-        <h2>This week</h2>
-        <Legend />
-        <Calendar venues={venues.filter((v) => v.active)} days={week.days} locks={week.locks} />
-        <div className="alert info">The shared calendar shows bookings from every Sector / Mohalla. <Link href="/book">Check availability</Link></div>
-      </div>
+      <Availability sp={sp} data={avail} />
     </>
   );
 }

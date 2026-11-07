@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "@/lib/icons";
 import { useState } from "react";
 import { importHouseholds } from "@/app/actions";
 
@@ -21,7 +22,7 @@ export function HouseholdImport({ known, sectorId }: { known: string[]; sectorId
   return (
     <div className="stack">
       <div className="row">
-        <a className="btn" href="/households-template.csv" download>Download template</a>
+        <a className="btn btn-icon" href="/households-template.csv" download><Icon name="download" />Download template</a>
         <label>Upload CSV / Excel
           <input
             type="file"
@@ -49,7 +50,7 @@ export function HouseholdImport({ known, sectorId }: { known: string[]; sectorId
             <input type="hidden" name="rows" value={JSON.stringify(valid.map(({ result, ...r }) => r))} />
             {sectorId && <input type="hidden" name="sectorId" value={sectorId} />}
             <button className="btn primary" disabled={!valid.length}>Import {valid.length} valid rows</button>
-            <button type="button" className="btn" onClick={() => setRows([])}>Cancel</button>
+            <button type="button" className="btn btn-icon" onClick={() => setRows([])}><Icon name="x" />Cancel</button>
           </form>
         </>
       )}

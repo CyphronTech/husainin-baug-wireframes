@@ -42,7 +42,7 @@ export type Booking = {
   createdByName: string;
   household: { name: string; hof: string; mobile: string; whatsappConsent: boolean };
   items: Item[];
-  event: { purpose: string; guests: number; thaal?: number };
+  event: { purpose: string; guests?: number; thaal?: number }; // guests: only on bookings made before the field was dropped
   amount: number;
   status: "pending" | "confirmed" | "cancelled";
   /** Pending only: after this the hold lapses and the slots count as free (lazily — no cron). */

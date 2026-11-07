@@ -1,3 +1,4 @@
+import { Icon } from "@/lib/icons";
 import Link from "next/link";
 import { Select } from "@/lib/dropdown";
 import { DateField } from "@/lib/date-field";
@@ -34,7 +35,7 @@ export default async function Payments({ searchParams }: { searchParams: SP }) {
           <label>To date<DateField hijri={hijri} name="to" defaultValue={sp.to} /></label>
           <Select label="Sector / Mohalla" name="sector" defaultValue={sp.sector}><option value="">All</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select>
           <Select label="Status" name="status" defaultValue={sp.status}><option value="">All</option><option value="paid">Paid</option><option value="pending">Pending link</option><option value="refunded">Refunded</option><option value="refund due">Refund due</option></Select>
-          <button className="btn">Apply</button>
+          <button className="btn btn-icon"><Icon name="filter" />Apply</button>
         </form>
       </div>
       <div className="grid g4 mb-5">
@@ -43,7 +44,7 @@ export default async function Payments({ searchParams }: { searchParams: SP }) {
         <div className="card"><div className="muted">Refunds recorded</div><div className="stat">{inr(refunds.reduce((s, c) => s + c.refund!.amount, 0))}</div></div>
       </div>
       <div className="card">
-        <div className="top mb-2"><h2 className="m0">Payment collection</h2><a className="btn" href={`/api/payments/export?${qs}`}>Export to Excel</a></div>
+        <div className="top mb-2"><h2 className="m0">Payment collection</h2><a className="btn btn-icon" href={`/api/payments/export?${qs}`}><Icon name="download" />Export to Excel</a></div>
         <table>
           <thead><tr><th>Receipt no.</th><th>Booking</th><th>Household</th><th>Sector / Mohalla</th><th>Amount</th><th>Method</th><th>Razorpay ref.</th><th>Paid on</th><th>Status</th></tr></thead>
           <tbody>

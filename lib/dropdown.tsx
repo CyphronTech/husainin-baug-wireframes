@@ -104,19 +104,28 @@ export function Select({ label, "aria-label": ariaLabel, name, form, defaultValu
 }
 
 /** Pick several. Submits one `name` field per ticked option. */
-export function MultiSelect({ label, name, empty, options, selected }: {
+export function MultiSelect({ label, name, empty, options, selected, busy, onChange }: {
   label: string;
   name: string;
   empty: string;
   options: { value: string; label: string }[];
   selected: string[];
+  busy?: boolean;
+  onChange?: (picked: string[]) => void;
 }) {
   const [picked, setPicked] = useState(selected);
+  const key = selected.join(",");
+  useEffect(() => setPicked(key ? key.split(",") : []), [key]); // follow the URL when a link changes it
   const { ref, props } = useDropdown();
   const names = options.filter((o) => picked.includes(o.value)).map((o) => o.label);
+  const toggle = (value: string, on: boolean) => {
+    const next = on ? [...picked, value] : picked.filter((p) => p !== value);
+    setPicked(next);
+    onChange?.(next);
+  };
   return (
     <Field label={label}>
-      <details ref={ref} className="ms" {...props}>
+      <details ref={ref} className="ms" aria-busy={busy} {...props}>
         <summary>{names.length === 0 ? empty : names.length <= 2 ? names.join(", ") : `${names.length} selected`}</summary>
         <div className="ms-panel">
           {options.map((o) => (
@@ -126,7 +135,7 @@ export function MultiSelect({ label, name, empty, options, selected }: {
                 name={name}
                 value={o.value}
                 checked={picked.includes(o.value)}
-                onChange={(e) => setPicked(e.target.checked ? [...picked, o.value] : picked.filter((p) => p !== o.value))}
+                onChange={(e) => toggle(o.value, e.target.checked)}
               />
               {o.label}
             </label>

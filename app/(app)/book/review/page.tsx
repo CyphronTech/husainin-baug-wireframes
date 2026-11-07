@@ -1,19 +1,23 @@
 import Form from "next/form";
-import { Select } from "@/lib/dropdown";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { bookFromWizard } from "@/app/actions";
-import { HOLD_MINUTES, thaalLimit } from "@/lib/booking";
+import { HOLD_MINUTES } from "@/lib/booking";
 import { cartItems } from "@/lib/cart";
 import { getHouseholds, getSectors, getVenues } from "@/lib/data";
 import { fmt, inr, SLOT_LABEL } from "@/lib/format";
 import { requireUser } from "@/lib/session";
-import type { Item } from "@/lib/types";
+import type { Household, Item } from "@/lib/types";
 import { Msg, Steps, type SP } from "@/lib/ui";
 import { Submit } from "@/lib/submit";
+import { Icon } from "@/lib/icons";
+import { Purpose } from "./purpose";
 
 const PURPOSES = ["Wedding", "Majlis", "Family function", "Meeting", "Other"];
 
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+
+/** Step 3–4: pick the household, fill the event details, check the summary and create the booking. */
 export default async function BookReview({ searchParams }: { searchParams: SP }) {
   const { dmy } = await fmt();
   const user = await requireUser();
@@ -32,66 +36,88 @@ export default async function BookReview({ searchParams }: { searchParams: SP })
   const hh = households.find((h) => h.id === sp.h);
   const term = (sp.q ?? "").toLowerCase();
   const matches = term ? households.filter((h) => `${h.hof} ${h.name} ${h.mobile}`.toLowerCase().includes(term)).slice(0, 8) : [];
-  const capacity = selected.filter((v) => v.type === "hall").reduce((s, v) => s + v.capacity, 0);
   const hasHall = selected.some((v) => v.type === "hall");
-  const thaalMax = thaalLimit(selected);
+  const total = items.reduce((s, i) => s + i.rate, 0);
   const here = (o: Record<string, string>) => `/book/review?${new URLSearchParams({ ...state, ...(sp.h && { h: sp.h }), ...(sp.q && { q: sp.q }), ...o })}`;
   const sectorName = (id: string) => sectors.find((s) => s.id === id)?.name;
+  const hhCard = (h: Household) => (
+    <>
+      <span className="chip-avatar" aria-hidden="true">{initials(h.name)}</span>
+      <span className="hh-main">
+        <b>{h.name}</b>
+        <span className="muted">HOF {h.hof} · {h.mobile}</span>
+        <span className="muted">{sectorName(h.sectorId)}</span>
+      </span>
+    </>
+  );
 
   return (
     <>
-      <div className="top"><h1>New booking · household and review</h1></div>
+      <div className="top"><h1>Household &amp; event</h1></div>
       <Steps on={hh ? 4 : 3} />
       <Msg msg={sp.msg} />
-      <div className="grid g2e mb-5">
-        <div className="card">
-          <h2>Select household</h2>
-          <Form action="/book/review" className="row mb-3">
+      <div className="review-grid">
+        <div>
+          <section className="card">
+            <h2><span className="step-n">1</span>Household</h2>
+            {hh ? (
+              <div className="hh-pick on">
+                {hhCard(hh)}
+                <Link className="icon-btn" href={here({ h: "", q: "" })} aria-label="Change household" title="Change household"><Icon name="pencil" /></Link>
+              </div>
+            ) : (
+              <>
+                <Form action="/book/review" className="hh-search">
+                  {Object.entries(state).map(([k, val]) => <input key={k} type="hidden" name={k} value={val} />)}
+                  <label className="sr-only" htmlFor="hh-q">Search household by HOF ID, name or mobile</label>
+                  <input id="hh-q" name="q" type="search" defaultValue={sp.q} placeholder="Search by HOF ID, name or mobile" autoComplete="off" />
+                  <button className="icon-btn primary" aria-label="Search" title="Search"><Icon name="search" /></button>
+                </Form>
+                <div className="hh-results">
+                  {matches.map((h) => <Link key={h.id} className="hh-pick" href={here({ h: h.id })}>{hhCard(h)}</Link>)}
+                  {term && !matches.length && <p className="muted m0">No household matches “{sp.q}”.</p>}
+                  {!term && <p className="muted m0">Search, then tap the household to book for.</p>}
+                </div>
+                <Link className="btn mt-3 btn-icon" href={`/households?back=${encodeURIComponent(here({}))}`}><Icon name="userPlus" />New household</Link>
+              </>
+            )}
+          </section>
+
+          <section className="card">
+            <h2><span className="step-n">2</span>Event details</h2>
+            {/* After a failed save the server sends purpose back in the URL, so the choice survives. The server still checks a blank "Other". */}
+            <Purpose
+              options={PURPOSES}
+              initial={!sp.purpose ? "Wedding" : PURPOSES.includes(sp.purpose) ? sp.purpose : "Other"}
+              initialOther={sp.purposeOther ?? ""}
+            />
+          </section>
+        </div>
+
+        <aside className="card review-sum">
+          <div className="top mb-2"><h2 className="m0">Summary</h2><Link className="icon-btn" href={back} aria-label="Edit slots" title="Edit slots"><Icon name="pencil" /></Link></div>
+          <ul className="cart-list">
+            {items.map((i) => (
+              <li key={i.venueId + i.date}>
+                <div><b>{i.venueName}</b><div className="muted">{dmy(i.date)} · {SLOT_LABEL[i.slot]}</div></div>
+                <span className="cart-rate">{inr(i.rate)}</span>
+              </li>
+            ))}
+          </ul>
+          {hasHall && sp.th && <div className="sum-row"><span>No. of thaal</span><span>{sp.th}</span></div>}
+          <div className="sum-total"><span>Total payable</span><b>{inr(total)}</b></div>
+          <p className="muted sum-note">
+            Holds the slots for {HOLD_MINUTES} minutes and sends a Razorpay payment link to the household by {hh && !hh.whatsappConsent ? "SMS (no WhatsApp consent)" : "WhatsApp"}.
+          </p>
+          {!hh && <p className="alert warn m0">Select a household first.</p>}
+          <form id="book" action={bookFromWizard} className="step-nav">
             {Object.entries(state).map(([k, val]) => <input key={k} type="hidden" name={k} value={val} />)}
-            {sp.h && <input type="hidden" name="h" value={sp.h} />}
-            <label>Search household (HOF ID, name or mobile)<input name="q" defaultValue={sp.q} /></label>
-            <button className="btn">Search</button>
-          </Form>
-          {[...(hh ? [hh] : []), ...matches.filter((m) => m.id !== hh?.id)].map((h) => (
-            <Link key={h.id} className={`pick${h.id === hh?.id ? " on" : ""}`} href={here({ h: h.id })}>
-              <b>{h.name}</b><br />HOF {h.hof} · Mobile {h.mobile}<br />{sectorName(h.sectorId)} · WhatsApp consent: {h.whatsappConsent ? "Yes" : "No"}
-            </Link>
-          ))}
-          {term && !matches.length && <p className="muted">No household found.</p>}
-          <Link href={`/households?back=${encodeURIComponent(here({}))}`}>+ Add new household</Link>
-        </div>
-
-        <div className="card">
-          <h2>Event details</h2>
-          <div className="stack">
-            <Select label="Purpose" name="purpose" form="book" defaultValue="Wedding">{PURPOSES.map((p) => <option key={p}>{p}</option>)}</Select>
-            <label>Expected guests<input name="guests" form="book" type="number" min={1} max={capacity || undefined} required /></label>
-            {hasHall && <label>No. of thaal<input name="thaal" form="book" type="number" min={1} max={thaalMax || undefined} defaultValue={sp.th} required /></label>}
-            {thaalMax > 0 && <p className="alert info m0">Thaal limit for this booking: {thaalMax}.</p>}
-          </div>
-        </div>
-      </div>
-
-      <div className="card">
-        <h2>Review</h2>
-        <table>
-          <thead><tr><th>Venue</th><th>Date</th><th>Slot</th><th>Amount</th></tr></thead>
-          <tbody>
-            {items.map((i) => <tr key={i.venueId + i.date}><td>{i.venueName}</td><td>{dmy(i.date)}</td><td>{SLOT_LABEL[i.slot]}</td><td>{inr(i.rate)}</td></tr>)}
-            <tr><td colSpan={3}><b>Total payable (full amount)</b></td><td><b>{inr(items.reduce((s, i) => s + i.rate, 0))}</b></td></tr>
-          </tbody>
-        </table>
-        <p className="alert warn">
-          Creating the booking holds the venue for {HOLD_MINUTES} minutes and sends a Razorpay payment link to the household on WhatsApp
-          {hh && !hh.whatsappConsent && " (no WhatsApp consent, so it goes by SMS)"}.
-        </p>
-        <form id="book" action={bookFromWizard} className="row">
-          {Object.entries(state).map(([k, val]) => <input key={k} type="hidden" name={k} value={val} />)}
-          <input type="hidden" name="h" value={hh?.id ?? ""} />
-          <Submit className="btn primary" disabled={!hh}>Create booking &amp; send payment link</Submit>
-          <Link className="btn" href={back}>Back</Link>
-          {!hh && <span className="muted">Select a household first.</span>}
-        </form>
+            <input type="hidden" name="h" value={hh?.id ?? ""} />
+            {hasHall && <input type="hidden" name="thaal" value={sp.th ?? ""} />}{/* entered on step 1; the server checks it against the halls */}
+            <Link className="btn btn-icon" href={back}><Icon name="back" />Back</Link>
+            <Submit className="btn primary btn-icon" disabled={!hh}><Icon name="send" />Book &amp; send link</Submit>
+          </form>
+        </aside>
       </div>
     </>
   );

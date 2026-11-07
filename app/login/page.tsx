@@ -1,3 +1,4 @@
+import { Icon } from "@/lib/icons";
 import { login } from "@/app/actions";
 import { Msg, type SP } from "@/lib/ui";
 import { Submit } from "@/lib/submit";
@@ -13,7 +14,7 @@ export default async function Login({ searchParams }: { searchParams: SP }) {
         <label>Username<input name="username" required autoFocus autoComplete="username" /></label>
         <label>Password<input name="password" type="password" required autoComplete="current-password" /></label>
         <label className="check"><input type="checkbox" name="remember" />Remember me</label>
-        <Submit className="btn primary">Sign in</Submit>
+        <Submit className="btn primary btn-icon">Sign in<Icon name="login" /></Submit>
         <p className="muted m0">Accounts are created by Admin. Forgot your password? Ask Admin to reset it.</p>
       </form>
     </main>

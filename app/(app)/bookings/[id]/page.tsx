@@ -1,3 +1,4 @@
+import { Icon } from "@/lib/icons";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { releaseBooking, resendLink } from "@/app/actions";
@@ -52,7 +53,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
           <p className="m0">
             {summary(b.items)} · {inr(b.amount)}<br />
             {b.household.name} · HOF {b.household.hof} · {b.household.mobile}<br />
-            <span className="muted">{b.event?.purpose} · {b.event?.guests} guests{b.event?.thaal ? ` · ${b.event.thaal} thaal` : ""} · {b.sectorName} · by {b.createdByName}</span>
+            <span className="muted">{b.event?.purpose}{b.event?.guests ? ` · ${b.event.guests} guests` : ""}{b.event?.thaal ? ` · ${b.event.thaal} thaal` : ""} · {b.sectorName} · by {b.createdByName}</span>
           </p>
           <div className="row items-center">
             <Badge s={status === "On hold" ? "On hold" : status} />
@@ -62,7 +63,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
             <>
               <div className="row">
                 <form action={resendLink}><input type="hidden" name="id" value={id} /><Submit className="btn">{b.payment ? "Resend link on WhatsApp" : "Create & send payment link"}</Submit></form>
-                {canAct && <form action={releaseBooking}><input type="hidden" name="id" value={id} /><Submit className="btn danger">Cancel &amp; release</Submit></form>}
+                {canAct && <form action={releaseBooking}><input type="hidden" name="id" value={id} /><Submit className="btn danger btn-icon"><Icon name="x" />Cancel &amp; release</Submit></form>}
               </div>
               {b.payment && <label>Payment link (copy)<input readOnly value={b.payment.url} /></label>}
               {mockPayments && b.payment && <p className="muted m0">Mock mode — <a href={b.payment.url}>open mock checkout</a></p>}
@@ -72,7 +73,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
           )}
           {status === "Expired" && <p className="alert info m0">The hold lapsed without payment. <Link href="/book">Start a new booking</Link>.</p>}
           {status === "Refund due" && <p className="alert warn m0">Paid after the hold expired and the slot was taken. Refund {inr(b.amount)} manually (Razorpay {b.payment?.paymentId}).</p>}
-          {canAct && status === "Confirmed" && <div><Link className="btn danger" href={`/bookings/${id}/cancel`}>Request cancellation</Link></div>}
+          {canAct && status === "Confirmed" && <div><Link className="btn danger btn-icon" href={`/bookings/${id}/cancel`}><Icon name="x" />Request cancellation</Link></div>}
           {crs.map((c) => <p key={c.id} className="muted m0">{c.no}: <Badge s={c.status} /> {c.reason}{c.adminComment && ` — Admin: ${c.adminComment}`}{user.role === "admin" && c.status === "awaiting" && <> <Link href={`/bookings/${id}/cancel`}>Review</Link></>}</p>)}
         </div>
 
@@ -121,8 +122,8 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
                 Cancellation is subject to Admin approval and the trust&apos;s policy.
               </div>
               <div className="row mt-3">
-                <a className="btn" href={b.receiptUrl ?? `/r/${b.id}/pdf`}>Download PDF</a>
-                <Link className="btn primary" href="/my-bookings">Go to my bookings</Link>
+                <a className="btn btn-icon" href={b.receiptUrl ?? `/r/${b.id}/pdf`}><Icon name="download" />Download PDF</a>
+                <Link className="btn primary btn-icon" href="/my-bookings"><Icon name="list" />Go to my bookings</Link>
               </div>
             </>
           ) : (

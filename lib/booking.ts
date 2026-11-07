@@ -71,15 +71,13 @@ export async function createBooking(
   user: AppUser,
   input: { cart: string; sectorId: string; sectorName: string; household: Booking["household"]; event: Booking["event"] },
 ) {
-  if (!Number.isInteger(input.event.guests) || input.event.guests < 1) throw new Error("Enter the expected guests");
+  if (!input.event.purpose) throw new Error("Enter what the event is");
   const all = await getVenues();
   const items = cartItems(input.cart, all);
   if (!items.length) throw new Error("Select at least one venue");
   const past = items.find((i) => i.date < today());
   if (past) throw new Error(`${past.venueName} ${dmy(past.date)} is in the past. Remove it from the cart`);
   const venues = all.filter((v) => items.some((i) => i.venueId === v.id));
-  const capacity = venues.filter((v) => v.type === "hall").reduce((s, v) => s + v.capacity, 0);
-  if (capacity && input.event.guests > capacity) throw new Error(`Expected guests exceed hall capacity of ${capacity}`);
   if (venues.some((v) => v.type === "hall")) {
     const thaal = input.event.thaal ?? 0;
     if (!Number.isInteger(thaal) || thaal < 1) throw new Error("Enter the number of thaal");

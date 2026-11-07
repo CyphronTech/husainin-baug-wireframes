@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import { cachedFor } from "./data";
 import { db } from "./firebase-admin";
 import type { AppUser } from "./types";
 
@@ -51,9 +52,15 @@ export const getUser = cache(async (): Promise<AppUser | null> => {
     sessionCache.set(token, hit);
   }
   if (hit.until < Date.now()) return null; // session itself expired
-  const doc = await db.doc(`users/${hit.uid}`).get();
-  // Checked on every request, so deactivating a user signs them out immediately.
-  return doc.exists && doc.data()!.active ? ({ uid: doc.id, ...doc.data() } as AppUser) : null;
+  // User doc cached 30 s in this process (one Firestore round trip per page saved). saveUser clears it, so
+  // deactivating a user still signs them out at once on this server.
+  // shortcut: with several server instances, another instance keeps the old user for up to 30 s. Upgrade: shared cache.
+  const uid = hit.uid;
+  const user = await cachedFor(`user:${uid}`, 30_000, async () => {
+    const doc = await db.doc(`users/${uid}`).get();
+    return doc.exists ? ({ uid: doc.id, ...doc.data() } as AppUser) : null;
+  });
+  return user?.active ? user : null;
 });
 
 export async function requireUser() {

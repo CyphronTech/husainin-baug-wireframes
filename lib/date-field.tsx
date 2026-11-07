@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "./icons";
 import { dateToIso, englishLabel, fromMisri, misri, MISRI_MONTHS, misriLabel } from "./misri";
 
 type Props = { hijri: boolean; name: string; defaultValue?: string; required?: boolean };
@@ -110,9 +111,9 @@ function DatePicker({ hijri, name, defaultValue, required }: Props) {
         // preventDefault: a click on the popover's empty space would otherwise re-activate the label's button.
         <div className="datefield-pop" role="dialog" aria-label="Pick a date" style={at} onClick={(e) => e.preventDefault()}>
           <div className="datefield-head">
-            <button type="button" className="btn" aria-label="Previous month" onClick={() => move(-1)}>‹</button>
+            <button type="button" className="btn" aria-label="Previous month" onClick={() => move(-1)}><Icon name="chevronLeft" /></button>
             <b>{cal.title(view.y, view.m)}</b>
-            <button type="button" className="btn" aria-label="Next month" onClick={() => move(1)}>›</button>
+            <button type="button" className="btn" aria-label="Next month" onClick={() => move(1)}><Icon name="chevronRight" /></button>
           </div>
           <div className="datefield-grid" ref={grid} onKeyDown={onKey}>
             {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => <span key={d} className="muted">{d}</span>)}
