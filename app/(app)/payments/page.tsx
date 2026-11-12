@@ -7,6 +7,7 @@ import { fmt, inr } from "@/lib/format";
 import { paymentRows } from "@/lib/payments";
 import { requireAdmin } from "@/lib/session";
 import { Badge, type SP } from "@/lib/ui";
+import { FilterFold } from "@/lib/switch";
 
 export default async function Payments({ searchParams }: { searchParams: SP }) {
   const { dmy, dmyhm, hijri } = await fmt();
@@ -27,16 +28,17 @@ export default async function Payments({ searchParams }: { searchParams: SP }) {
 
   return (
     <>
-      <div className="top"><h1>Payment collection details</h1></div>
+      <div className="top"><h1>Payment collection details</h1><a className="btn btn-icon" href={`/api/payments/export?${qs}`} download><Icon name="download" />Export to Excel</a></div>
       <div className="card">
-        <h2>Filters</h2>
-        <form className="row">
-          <label>From date<DateField hijri={hijri} name="from" defaultValue={sp.from} /></label>
-          <label>To date<DateField hijri={hijri} name="to" defaultValue={sp.to} /></label>
-          <Select label="Sector / Mohalla" name="sector" defaultValue={sp.sector}><option value="">All</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select>
-          <Select label="Status" name="status" defaultValue={sp.status}><option value="">All</option><option value="paid">Paid</option><option value="pending">Pending link</option><option value="refunded">Refunded</option><option value="refund due">Refund due</option></Select>
-          <button className="btn btn-icon"><Icon name="filter" />Apply</button>
-        </form>
+        <FilterFold id="pay-filters" count={["from", "to", "sector", "status"].filter((k) => sp[k]).length}>
+          <form className="row">
+            <label>From date<DateField hijri={hijri} name="from" defaultValue={sp.from} /></label>
+            <label>To date<DateField hijri={hijri} name="to" defaultValue={sp.to} /></label>
+            <Select label="Sector / Mohalla" name="sector" defaultValue={sp.sector}><option value="">All</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select>
+            <Select label="Status" name="status" defaultValue={sp.status}><option value="">All</option><option value="paid">Paid</option><option value="pending">Pending link</option><option value="refunded">Refunded</option><option value="refund due">Refund due</option></Select>
+            <button className="btn btn-icon"><Icon name="filter" />Apply</button>
+          </form>
+        </FilterFold>
       </div>
       <div className="grid g4 mb-5">
         <div className="card"><div className="muted">Collected</div><div className="stat">{inr(list.filter((b) => b.receiptNo).reduce((s, b) => s + b.amount, 0))}</div></div>
@@ -44,7 +46,7 @@ export default async function Payments({ searchParams }: { searchParams: SP }) {
         <div className="card"><div className="muted">Refunds recorded</div><div className="stat">{inr(refunds.reduce((s, c) => s + c.refund!.amount, 0))}</div></div>
       </div>
       <div className="card">
-        <div className="top mb-2"><h2 className="m0">Payment collection</h2><a className="btn btn-icon" href={`/api/payments/export?${qs}`}><Icon name="download" />Export to Excel</a></div>
+        <h2>Payment collection</h2>
         <table>
           <thead><tr><th>Receipt no.</th><th>Booking</th><th>Household</th><th>Sector / Mohalla</th><th>Amount</th><th>Method</th><th>Razorpay ref.</th><th>Paid on</th><th>Status</th></tr></thead>
           <tbody>

@@ -11,6 +11,7 @@ import { requireAdmin } from "@/lib/session";
 import { EXPENSE_CATEGORIES, type Booking, type Expense } from "@/lib/types";
 import { Msg, type SP } from "@/lib/ui";
 import { Submit } from "@/lib/submit";
+import { Modal } from "@/lib/modal";
 
 export default async function Expenses({ searchParams }: { searchParams: SP }) {
   const { dmy, monthStart, monthLabel, hijri } = await fmt();
@@ -29,6 +30,7 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
     db.collection("bookings").where("status", "==", "confirmed").get().then(rows<Booking>),
   ]);
   const editing = expenses.find((x) => x.id === sp.edit);
+  const formTitle = editing ? "Edit expense" : "Record an expense";
   const inMonth = expenses.filter((e) => inRange(e.date)).sort((a, b) => b.date.localeCompare(a.date));
   const venueName = (id: string) => (id ? venues.find((v) => v.id === id)?.name ?? id : "All / general");
   // Income = booked rate of each venue-day falling in the month (a booking spanning months splits across them).
@@ -41,11 +43,11 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
 
   return (
     <>
-      <div className="top"><h1>Expenses</h1></div>
+      <div className="top"><h1>Expenses</h1><Link className="btn primary btn-icon" href={`/expenses?month=${month}&add=1`} scroll={false}><Icon name="plus" />Add expense</Link></div>
       <Msg msg={sp.msg} />
-      <div className="grid g2e mb-5">
-        <div className="card">
-          <h2>{editing ? "Edit expense" : "Record an expense"}</h2>
+      {(sp.add || editing) && (
+        <Modal label={formTitle} close={`/expenses?month=${month}`}><div className="modal-form">
+          <h2>{formTitle}</h2>
           <form action={saveExpense} className="stack" key={editing?.id ?? "new"}>
             <input type="hidden" name="id" value={editing?.id ?? ""} />
             <div className="row">
@@ -59,10 +61,11 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
             <label>Paid to<input name="paidTo" required defaultValue={editing?.paidTo} /></label>
             <label>{editing?.billName ? `Replace bill (current: ${editing.billName})` : "Bill / invoice (PDF or photo, max 10 MB)"}<input type="file" name="bill" accept=".pdf,image/*" /></label>
             <label>Notes<textarea name="notes" rows={2} defaultValue={editing?.notes} /></label>
-            <div className="row"><Submit className="btn primary btn-icon"><Icon name="check" />Save expense</Submit>{editing && <Link className="btn btn-icon" href={`/expenses?month=${month}`}><Icon name="x" />Cancel</Link>}</div>
+            <div className="row modal-actions"><Submit className="btn primary btn-icon"><Icon name="check" />Save expense</Submit><Link className="btn btn-icon" href={`/expenses?month=${month}`} scroll={false}><Icon name="x" />Cancel</Link></div>
           </form>
-        </div>
-        <div className="card">
+        </div></Modal>
+      )}
+        <div className="card mb-5">
           <div className="top mb-2">
             <h2 className="m0">Income vs expenses</h2>
             <form className="row"><Select name="month" defaultValue={month} aria-label="Month">{!months.includes(month) && <option value={month}>{monthLabel(month)}</option>}{months.map((m) => <option key={m} value={m}>{monthLabel(m)}</option>)}</Select><button className="btn btn-icon"><Icon name="filter" />Show</button></form>
@@ -78,7 +81,6 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
           </table>
           <p className="alert info">Income counts confirmed bookings by event date. General expenses are not split across venues.</p>
         </div>
-      </div>
       <div className="card">
         <h2>Expenses · {monthLabel(month)}</h2>
         <table>
@@ -89,7 +91,7 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
                 <td>{dmy(e.date)}</td><td>{venueName(e.venueId)}</td><td>{e.category}</td><td className="text-right">{inr(e.amount)}</td><td>{e.paidTo}</td>
                 <td>{e.billUrl ? <a href={e.billUrl} target="_blank" rel="noreferrer">{e.billName}</a> : "—"}</td><td>{e.notes}</td>
                 <td>
-                  <Link className="link btn-icon" href={`/expenses?month=${month}&edit=${e.id}`}><Icon name="pencil" size={16} />Edit</Link>
+                  <Link className="link btn-icon" href={`/expenses?month=${month}&edit=${e.id}`} scroll={false}><Icon name="pencil" size={16} />Edit</Link>
                   {/* Native two-step confirm: open, then confirm. No JS. */}
                   <details className="inline"><summary className="link btn-icon"><Icon name="trash" size={16} />Delete</summary>
                     <form action={deleteExpense}><input type="hidden" name="id" value={e.id} /><input type="hidden" name="month" value={month} /><button className="btn danger mt-3 btn-icon"><Icon name="trash" />Confirm delete</button></form>

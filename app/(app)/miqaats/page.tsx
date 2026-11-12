@@ -10,6 +10,7 @@ import { fmt, SLOT_LABEL } from "@/lib/format";
 import { requireAdmin } from "@/lib/session";
 import type { Block } from "@/lib/types";
 import { Msg, type SP } from "@/lib/ui";
+import { Modal } from "@/lib/modal";
 
 export default async function Miqaats({ searchParams }: { searchParams: SP }) {
   const { dmy, hijri } = await fmt();
@@ -21,7 +22,7 @@ export default async function Miqaats({ searchParams }: { searchParams: SP }) {
 
   return (
     <>
-      <div className="top"><h1>Update Miqaat details</h1></div>
+      <div className="top"><h1>Update Miqaat details</h1><Link className="btn primary btn-icon" href="?add=1" scroll={false}><Icon name="plus" />Add Miqaat</Link></div>
       <Msg msg={sp.msg} />
       <div className="card">
         <h2>Miqaat calendar</h2>
@@ -37,7 +38,7 @@ export default async function Miqaats({ searchParams }: { searchParams: SP }) {
                 <td>{m.blocking === false ? "Not blocked" : "Blocked"}</td>
                 <td className="muted">{m.clashes.join(", ") || "—"}</td>
                 <td>
-                  <Link className="link btn-icon" href={`?edit=${m.id}#edit`}><Icon name="pencil" size={16} />Edit</Link>{" "}
+                  <Link className="link btn-icon" href={`?edit=${m.id}`} scroll={false}><Icon name="pencil" size={16} />Edit</Link>{" "}
                   <form className="inline" action={deleteBlockAction}><input type="hidden" name="id" value={m.id} /><input type="hidden" name="back" value="/miqaats" /><button className="link btn-icon"><Icon name="trash" size={16} />Delete</button></form>
                 </td>
               </tr>
@@ -48,23 +49,27 @@ export default async function Miqaats({ searchParams }: { searchParams: SP }) {
         <p className="alert info">Blocked Miqaat dates appear as Unavailable on every Sector / Mohalla calendar. Slots already booked are not blocked and are flagged here.</p>
       </div>
 
-      <div className="card" id="edit">
-        <h2>Add or update Miqaat</h2>
-        <form action={saveBlockAction} className="stack" key={e.id ?? "new"}>
-          <input type="hidden" name="kind" value="miqaat" />
-          <input type="hidden" name="id" value={e.id ?? ""} />
-          <div className="row">
-            <label>Miqaat name<input name="name" required defaultValue={e.name} /></label>
-            <label>From date<DateField hijri={hijri} name="from" required defaultValue={e.from} /></label>
-            <label>To date<DateField hijri={hijri} name="to" defaultValue={e.to} /></label>
-            <Select label="Slot" name="slot" defaultValue={e.slot}><option value="D">Full day</option><option value="M">Morning</option><option value="E">Evening</option></Select>
-          </div>
-          <div className="row">{venues.map((v) => <label key={v.id} className="check"><input type="checkbox" name="venueIds" value={v.id} defaultChecked={e.venueIds?.includes(v.id)} />{v.name}</label>)}</div>
-          <label>Notes<textarea name="notes" rows={2} defaultValue={e.notes} /></label>
-          <label className="check"><input type="checkbox" name="blocking" defaultChecked={e.blocking !== false} />Block these venues for booking</label>
-          <div className="row"><button className="btn primary btn-icon"><Icon name="check" />Save Miqaat</button><Link className="btn btn-icon" href="/miqaats"><Icon name="x" />Cancel</Link></div>
-        </form>
-      </div>
+      {(sp.add || e.id) && (
+        <Modal label={e.id ? "Edit Miqaat" : "Add Miqaat"} close="/miqaats"><div className="modal-form">
+          <h2>{e.id ? "Edit Miqaat" : "Add Miqaat"}</h2>
+          <form action={saveBlockAction} className="stack" key={e.id ?? "new"}>
+            <input type="hidden" name="kind" value="miqaat" />
+            <input type="hidden" name="id" value={e.id ?? ""} />
+            <label>Miqaat name *<input name="name" required defaultValue={e.name} /></label>
+            <div className="row">
+              <label>From date *<DateField hijri={hijri} name="from" required defaultValue={e.from} /></label>
+              <label>To date<DateField hijri={hijri} name="to" defaultValue={e.to} /></label>
+              <Select label="Slot" name="slot" defaultValue={e.slot}><option value="D">Full day</option><option value="M">Morning</option><option value="E">Evening</option></Select>
+            </div>
+            <fieldset className="stack"><legend>Halls and rooms</legend>
+              <div className="row">{venues.map((v) => <label key={v.id} className="check"><input type="checkbox" name="venueIds" value={v.id} defaultChecked={e.venueIds?.includes(v.id)} />{v.name}</label>)}</div>
+            </fieldset>
+            <label>Notes<textarea name="notes" rows={2} defaultValue={e.notes} /></label>
+            <label className="check"><input type="checkbox" name="blocking" defaultChecked={e.blocking !== false} />Block these halls and rooms for booking</label>
+            <div className="row modal-actions"><button className="btn primary btn-icon"><Icon name="check" />Save Miqaat</button><Link className="btn btn-icon" href="/miqaats" scroll={false}><Icon name="x" />Cancel</Link></div>
+          </form>
+        </div></Modal>
+      )}
     </>
   );
 }

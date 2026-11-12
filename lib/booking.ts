@@ -1,12 +1,12 @@
 import type { DocumentReference, DocumentSnapshot, Transaction } from "firebase-admin/firestore";
-import { cartItems } from "./cart";
+import { cartItems, parseDays } from "./cart";
 import { readVenues as getVenues } from "./data";
 import { db } from "./firebase-admin";
 import { dmy, inr, summary, today } from "./format";
 import { storeReceipt } from "./receipt";
 import { sendSms } from "./sms";
 import { sendWhatsApp, type Template } from "./whatsapp";
-import type { AppUser, Block, Booking, Cancellation, Item, Lock, Slot, Venue } from "./types";
+import type { AppUser, Block, Booking, Cancellation, DayEvent, Item, Lock, Slot, Venue } from "./types";
 
 // shortcut: one Firestore transaction holds ≤500 writes, so a single booking/block row is capped at 60 days.
 // Longer ranges → split into several rows (or batch the lock writes outside the transaction).
@@ -41,10 +41,41 @@ const liveSnap = (s: DocumentSnapshot) => s.exists && isLive(s.data() as Lock);
 
 export const DEFAULT_MAX_THAAL = 100;
 export const maxThaal = (v: Venue) => v.maxThaal || DEFAULT_MAX_THAAL;
+/** Second line under a venue name in pickers and the calendar. */
+export const venueSub = (v: Venue) =>
+  v.type === "hall"
+    ? `${v.ac ? "AC" : "Non-AC"} · ${maxThaal(v)} thaal / ${v.capacity} guests · ${inr(v.rates.morning ?? 0)} per session`
+    : `Room · ${v.capacity} persons · ${inr(v.rates.perDay ?? 0)} per day`;
+
+// shortcut: room type = name without its trailing number ("Deluxe Room 3" → "Deluxe Room"). Add a type field on Venue if names stop following that.
+export const roomType = (v: Venue) => v.name.replace(/\s*\d+$/, "");
 
 /** Thaal the selected halls hold together. 0 = no limit (no halls selected). */
 export function thaalLimit(venues: Venue[]) {
   return venues.filter((v) => v.type === "hall").reduce((a, v) => a + maxThaal(v), 0);
+}
+/** Guests the selected halls hold together. 0 = no halls selected. */
+export function guestLimit(venues: Venue[]) {
+  return venues.filter((v) => v.type === "hall").reduce((a, v) => a + v.capacity, 0);
+}
+/** Function size from step 2: thaal and/or guests, either may be 0 (not given). */
+export type Size = { thaal: number; guests: number };
+/** First too-small reason for these halls together, or "". No halls = nothing to check. */
+export function sizeProblem(venues: Venue[], { thaal, guests }: Size) {
+  if (!venues.some((v) => v.type === "hall")) return "";
+  if (thaal > thaalLimit(venues)) return `${thaal} thaal is more than the ${thaalLimit(venues)} these halls hold`;
+  if (guests > guestLimit(venues)) return `${guests} guests is more than the ${guestLimit(venues)} these halls hold`;
+  return "";
+}
+/** Each booked date has its own function: it needs details, and that date's halls must hold its size on their own. */
+export function cartProblem(items: Item[], venues: Venue[], days: DayEvent[]) {
+  for (const d of [...new Set(items.map((i) => i.date))].sort()) {
+    const day = days.find((x) => x.date === d);
+    if (!day) return `${dmy(d)}: enter what the function is`;
+    const p = sizeProblem(venues.filter((v) => items.some((i) => i.date === d && i.venueId === v.id)), day);
+    if (p) return `${dmy(d)}: ${p}`;
+  }
+  return "";
 }
 
 /** Must be called before any tx writes (Firestore: all reads first). */
@@ -69,21 +100,18 @@ const describe = (l: Lock, venues: Venue[]) => `${venues.find((v) => v.id === l.
 
 export async function createBooking(
   user: AppUser,
-  input: { cart: string; sectorId: string; sectorName: string; household: Booking["household"]; event: Booking["event"] },
+  input: { cart: string; days: string; sectorId: string; sectorName: string; household: Booking["household"] },
 ) {
-  if (!input.event.purpose) throw new Error("Enter what the event is");
   const all = await getVenues();
   const items = cartItems(input.cart, all);
   if (!items.length) throw new Error("Select at least one venue");
   const past = items.find((i) => i.date < today());
   if (past) throw new Error(`${past.venueName} ${dmy(past.date)} is in the past. Remove it from the cart`);
   const venues = all.filter((v) => items.some((i) => i.venueId === v.id));
-  if (venues.some((v) => v.type === "hall")) {
-    const thaal = input.event.thaal ?? 0;
-    if (!Number.isInteger(thaal) || thaal < 1) throw new Error("Enter the number of thaal");
-    const limit = thaalLimit(venues);
-    if (limit && thaal > limit) throw new Error(`Thaal exceed the hall limit of ${limit}`);
-  }
+  const days = parseDays(input.days).filter((d) => items.some((i) => i.date === d.date)); // dates left with no slots drop out
+  const problem = cartProblem(items, venues, days);
+  if (problem) throw new Error(problem);
+  const event = { purpose: [...new Set(days.map((d) => d.purpose))].join(" / "), thaal: Math.max(...days.map((d) => d.thaal)), guests: Math.max(...days.map((d) => d.guests)) };
   const refs = itemLockRefs(items, venues);
   const bookingRef = db.collection("bookings").doc();
   const holdUntil = new Date(Date.now() + HOLD_MINUTES * 60_000).toISOString();
@@ -107,7 +135,8 @@ export async function createBooking(
       createdByName: user.name,
       household: input.household,
       items,
-      event: input.event,
+      event,
+      days,
       amount: items.reduce((s, i) => s + i.rate, 0),
       status: "pending",
       holdUntil,

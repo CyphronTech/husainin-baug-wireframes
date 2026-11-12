@@ -19,6 +19,7 @@ export type Venue = {
   type: "hall" | "room";
   capacity: number;
   maxThaal?: number; // halls; unset or 0 = DEFAULT_MAX_THAAL
+  ac?: boolean;
   morningTime: string;
   eveningTime: string;
   rates: { morning?: number; evening?: number; fullDay?: number; multiDay?: number; perDay?: number };
@@ -31,7 +32,9 @@ export type AppUser = { uid: string; name: string; mobile: string; email: string
 
 export type Household = { id: string; hof: string; name: string; mobile: string; address: string; sectorId: string; whatsappConsent: boolean };
 
-export type Item = { venueId: string; venueName: string; date: string; slot: Slot; rate: number };
+export type DayEvent = { date: string; purpose: string; thaal: number; guests: number };
+
+export type Item ={ venueId: string; venueName: string; date: string; slot: Slot; rate: number };
 
 export type Booking = {
   id: string;
@@ -42,7 +45,10 @@ export type Booking = {
   createdByName: string;
   household: { name: string; hof: string; mobile: string; whatsappConsent: boolean };
   items: Item[];
-  event: { purpose: string; guests?: number; thaal?: number }; // guests: only on bookings made before the field was dropped
+  /** Summary of days (purposes joined, largest size). Older bookings have only this. 0 or missing = not given. */
+  event: { purpose: string; guests?: number; thaal?: number };
+  /** Function details per booked date: each date can be a different function and size. */
+  days?: DayEvent[];
   amount: number;
   status: "pending" | "confirmed" | "cancelled";
   /** Pending only: after this the hold lapses and the slots count as free (lazily — no cron). */
@@ -83,6 +89,8 @@ export type Block = {
   lockIds: string[];
   clashes: string[];
 };
+
+export const PURPOSES = ["Wedding", "Majlis", "Family function", "Meeting", "Other"];
 
 export const EXPENSE_CATEGORIES = ["Electricity", "Maintenance", "Cleaning", "Repairs", "Other"];
 

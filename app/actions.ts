@@ -3,7 +3,7 @@
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { audit, cancelPending, createBooking, decideCancellation, deleteBlock, getBooking, markPaid, notify, requestCancellation, saveBlock } from "@/lib/booking";
+import { audit, cancelPending, createBooking, decideCancellation, deleteBlock, getBooking, markPaid, notify, requestCancellation, roomType, saveBlock } from "@/lib/booking";
 import { displayStatus } from "@/lib/format";
 import { invalidate, readSectors as getSectors, readVenues as getVenues } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
@@ -84,18 +84,18 @@ export async function logout() {
 
 export async function bookFromWizard(f: FormData) {
   const user = await requireUser();
-  const state = new URLSearchParams({ c: s(f, "c"), from: s(f, "from"), to: s(f, "to"), hall: s(f, "hall"), th: s(f, "thaal"), h: s(f, "h"), purpose: s(f, "purpose"), purposeOther: s(f, "purposeOther") });
-  await run(`/book/review?${state}`, async () => {
+  const state = new URLSearchParams({ c: s(f, "c"), ev: s(f, "ev"), d: s(f, "d"), h: s(f, "h") });
+  await run(`/book/slots?${state}`, async () => {
     if (!HOF.test(s(f, "h"))) throw new Error("Select a household");
     const hh = (await db.doc(`households/${s(f, "h")}`).get()).data() as Household | undefined;
     if (!hh || (user.role !== "admin" && hh.sectorId !== user.sectorId)) throw new Error("Select a household");
     const sector = (await getSectors()).find((x) => x.id === hh.sectorId)!;
     const id = await createBooking(user, {
-      cart: s(f, "c"), // validated in createBooking
+      cart: s(f, "c"), // cart and days are validated in createBooking
+      days: s(f, "ev"),
       sectorId: sector.id,
       sectorName: sector.name,
       household: { name: hh.name, hof: hh.hof, mobile: hh.mobile, whatsappConsent: hh.whatsappConsent },
-      event: { purpose: s(f, "purpose") === "Other" ? s(f, "purposeOther") : s(f, "purpose"), thaal: n(f, "thaal") ?? 0 },
     });
     await sendLink(id).catch(() => {}); // booking + hold stand even if Razorpay is down; retry from booking page
     return `/bookings/${id}`;
@@ -181,12 +181,16 @@ export async function decideCancel(f: FormData) {
 
 export async function saveVenue(f: FormData) {
   const admin = await requireAdmin();
-  await run("/venues", async () => {
+  // On an error, reopen the popup the form was in.
+  await run(`/venues?${s(f, "id") ? new URLSearchParams({ edit: s(f, "id") }) : "add=hall"}`, async () => {
     const id = s(f, "id");
     const type = s(f, "type") as "hall" | "room";
+    // One rate per session; evening only when it differs; full day defaults to both sessions.
+    const morning = n(f, "session") ?? n(f, "morning");
+    const evening = n(f, "evening") ?? morning;
     const rates =
       type === "hall"
-        ? { morning: n(f, "morning"), evening: n(f, "evening"), fullDay: n(f, "fullDay"), multiDay: n(f, "multiDay") }
+        ? { morning, evening, fullDay: n(f, "fullDay") ?? (morning != null && evening != null ? morning + evening : undefined), multiDay: n(f, "multiDay") }
         : { perDay: n(f, "perDay") };
     const data = {
       name: s(f, "name"),
@@ -194,6 +198,7 @@ export async function saveVenue(f: FormData) {
       type,
       capacity: n(f, "capacity") ?? 0,
       maxThaal: n(f, "maxThaal") ?? 0,
+      ac: f.get("ac") === "on",
       morningTime: s(f, "morningTime"),
       eveningTime: s(f, "eveningTime"),
       rates: JSON.parse(JSON.stringify(rates)), // drop undefined (Firestore rejects it)
@@ -210,6 +215,67 @@ export async function saveVenue(f: FormData) {
       const before = (await tx.get(ref)).data();
       tx.set(ref, data);
       audit(tx, admin, id ? "venue.update" : "venue.create", { venueId: ref.id, before: before?.rates ?? null, after: data.rates });
+    });
+    invalidate("venues");
+    return "/venues"; // saved: popup closed
+  });
+}
+
+/**
+ * A room type ("Deluxe Room") edited once for all its rooms: name, persons, rate and how many rooms are open.
+ * Rooms are numbered "<type> 1…n". Lowering the count turns the highest-numbered rooms off (never deletes: they may have bookings);
+ * raising it turns them back on first, then adds new rooms.
+ */
+export async function saveRoomType(f: FormData) {
+  const admin = await requireAdmin();
+  const oldType = s(f, "oldType");
+  await run(`/venues?${oldType ? new URLSearchParams({ roomType: oldType }) : "add=room"}`, async () => {
+    const name = s(f, "name").replace(/\s+/g, " ");
+    const count = n(f, "count");
+    const perDay = n(f, "perDay");
+    const capacity = n(f, "capacity");
+    const on = f.get("active") === "on";
+    if (!name || /\d$/.test(name) || name.length > 40) throw new Error("Enter the room type name without a number, e.g. Deluxe Room");
+    if (count == null || !Number.isInteger(count) || count < 0 || count > 50) throw new Error("Number of rooms must be 0 to 50");
+    const bad = (x: number | undefined) => x == null || !Number.isFinite(x) || x < 0;
+    if (bad(perDay) || bad(capacity)) throw new Error("Persons and rate must be 0 or more");
+    const all = await getVenues();
+    const num = (v: { name: string }) => Number(v.name.match(/(\d+)$/)?.[1] ?? 0);
+    const rooms = oldType ? all.filter((v) => v.type === "room" && roomType(v) === oldType).sort((a, b) => num(a) - num(b)) : [];
+    if (oldType && !rooms.length) throw new Error("Room type not found");
+    if (name !== oldType && all.some((v) => v.type === "room" && roomType(v) === name)) throw new Error(`${name} already exists`);
+    const prefix = rooms.length ? rooms[0].code.replace(/\d+$/, "") : s(f, "code").toUpperCase();
+    if (!/^[A-Z]{2,6}$/.test(prefix)) throw new Error("Code: 2–6 letters, e.g. DLX");
+    if (!oldType && all.some((v) => v.code.replace(/\d+$/, "") === prefix)) throw new Error(`Code ${prefix} is already used`);
+
+    let next = rooms.length ? num(rooms.at(-1)!) : 0;
+    const added = Array.from({ length: Math.max(0, count - rooms.length) }, () => {
+      next += 1;
+      return { id: `${prefix.toLowerCase()}${next}`, n: next };
+    });
+    if (added.some((a) => all.some((v) => v.id === a.id || v.code === a.id.toUpperCase()))) throw new Error("A room code is already used. Change the code");
+    await db.runTransaction(async (tx) => {
+      rooms.forEach((v, i) => tx.update(db.doc(`venues/${v.id}`), { name: `${name} ${num(v)}`, capacity, rates: { perDay }, active: on && i < count }));
+      for (const a of added)
+        tx.set(db.doc(`venues/${a.id}`), { code: a.id.toUpperCase(), name: `${name} ${a.n}`, type: "room", capacity, rates: { perDay }, morningTime: "", eveningTime: "", ac: false, active: on });
+      audit(tx, admin, oldType ? "roomtype.update" : "roomtype.create", { oldType, name, count, perDay, capacity, active: on, added: added.map((a) => a.id) });
+    });
+    invalidate("venues");
+    return "/venues";
+  });
+}
+
+/** On/off switch in the venues list: one hall, or every room of a type. */
+export async function setVenuesActive(f: FormData) {
+  const admin = await requireAdmin();
+  await run("/venues", async () => {
+    const ids = s(f, "ids").split(",").filter(Boolean);
+    const on = s(f, "active") === "1";
+    const all = await getVenues();
+    if (!ids.length || ids.some((id) => !all.some((v) => v.id === id))) throw new Error("Hall or room not found");
+    await db.runTransaction(async (tx) => {
+      for (const id of ids) tx.update(db.doc(`venues/${id}`), { active: on });
+      audit(tx, admin, on ? "venue.on" : "venue.off", { ids });
     });
     invalidate("venues");
   });
@@ -314,7 +380,8 @@ export async function saveSector(f: FormData) {
 /** Username is the users/{username} doc id: unique, and fixed once created. */
 export async function saveUser(f: FormData) {
   const admin = await requireAdmin();
-  await run("/users", async () => {
+  // On an error, reopen the popup the form was in.
+  await run(`/users?${s(f, "id") ? new URLSearchParams({ edit: s(f, "id") }) : "add=1"}`, async () => {
     const editing = s(f, "id");
     const username = editing || s(f, "username");
     if (!USERNAME.test(username)) throw new Error("Username: 3–40 letters, digits, . _ -");
@@ -343,6 +410,7 @@ export async function saveUser(f: FormData) {
       audit(tx, admin, editing ? "user.update" : "user.create", { uid: username, ...logged });
     });
     invalidate(`user:${username}`);
+    return "/users"; // saved: popup closed
   });
 }
 
@@ -357,6 +425,58 @@ const householdsUrl = (user: AppUser, f: FormData, back = "") => {
 };
 
 /** HOF ID is the doc id: unique across all sectors. A HOF registered to another sector is never overwritten. */
+// ── On/off switches in lists ────────────────────────────────────────────────
+
+export async function setUserActive(f: FormData) {
+  const admin = await requireAdmin();
+  await run("/users", async () => {
+    const id = s(f, "id");
+    const on = s(f, "active") === "1";
+    if (!USERNAME.test(id)) throw new Error("User not found");
+    if (id === admin.uid && !on) throw new Error("You can't deactivate your own account");
+    const ref = db.doc(`users/${id}`);
+    await db.runTransaction(async (tx) => {
+      if (!(await tx.get(ref)).exists) throw new Error("User not found");
+      tx.update(ref, { active: on });
+      audit(tx, admin, on ? "user.on" : "user.off", { uid: id });
+    });
+    invalidate(`user:${id}`);
+  });
+}
+
+export async function setSectorActive(f: FormData) {
+  const admin = await requireAdmin();
+  await run("/venues?open=sectors", async () => {
+    const id = s(f, "id");
+    const on = s(f, "active") === "1";
+    if (!(await getSectors()).some((x) => x.id === id)) throw new Error("Sector / Mohalla not found");
+    await db.runTransaction(async (tx) => {
+      tx.update(db.doc(`sectors/${id}`), { active: on });
+      audit(tx, admin, on ? "sector.on" : "sector.off", { sectorId: id });
+    });
+    invalidate("sectors");
+  });
+}
+
+/** WhatsApp consent switch on the households list. Sector users only for their own sector's households. */
+export async function setHouseholdConsent(f: FormData) {
+  const user = await requireUser();
+  const back = s(f, "back");
+  await run(back.startsWith("/households") ? back : "/households", async () => {
+    const hof = s(f, "id");
+    const on = s(f, "active") === "1";
+    if (!HOF.test(hof)) throw new Error("Household not found");
+    const ref = db.doc(`households/${hof}`);
+    await db.runTransaction(async (tx) => {
+      const h = (await tx.get(ref)).data() as Household | undefined;
+      if (!h || (user.role !== "admin" && h.sectorId !== user.sectorId)) throw new Error("Household not found");
+      tx.update(ref, { whatsappConsent: on });
+      audit(tx, user, "household.consent", { hof, whatsappConsent: on });
+    });
+    invalidate("households:");
+  });
+}
+
 async function upsertHousehold(user: AppUser, h: HouseholdInput) {
   if (!HOF.test(h.hof)) throw new Error(`HOF ID must be 8–10 digits (${h.hof || "blank"})`);
   if (!h.name) throw new Error(`Name missing for HOF ${h.hof}`);
@@ -384,11 +504,15 @@ const householdFrom = (user: AppUser, f: FormData): HouseholdInput => ({
 export async function saveHousehold(f: FormData) {
   const user = await requireUser();
   const back = s(f, "back");
-  await run(householdsUrl(user, f, back), async () => {
+  const list = householdsUrl(user, f, back);
+  // On an error, reopen the popup the form was in (add, or edit of that household).
+  const open = /^(add=1|edit=\d{8,10})$/.test(s(f, "open")) ? s(f, "open") : "";
+  await run(open ? `${list}${list.includes("?") ? "&" : "?"}${open}` : list, async () => {
     const h = householdFrom(user, f);
     await upsertHousehold(user, h);
     // Came from the booking wizard: return there with the new household selected.
-    if (back.startsWith("/book/")) return `${back}${back.includes("?") ? "&" : "?"}h=${h.hof}`;
+    if (/^\/book[/?]/.test(back)) return `${back}${back.includes("?") ? "&" : "?"}h=${h.hof}`;
+    return list; // saved: back to the list, popup closed
   });
 }
 
@@ -413,7 +537,9 @@ export async function importHouseholds(f: FormData) {
 export async function saveExpense(f: FormData) {
   const admin = await requireAdmin();
   const id = s(f, "id");
-  await run(`/expenses?month=${s(f, "date")}`, async () => {
+  const list = `/expenses?${new URLSearchParams({ month: s(f, "date") })}`;
+  // On an error, reopen the popup the form was in.
+  await run(`${list}&${id ? new URLSearchParams({ edit: id }) : "add=1"}`, async () => {
     const amount = n(f, "amount");
     if (!amount || amount <= 0) throw new Error("Enter the amount");
     if (!EXPENSE_CATEGORIES.includes(s(f, "category"))) throw new Error("Pick a category");
@@ -441,6 +567,7 @@ export async function saveExpense(f: FormData) {
       tx.set(ref, data, { merge: true });
       audit(tx, admin, id ? "expense.update" : "expense.create", { expenseId: ref.id, ...data });
     });
+    return list; // saved: popup closed
   });
 }
 

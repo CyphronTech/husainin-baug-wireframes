@@ -53,8 +53,13 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
           <p className="m0">
             {summary(b.items)} · {inr(b.amount)}<br />
             {b.household.name} · HOF {b.household.hof} · {b.household.mobile}<br />
-            <span className="muted">{b.event?.purpose}{b.event?.guests ? ` · ${b.event.guests} guests` : ""}{b.event?.thaal ? ` · ${b.event.thaal} thaal` : ""} · {b.sectorName} · by {b.createdByName}</span>
+            <span className="muted">{b.days?.length ? "" : <>{b.event?.purpose}{b.event?.guests ? ` · ${b.event.guests} guests` : ""}{b.event?.thaal ? ` · ${b.event.thaal} thaal` : ""} · </>}{b.sectorName} · by {b.createdByName}</span>
           </p>
+          {!!b.days?.length && (
+            <ul className="m0">
+              {b.days.map((x) => <li key={x.date}>{dmy(x.date)}: {x.purpose}{x.thaal ? ` · ${x.thaal} thaal` : ""}{x.guests ? ` · ${x.guests} guests` : ""}</li>)}
+            </ul>
+          )}
           <div className="row items-center">
             <Badge s={status === "On hold" ? "On hold" : status} />
             {status === "On hold" && <b>Hold expires at {hm(b.holdUntil)}</b>}

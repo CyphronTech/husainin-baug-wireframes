@@ -1,4 +1,4 @@
-import type { Item, Slot, Venue } from "./types";
+import type { DayEvent, Item, Slot, Venue } from "./types";
 
 // shortcut: one Firestore transaction holds ≤500 writes, and every line locks 1–2 slots. Also keeps the cart URL short.
 const MAX_LINES = 60;
@@ -43,3 +43,26 @@ export function toggleSlot(items: Item[], venueId: string, date: string, s: Slot
   const slot: Slot = !line ? s : line.slot === "D" ? (s === "M" ? "E" : "M") : "D";
   return toCart([...rest, { venueId, date, slot }]);
 }
+
+/**
+ * Function details per date, "date~purpose~thaal~guests,…" with purpose URI-encoded. Each date of a booking can be a
+ * different function and size. Comes from the URL: throws on anything invalid. Sorted by date, one entry per date.
+ */
+export function parseDays(s: string): DayEvent[] {
+  const days = new Map<string, DayEvent>();
+  for (const part of s.split(",").filter(Boolean)) {
+    const [date, p, th, g, extra] = part.split("~");
+    const purpose = decodeURIComponent(p ?? "").trim();
+    const [thaal, guests] = [th, g].map((x) => (/^\d{0,5}$/.test(x ?? "") ? Number(x || 0) : NaN));
+    if (extra !== undefined || !realDate(date) || !purpose || purpose.length > 60 || isNaN(thaal) || isNaN(guests) || (!thaal && !guests))
+      throw new Error("The function details have an invalid line");
+    days.set(date, { date, purpose, thaal, guests });
+  }
+  if (days.size > MAX_LINES) throw new Error(`Max ${MAX_LINES} dates per booking`);
+  return [...days.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export const toDays = (days: DayEvent[]) => days.map((d) => `${d.date}~${encodeURIComponent(d.purpose)}~${d.thaal || ""}~${d.guests || ""}`).join(",");
+
+/** Days after setting one date's details (adds the date or replaces it). */
+export const setDay = (days: DayEvent[], day: DayEvent) => parseDays(toDays([...days.filter((d) => d.date !== day.date), day]));

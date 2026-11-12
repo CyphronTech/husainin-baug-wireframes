@@ -48,7 +48,7 @@ function Field({ label, ariaLabel, children }: { label?: string; ariaLabel?: str
 }
 
 /** Pick one. Takes the same <option> children as a native select and submits the same `name` field. */
-export function Select({ label, "aria-label": ariaLabel, name, form, defaultValue, busy, onChange, children }: {
+export function Select({ label, "aria-label": ariaLabel, name, form, defaultValue, busy, onChange, autoSubmit, children }: {
   label?: string;
   "aria-label"?: string;
   name: string;
@@ -56,6 +56,8 @@ export function Select({ label, "aria-label": ariaLabel, name, form, defaultValu
   defaultValue?: string | null;
   busy?: boolean;
   onChange?: (value: string) => void;
+  /** Submit the form as soon as an option is picked (for "pick one to open" selects with no other fields). */
+  autoSubmit?: boolean;
   children: React.ReactNode;
 }) {
   const options = Children.toArray(children).flatMap((c) => {
@@ -67,6 +69,11 @@ export function Select({ label, "aria-label": ariaLabel, name, form, defaultValu
   const start = options.find((o) => o.value === (defaultValue ?? ""))?.value ?? options[0]?.value ?? "";
   const [value, setValue] = useState(start);
   const { ref, close, props } = useDropdown();
+  // autoSubmit: a mouse pick or Enter submits; arrow keys only move through the list.
+  const submit = () => {
+    const f = ref.current?.querySelector("input")?.form;
+    if (autoSubmit && f) requestAnimationFrame(() => f.requestSubmit()); // after React re-checks the radio
+  };
   useEffect(() => setValue(start), [start]);
   useEffect(() => {
     // React resets a form after a server action. Controlled radios have to follow.
@@ -77,12 +84,22 @@ export function Select({ label, "aria-label": ariaLabel, name, form, defaultValu
   }, [ref, start]);
   return (
     <Field label={label} ariaLabel={ariaLabel}>
-      <details ref={ref} className="ms" aria-busy={busy} {...props}>
+      <details
+        ref={ref}
+        className="ms"
+        aria-busy={busy}
+        {...props}
+        onKeyDown={(e) => {
+          const pick = e.key === "Enter" && ref.current?.open && e.target instanceof HTMLInputElement;
+          props.onKeyDown(e);
+          if (pick) submit();
+        }}
+      >
         <summary>{options.find((o) => o.value === value)?.label}</summary>
         <div className="ms-panel">
           {options.map((o) => (
             // detail 0 is the click a browser fires for arrow keys: those change the value but keep the list open.
-            <label key={o.value} className="check" onClick={(e) => { if (e.detail > 0 && e.target instanceof HTMLInputElement) close(true); }}>
+            <label key={o.value} className="check" onClick={(e) => { if (e.detail > 0 && e.target instanceof HTMLInputElement) (close(true), submit()); }}>
               <input
                 type="radio"
                 name={name}

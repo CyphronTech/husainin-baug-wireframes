@@ -21,7 +21,7 @@ export const Badge = ({ s }: { s: string }) => {
 };
 export type SP = Promise<Record<string, string | undefined>>;
 
-const STEPS = ["Basic details", "Dates & slots", "Household & event", "Review & payment link"];
+const STEPS = ["Household", "Date & function", "Halls"];
 export const Steps = ({ on }: { on: number }) => (
   <div className="card steps">
     {STEPS.map((label, i) => (

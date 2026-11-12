@@ -1,7 +1,7 @@
 // node --test scripts/cart.test.mjs
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { cartItems, toCart, toggleSlot } from "../lib/cart.ts";
+import { cartItems, parseDays, setDay, toCart, toDays, toggleSlot } from "../lib/cart.ts";
 
 const hall = { id: "vaj", name: "Vajihi Hall", type: "hall", active: true, rates: { morning: 10, evening: 12, fullDay: 20, multiDay: 15 } };
 const other = { id: "muf", name: "Muffadal Hall", type: "hall", active: true, rates: { morning: 15, evening: 18, fullDay: 30 } };
@@ -57,4 +57,13 @@ test("a room click toggles on and off", () => {
   assert.equal(c, `r1_${A}_D`);
   assert.equal(click(c, "r1", A, "D"), "");
   assert.equal(toCart(items(c)), c);
+});
+
+test("per-date function details round-trip, one per date, sorted", () => {
+  const days = parseDays("2026-12-03~Majlis~12~,2026-12-01~Aqeeqah%2C%20small~~40");
+  assert.deepEqual(days, [{ date: A, purpose: "Aqeeqah, small", thaal: 0, guests: 40 }, { date: B, purpose: "Majlis", thaal: 12, guests: 0 }]);
+  assert.deepEqual(parseDays(toDays(days)), days);
+  assert.deepEqual(setDay(days, { date: A, purpose: "Wedding", thaal: 30, guests: 0 })[0], { date: A, purpose: "Wedding", thaal: 30, guests: 0 });
+  for (const bad of ["2026-12-01~Wedding~~", "2026-12-01~~30~", "2026-13-01~Wedding~30~", "2026-12-01~Wedding~x~", "2026-12-01~Wedding~30~~extra"])
+    assert.throws(() => parseDays(bad), /invalid/);
 });

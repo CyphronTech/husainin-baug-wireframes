@@ -31,7 +31,9 @@ export async function Availability({ sp, data = availabilityData(sp) }: { sp: Aw
   const active = allVenues.filter((v) => v.active);
   const picked = [sp.venue].flat().join(",").split(",").filter(Boolean);
   const venues = active.filter((v) => !picked.length || picked.includes(v.id) || picked.includes(v.type));
-  const q = (s: string) => `?${new URLSearchParams({ start: s, ...(picked.length && { venue: picked.join(",") }) })}`;
+  const each = sp.rooms === "each"; // rooms are grouped by type unless asked to show each room
+  const q = (s: string, o: Record<string, string> = each ? { rooms: "each" } : {}) => `?${new URLSearchParams({ start: s, ...(picked.length && { venue: picked.join(",") }), ...o })}`;
+  const hasRooms = venues.some((v) => v.type === "room");
 
   return (
     <div className="card">
@@ -41,6 +43,7 @@ export async function Availability({ sp, data = availabilityData(sp) }: { sp: Aw
       </div>
       <p className="alert notice"><b>This calendar only shows what is free. You can&apos;t book from here.</b> To book, go to <Link href="/book">New booking</Link>.</p>
       <Form action="/" scroll={false} className="row mb-3">
+        {each && <input type="hidden" name="rooms" value="each" />}
         <MultiSelect
           label="Halls & rooms"
           name="venue"
@@ -57,8 +60,15 @@ export async function Availability({ sp, data = availabilityData(sp) }: { sp: Aw
       </Form>
       <div className="cal-view">
         <Legend />
-        <Calendar venues={venues} days={days} locks={locks} />
+        <Calendar venues={venues} days={days} locks={locks} groupRooms={!each} />
       </div>
+      {hasRooms && (
+        <p className="mt-3">
+          <Link prefetch={false} scroll={false} className="btn btn-icon" href={q(start, each ? {} : { rooms: "each" })}>
+            <Icon name={each ? "back" : "next"} />{each ? "Group rooms by type" : "Show each room"}
+          </Link>
+        </p>
+      )}
       <div className="alert info">Halls book by Morning (M) or Evening (E) slot; both slots = Full day. Rooms book by full day. The calendar shows bookings from every Sector / Mohalla.</div>
     </div>
   );

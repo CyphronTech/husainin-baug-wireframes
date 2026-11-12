@@ -6,6 +6,7 @@ import { NavProgress } from "@/lib/nav-progress";
 import { TrackPage } from "@/lib/modal";
 import { requireUser } from "@/lib/session";
 import { Nav } from "./nav";
+import { TableLabels } from "@/lib/table-labels";
 
 export default async function AppLayout({ children, modal }: { children: React.ReactNode; modal: React.ReactNode }) {
   const [user, sectors] = await Promise.all([requireUser(), getSectors()]);
@@ -32,6 +33,7 @@ export default async function AppLayout({ children, modal }: { children: React.R
         {children}
         {modal}
         <TrackPage />
+        <TableLabels />
       </div>
       <NavProgress />
     </div>
