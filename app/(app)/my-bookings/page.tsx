@@ -3,11 +3,11 @@ import Link from "next/link";
 import { Select } from "@/lib/dropdown";
 import { resendLink } from "@/app/actions";
 import { DateField } from "@/lib/date-field";
-import { getSectors, rows } from "@/lib/data";
-import { db } from "@/lib/firebase-admin";
-import { displayStatus, fmt, inr, slotSummary } from "@/lib/format";
+import { getSectors } from "@/lib/data";
+import { FilterFold } from "@/lib/switch";
+import { bookingRows } from "@/lib/booking-rows";
+import { fmt, inr, slotSummary } from "@/lib/format";
 import { requireUser } from "@/lib/session";
-import type { Booking, Cancellation } from "@/lib/types";
 import { Badge, Msg, type SP } from "@/lib/ui";
 
 const STATUSES = ["On hold", "Confirmed", "Cancellation requested", "Cancelled", "Completed", "Expired", "Refund due"];
@@ -18,25 +18,8 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
   const user = await requireUser();
   const sp = await searchParams;
   const isAdmin = user.role === "admin";
-  const sectorId = isAdmin ? sp.sector : user.sectorId!;
-  // shortcut: equality filter + in-memory filter/sort (no composite indexes); fine to a few thousand bookings per sector.
-  const scoped = (name: string) => (sectorId ? db.collection(name).where("sectorId", "==", sectorId) : db.collection(name));
-  const [all, requests] = await Promise.all([scoped("bookings").get().then(rows<Booking>), scoped("cancellations").get().then(rows<Cancellation>)]);
-  requests.sort((a, b) => a.requestedAt.localeCompare(b.requestedAt));
-  const sectors = isAdmin ? await getSectors() : [];
-  const term = (sp.q ?? "").toLowerCase();
-  const list = all
-    .map((b) => ({ ...b, shown: displayStatus(b) }))
-    .filter((b) => {
-      const first = b.items[0].date, last = b.items.at(-1)!.date;
-      return (
-        (!sp.status || b.shown === sp.status) &&
-        (!sp.from || last >= sp.from) &&
-        (!sp.to || first <= sp.to) &&
-        (!term || `${b.no} ${b.household.name} ${b.household.hof} ${b.items.map((i) => i.venueName).join(" ")}`.toLowerCase().includes(term))
-      );
-    })
-    .sort((a, b) => b.items[0].date.localeCompare(a.items[0].date));
+  const [{ list, requests }, sectors] = await Promise.all([bookingRows(user, sp), isAdmin ? getSectors() : []]);
+  const exportQ = new URLSearchParams(Object.entries(sp).filter((e): e is [string, string] => typeof e[1] === "string" && ["q", "from", "to", "status", "sector"].includes(e[0])));
   const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
   const page = Math.min(Math.max(1, parseInt(sp.page ?? "") || 1), pages);
   const pageHref = (n: number) => {
@@ -48,15 +31,17 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
 
   return (
     <>
-      <div className="top"><h1>List of bookings</h1></div>
+      <div className="top"><h1>List of bookings</h1><a className="btn btn-icon" href={`/api/bookings/export?${exportQ}`} download><Icon name="download" />Export to Excel</a></div>
       <Msg msg={sp.msg} />
       <div className="card">
         <form className="row">
           <label>Search<input name="q" defaultValue={sp.q} placeholder="Booking, household, HOF, venue" /></label>
-          <label>From date<DateField hijri={hijri} name="from" defaultValue={sp.from} /></label>
-          <label>To date<DateField hijri={hijri} name="to" defaultValue={sp.to} /></label>
-          <Select label="Status" name="status" defaultValue={sp.status}><option value="">All</option>{STATUSES.map((s) => <option key={s}>{s}</option>)}</Select>
-          {isAdmin && <Select label="Sector / Mohalla" name="sector" defaultValue={sp.sector}><option value="">All</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select>}
+          <FilterFold id="booking-filters" count={["from", "to", "status", "sector"].filter((k) => sp[k]).length}>
+            <label>From date<DateField hijri={hijri} name="from" defaultValue={sp.from} /></label>
+            <label>To date<DateField hijri={hijri} name="to" defaultValue={sp.to} /></label>
+            <Select label="Status" name="status" defaultValue={sp.status}><option value="">All</option>{STATUSES.map((s) => <option key={s}>{s}</option>)}</Select>
+            {isAdmin && <Select label="Sector / Mohalla" name="sector" defaultValue={sp.sector}><option value="">All</option>{sectors.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select>}
+          </FilterFold>
           <button className="btn btn-icon"><Icon name="filter" />Apply</button>
         </form>
       </div>

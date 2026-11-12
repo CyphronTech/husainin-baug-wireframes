@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { datesBetween, isLive, maxThaal } from "./booking";
+import { datesBetween, isLive, roomType, venueSub } from "./booking";
 import { db } from "./firebase-admin";
-import { fmt, SLOT_LABEL, toISODate } from "./format";
+import { fmt, inr, SLOT_LABEL, toISODate } from "./format";
 import { misri, MISRI_MONTHS } from "./misri";
 import type { Lock, Slot, Venue } from "./types";
 
@@ -36,6 +36,8 @@ export async function Calendar(p: {
   sel?: string;
   keepScroll?: boolean;
   removeHref?: (venueId: string) => string | undefined;
+  /** One row per room type with "n of m free" per day, instead of a row per room. View-only. */
+  groupRooms?: boolean;
 }) {
   const { hijri, dmy } = await fmt();
   const STATUS = { pending: "on hold", confirmed: "booked", block: "unavailable" } as const;
@@ -65,13 +67,27 @@ export async function Calendar(p: {
         <tr><th>Venue</th>{p.days.map((d) => <th key={d}>{head(d)}</th>)}{p.removeHref && <th><span className="sr-only">Remove</span></th>}</tr>
       </thead>
       <tbody>
-        {p.venues.map((v) => (
+        {(p.groupRooms ? p.venues.filter((v) => v.type === "hall") : p.venues).map((v) => (
           <tr key={v.id}>
-            <td><b>{v.name}</b><div className="muted">{v.type === "hall" ? `Hall · max ${maxThaal(v)} thaal` : "Room"}</div></td>
+            <td><b>{v.name}</b><div className="muted">{venueSub(v)}</div></td>
             {p.days.map((d) => <td key={d}>{v.type === "hall" ? [pill(v.name, v.id, d, "M", "M"), pill(v.name, v.id, d, "E", "E")] : pill(v.name, v.id, d, "D", "Day")}</td>)}
             {p.removeHref && <td className="cal-end">{p.removeHref(v.id) && <Link prefetch={false} scroll={false} className="cal-remove" href={p.removeHref(v.id)!} aria-label={`Remove ${v.name} from the calendar`} title={`Remove ${v.name}`}>×</Link>}</td>}
           </tr>
         ))}
+        {p.groupRooms && [...new Set(p.venues.filter((v) => v.type === "room").map(roomType))].map((type) => {
+          const rooms = p.venues.filter((v) => v.type === "room" && roomType(v) === type);
+          return (
+            <tr key={type}>
+              <td><b>{type}</b><div className="muted">{rooms.length} {rooms.length === 1 ? "room" : "rooms"} · {inr(rooms[0].rates.perDay ?? 0)} per day</div></td>
+              {p.days.map((d) => {
+                const free = rooms.filter((r) => !p.locks.has(`${r.id}_${d}_D`)).length;
+                const desc = `${type}, ${dmy(d)}: ${free} of ${rooms.length} free`;
+                return <td key={d}><span className={`pill count${free ? "" : " confirmed"}`} aria-label={desc} title={desc}>{free ? `${free} of ${rooms.length} free` : "Full"}</span></td>;
+              })}
+              {p.removeHref && <td />}
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
