@@ -25,6 +25,11 @@ env:
     value: HB
   - variable: CRON_SECRET
     secret: CRON_SECRET
+  - variable: MSG91_WA_NUMBER
+    value: "918275257252" # MSG91 → WhatsApp → Number (not secret)
+  - variable: MSG91_WA_NAMESPACE
+    value: 742ed293_094d_49a9_9b74_a05b262b7ffe # from any template's code snippet (not secret)
+  # Uncomment after `firebase apphosting:secrets:set MSG91_AUTHKEY` (MSG91 → Settings → API keys). Until then: console only.
   # - variable: MSG91_AUTHKEY
   #   secret: MSG91_AUTHKEY
   # - variable: TRUST_GSTIN
