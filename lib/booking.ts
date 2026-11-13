@@ -199,14 +199,13 @@ export function messageValues(b: Booking, template: Template, refund?: number) {
 const firstDate = (b: Booking) => b.items.map((i) => i.date).sort()[0];
 
 /** WhatsApp first; SMS when WhatsApp fails or the household hasn't consented to WhatsApp. */
-// shortcut: "fails" = RichAutomate rejected the send. A message accepted but never delivered isn't caught.
-// Upgrade: poll GET /api/v1/message-status/{message_id} (or its webhook) → send the SMS on status "failed".
+// shortcut: "fails" = MSG91 rejected the send. A message accepted but never delivered isn't caught.
+// Upgrade: MSG91 delivery-report webhook → send the SMS on a failed delivery status.
 export async function notify(b: Booking, template: Template, refund?: number) {
   const values = messageValues(b, template, refund);
   const log = (action: string) => db.runTransaction(async (tx) => audit(tx, null, action, { bookingId: b.id, values }));
   if (b.household.whatsappConsent) {
-    // "Resend payment link" is a deliberate repeat, so hold gets no idempotency key; the others must go once.
-    const ok = await sendWhatsApp(template, b.household.mobile, values, template === "hold" ? undefined : `${b.id}-${template}`);
+    const ok = await sendWhatsApp(template, b.household.mobile, values);
     await log(ok ? `whatsapp.${template}` : `whatsapp.${template}.failed`);
     if (ok) return;
   }

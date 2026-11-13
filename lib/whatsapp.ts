@@ -1,40 +1,41 @@
-// RichAutomate WhatsApp template send (https://richautomate.in/docs/api). Templates must be approved by Meta first
-// (RichAutomate → Templates), with body variables in this order:
+// MSG91 WhatsApp template send. Templates must be pre-approved (MSG91 panel → WhatsApp → Templates) with body
+// variables in this order:
 //   hold:      {{1}} name, {{2}} booking no, {{3}} venue · date · slot, {{4}} amount, {{5}} minutes, {{6}} payment link
 //   confirmed: {{1}} name, {{2}} booking no, {{3}} venue · date · slot, {{4}} amount, {{5}} receipt link
 //   cancelled: {{1}} name, {{2}} booking no, {{3}} venue · date · slot, {{4}} refund amount
 //   reminder:  {{1}} name, {{2}} booking no, {{3}} venue · date · slot, {{4}} first booked date
 const TEMPLATES = {
-  hold: process.env.RICHAUTOMATE_TEMPLATE_HOLD ?? "booking_on_hold",
-  confirmed: process.env.RICHAUTOMATE_TEMPLATE_CONFIRMED ?? "booking_confirmed",
-  cancelled: process.env.RICHAUTOMATE_TEMPLATE_CANCELLED ?? "booking_cancelled",
-  reminder: process.env.RICHAUTOMATE_TEMPLATE_REMINDER ?? "booking_reminder",
+  hold: process.env.MSG91_WA_TEMPLATE_HOLD ?? "booking_on_hold",
+  confirmed: process.env.MSG91_WA_TEMPLATE_CONFIRMED ?? "booking_confirmed",
+  cancelled: process.env.MSG91_WA_TEMPLATE_CANCELLED ?? "booking_cancelled",
+  reminder: process.env.MSG91_WA_TEMPLATE_REMINDER ?? "booking_reminder",
 };
 export type Template = keyof typeof TEMPLATES;
 
-/**
- * Never throws: a failed message must not undo a payment or cancellation. Returns delivery-accepted.
- * `key` = Idempotency-Key: RichAutomate won't send (or bill) the same key twice within 24 h.
- */
-export async function sendWhatsApp(template: Template, mobile: string, values: string[], key?: string) {
-  if (!process.env.RICHAUTOMATE_API_KEY) {
+/** Never throws: a failed message must not undo a payment or cancellation. Returns delivery-accepted. */
+export async function sendWhatsApp(template: Template, mobile: string, values: string[]) {
+  if (!process.env.MSG91_AUTHKEY) {
     console.log(`[whatsapp:dev] ${template} → ${mobile}`, values);
     return true;
   }
+  const components = Object.fromEntries(values.map((value, i) => [`body_${i + 1}`, { type: "text", value }]));
   try {
-    const res = await fetch("https://richautomate.in/api/v1/send-template", {
+    const res = await fetch("https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.RICHAUTOMATE_API_KEY}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        ...(key && { "Idempotency-Key": key }),
-      },
+      headers: { authkey: process.env.MSG91_AUTHKEY, "Content-Type": "application/json" },
       body: JSON.stringify({
-        phone: `91${mobile}`,
-        template: TEMPLATES[template],
-        language: process.env.RICHAUTOMATE_LANG ?? "en",
-        variables: values,
+        integrated_number: process.env.MSG91_WA_NUMBER,
+        content_type: "template",
+        payload: {
+          messaging_product: "whatsapp",
+          type: "template",
+          template: {
+            name: TEMPLATES[template],
+            language: { code: process.env.MSG91_WA_LANG ?? "en", policy: "deterministic" },
+            namespace: process.env.MSG91_WA_NAMESPACE,
+            to_and_components: [{ to: [`91${mobile}`], components }],
+          },
+        },
       }),
     });
     if (!res.ok) console.error("[whatsapp]", res.status, await res.text());
