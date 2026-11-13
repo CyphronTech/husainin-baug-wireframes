@@ -60,6 +60,8 @@ export type Booking = {
   receiptNo?: string;
   /** Public B2 link to the receipt PDF (or the app's /r/{id}/pdf fallback). */
   receiptUrl?: string;
+  /** Reminders already sent, as days before the first date (5, 2); stops a second send. */
+  remindersSent?: number[];
   createdAt: string;
 };
 

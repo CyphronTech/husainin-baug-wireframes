@@ -1,9 +1,9 @@
-import type { DocumentReference, DocumentSnapshot, Transaction } from "firebase-admin/firestore";
+import { FieldValue, type DocumentReference, type DocumentSnapshot, type Transaction } from "firebase-admin/firestore";
 import { cartItems, parseDays } from "./cart";
 import { readVenues as getVenues } from "./data";
 import { db } from "./firebase-admin";
 import { dmy, inr, summary, today } from "./format";
-import { storeReceipt } from "./receipt";
+import { receiptFile, storeReceipt } from "./receipt";
 import { sendSms } from "./sms";
 import { sendWhatsApp, type Template } from "./whatsapp";
 import type { AppUser, Block, Booking, Cancellation, DayEvent, Item, Lock, Slot, Venue } from "./types";
@@ -192,8 +192,14 @@ export function messageValues(b: Booking, template: Template, refund?: number) {
   const base = [b.household.name, b.no, summary(b.items), inr(b.amount)];
   if (template === "hold") return [...base, String(HOLD_MINUTES), b.payment?.url ?? ""];
   if (template === "confirmed") return [...base, b.receiptUrl ?? ""];
+  if (template === "reminder") return [...base.slice(0, 3), dmy(firstDate(b)), String(daysUntil(firstDate(b)))];
   return [...base.slice(0, 3), refund ? inr(refund) : "—"];
 }
+
+const firstDate = (b: Booking) => b.items.map((i) => i.date).sort()[0];
+const daysUntil = (date: string) => Math.round((Date.parse(date) - Date.parse(today())) / 864e5);
+/** Reminders go this many days before a confirmed booking's first date. */
+const REMINDER_DAYS = [5, 2];
 
 /** WhatsApp first; SMS when WhatsApp fails or the household hasn't consented to WhatsApp. */
 // shortcut: "fails" = MSG91 rejected the send. A message accepted but never delivered isn't caught.
@@ -202,11 +208,32 @@ export async function notify(b: Booking, template: Template, refund?: number) {
   const values = messageValues(b, template, refund);
   const log = (action: string) => db.runTransaction(async (tx) => audit(tx, null, action, { bookingId: b.id, values }));
   if (b.household.whatsappConsent) {
-    const ok = await sendWhatsApp(template, b.household.mobile, values);
+    // Receipt goes as the PDF itself (document header); SMS can't attach files, so it keeps the link as its last value.
+    const pdf = template === "confirmed" && b.receiptUrl && b.receiptNo ? { url: b.receiptUrl, filename: receiptFile(b) } : undefined;
+    const ok = await sendWhatsApp(template, b.household.mobile, pdf ? values.slice(0, -1) : values, pdf);
     await log(ok ? `whatsapp.${template}` : `whatsapp.${template}.failed`);
     if (ok) return;
   }
   await log((await sendSms(template, b.household.mobile, values)) ? `sms.${template}` : `sms.${template}.failed`);
+}
+
+/**
+ * Daily job (POST /api/cron/reminders): reminds confirmed bookings whose first date is 5 or 2 days away (IST).
+ * Multi-day bookings count from their first day. Booked later than 5 days out → only the 2-day one. Returns how many were sent.
+ */
+export async function sendReminders() {
+  const dates = REMINDER_DAYS.map((n) => new Date(Date.parse(today()) + n * 864e5).toISOString().slice(0, 10));
+  const locks = await db.collection("locks").where("date", "in", dates).where("kind", "==", "booking").where("status", "==", "confirmed").get();
+  let sent = 0;
+  for (const id of new Set(locks.docs.map((l) => (l.data() as Lock).refId))) {
+    const b = await getBooking(id);
+    const days = b && daysUntil(firstDate(b));
+    if (b?.status !== "confirmed" || !REMINDER_DAYS.includes(days!) || b.remindersSent?.includes(days!)) continue;
+    await notify(b, "reminder");
+    await db.doc(`bookings/${id}`).update({ remindersSent: FieldValue.arrayUnion(days) }); // a second run the same day skips it
+    sent++;
+  }
+  return sent;
 }
 
 const canAct = (user: AppUser, b: Booking) => user.role === "admin" || b.createdBy === user.uid;

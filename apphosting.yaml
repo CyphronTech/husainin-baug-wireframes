@@ -1,7 +1,8 @@
 # Firebase App Hosting (needs the Blaze plan). Steps: README → "Deploy to Firebase App Hosting".
 # Secrets (never in git):  firebase apphosting:secrets:set B2_KEY_ID   and   B2_APP_KEY
 # Razorpay and MSG91 stay mocked while their variables are absent. To go live, add RAZORPAY_KEY_ID /
-# RAZORPAY_KEY_SECRET / RAZORPAY_WEBHOOK_SECRET and MSG91_* here (keys as `secret:`), as listed in .env.example.
+# RAZORPAY_KEY_SECRET / RAZORPAY_WEBHOOK_SECRET, CRON_SECRET and MSG91_* here (keys as `secret:`),
+# as listed in .env.example. Uncomment a `secret:` line only after `firebase apphosting:secrets:set` for it.
 runConfig:
   minInstances: 0 # scales to zero when idle (free); first visit after idle takes a few seconds. 1 = always warm, paid.
   # shortcut: one instance, so the 60 s in-process caches (venues, sectors, sessions) can't go stale across instances.
@@ -22,5 +23,9 @@ env:
     value: HallbookingKey # same value as in your .env.local
   - variable: GST_INVOICE_PREFIX
     value: HB
+  - variable: CRON_SECRET
+    secret: CRON_SECRET
+  # - variable: MSG91_AUTHKEY
+  #   secret: MSG91_AUTHKEY
   # - variable: TRUST_GSTIN
   #   value: CHANGE-ME

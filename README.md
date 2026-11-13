@@ -47,10 +47,16 @@ npm run dev                       # terminal 2 → http://localhost:3000
   `requireUser()` / `requireAdmin()`. Sector users only get their own sector's booking details (`/bookings/[id]` 404s otherwise).
 - **Payments**: `lib/razorpay.ts`. With `RAZORPAY_KEY_ID` unset, links point to `/mock-pay/...`, which calls the same
   `markPaid()` the webhook does. Going live: set the 3 keys, add webhook `{APP_URL}/api/razorpay/webhook` for `payment_link.paid`.
-- **WhatsApp**: `lib/whatsapp.ts`. With `MSG91_AUTHKEY` unset, it logs to the console . Three templates
-  are needed (hold, confirmed, cancelled). Variables are listed in the file. Nothing is sent to households without WhatsApp consent.
+- **WhatsApp**: `lib/whatsapp.ts`, via MSG91. With `MSG91_AUTHKEY` unset, it logs to the console. Four
+  templates are needed (hold = payment link, confirmed = receipt PDF as a document header, cancelled, reminder). Variables are listed in the
+  file. Nothing is sent to households without WhatsApp consent (they get SMS instead).
+- **Booking reminders**: `POST /api/cron/reminders` sends the `reminder` template 5 days and again 2 days before a
+  confirmed booking's first date. A free GitHub Actions schedule calls it daily at 10:00 IST
+  (`.github/workflows/booking-reminders.yml`; no Firebase Function). Setup: one random value saved as the App Hosting
+  secret `CRON_SECRET` (`firebase apphosting:secrets:set CRON_SECRET`, then uncomment it in `apphosting.yaml`) and as the
+  GitHub repo secret `CRON_SECRET` (`gh secret set CRON_SECRET`). Test with Actions → Booking reminders → Run workflow.
 - **Receipt**: on payment the PDF is generated (no dependency) and uploaded to a public Backblaze B2 bucket
-  (`lib/b2.ts`). The WhatsApp confirmation carries only that link. Without B2 env vars, or if an upload fails, the link
+  (`lib/b2.ts`). WhatsApp sends that PDF itself as the message's document; the SMS fallback sends the link. Without B2 env vars, or if an upload fails, the link
   falls back to `/r/{bookingDocId}/pdf`, which the app generates live.
 - **Cancellations**: unpaid hold → creator/admin releases it directly. Paid → creator requests, admin approves and records the manual refund.
 - **Audit**: every mutation writes to `audit/` within the same transaction.
