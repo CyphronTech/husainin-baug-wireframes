@@ -6,6 +6,7 @@ const TEMPLATES: Record<Template, string | undefined> = {
   hold: process.env.MSG91_SMS_TEMPLATE_HOLD,
   confirmed: process.env.MSG91_SMS_TEMPLATE_CONFIRMED,
   cancelled: process.env.MSG91_SMS_TEMPLATE_CANCELLED,
+  reminder: process.env.MSG91_SMS_TEMPLATE_REMINDER,
 };
 
 /** Never throws. Without MSG91 keys/templates it logs to the console (dev mock). */

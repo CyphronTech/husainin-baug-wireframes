@@ -192,21 +192,43 @@ export function messageValues(b: Booking, template: Template, refund?: number) {
   const base = [b.household.name, b.no, summary(b.items), inr(b.amount)];
   if (template === "hold") return [...base, String(HOLD_MINUTES), b.payment?.url ?? ""];
   if (template === "confirmed") return [...base, b.receiptUrl ?? ""];
+  if (template === "reminder") return [...base.slice(0, 3), dmy(firstDate(b))];
   return [...base.slice(0, 3), refund ? inr(refund) : "—"];
 }
 
+const firstDate = (b: Booking) => b.items.map((i) => i.date).sort()[0];
+
 /** WhatsApp first; SMS when WhatsApp fails or the household hasn't consented to WhatsApp. */
-// shortcut: "fails" = MSG91 rejected the send. A message accepted but never delivered isn't caught.
-// Upgrade: MSG91 delivery-report webhook → send the SMS on a failed delivery status.
+// shortcut: "fails" = RichAutomate rejected the send. A message accepted but never delivered isn't caught.
+// Upgrade: poll GET /api/v1/message-status/{message_id} (or its webhook) → send the SMS on status "failed".
 export async function notify(b: Booking, template: Template, refund?: number) {
   const values = messageValues(b, template, refund);
   const log = (action: string) => db.runTransaction(async (tx) => audit(tx, null, action, { bookingId: b.id, values }));
   if (b.household.whatsappConsent) {
-    const ok = await sendWhatsApp(template, b.household.mobile, values);
+    // "Resend payment link" is a deliberate repeat, so hold gets no idempotency key; the others must go once.
+    const ok = await sendWhatsApp(template, b.household.mobile, values, template === "hold" ? undefined : `${b.id}-${template}`);
     await log(ok ? `whatsapp.${template}` : `whatsapp.${template}.failed`);
     if (ok) return;
   }
   await log((await sendSms(template, b.household.mobile, values)) ? `sms.${template}` : `sms.${template}.failed`);
+}
+
+/**
+ * Daily job (POST /api/cron/reminders): reminds confirmed bookings whose first date is tomorrow (IST).
+ * A multi-day booking gets one reminder, before its first day. Returns how many were sent.
+ */
+export async function sendReminders() {
+  const tomorrow = new Date(new Date(today() + "T00:00:00Z").getTime() + 864e5).toISOString().slice(0, 10);
+  const locks = await db.collection("locks").where("date", "==", tomorrow).where("kind", "==", "booking").where("status", "==", "confirmed").get();
+  let sent = 0;
+  for (const id of new Set(locks.docs.map((l) => (l.data() as Lock).refId))) {
+    const b = await getBooking(id);
+    if (b?.status !== "confirmed" || firstDate(b) !== tomorrow || b.reminderSentFor === tomorrow) continue;
+    await notify(b, "reminder");
+    await db.doc(`bookings/${id}`).update({ reminderSentFor: tomorrow }); // a second run the same day skips it
+    sent++;
+  }
+  return sent;
 }
 
 const canAct = (user: AppUser, b: Booking) => user.role === "admin" || b.createdBy === user.uid;

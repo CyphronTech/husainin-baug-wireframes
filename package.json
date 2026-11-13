@@ -20,6 +20,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19.3.0",
+    "fontkit": "^2.0.4",
     "typescript": "^5"
   }
 }

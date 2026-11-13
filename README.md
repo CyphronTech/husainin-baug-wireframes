@@ -1,6 +1,6 @@
 # Husainin Baug — Hall & Room Booking
 
-Next.js 16 (App Router, server actions) + Firestore. Razorpay Payment Links (mocked until keys are set), MSG91 WhatsApp.
+Next.js 16 (App Router, server actions) + Firestore. Razorpay Payment Links (mocked until keys are set), RichAutomate WhatsApp.
 Built from the admin (A1–A9) and Sector / Mohalla (Login, M1–M8) wireframes on `main`.
 
 ## Run locally against a real Firebase project (free Spark plan — no hosting needed)
@@ -11,7 +11,7 @@ Built from the admin (A1–A9) and Sector / Mohalla (Login, M1–M8) wireframes 
 3. Note the **Project ID** (Project settings → General).
 4. Project settings → Service accounts → Generate new private key → save the JSON **outside** this folder.
 5. `cp .env.example .env.local` (Windows: `copy .env.example .env.local`) and fill in `NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `GOOGLE_APPLICATION_CREDENTIALS=/full/path/to/that.json`
-   and the four `B2_*` lines. Leave the emulator, Razorpay and MSG91 lines empty (both run as mocks).
+   and the four `B2_*` lines. Leave the emulator, Razorpay, RichAutomate and MSG91 lines empty (they run as mocks).
 6. `npm i`
 7. `node --env-file=.env.local scripts/seed.mjs` (admin `50450028` / `Password`; pass `<username> <password>` to change)
 8. `npm run dev` → http://localhost:3000
@@ -47,8 +47,12 @@ npm run dev                       # terminal 2 → http://localhost:3000
   `requireUser()` / `requireAdmin()`. Sector users only get their own sector's booking details (`/bookings/[id]` 404s otherwise).
 - **Payments**: `lib/razorpay.ts`. With `RAZORPAY_KEY_ID` unset, links point to `/mock-pay/...`, which calls the same
   `markPaid()` the webhook does. Going live: set the 3 keys, add webhook `{APP_URL}/api/razorpay/webhook` for `payment_link.paid`.
-- **WhatsApp**: `lib/whatsapp.ts`. With `MSG91_AUTHKEY` unset, it logs to the console . Three templates
-  are needed (hold, confirmed, cancelled). Variables are listed in the file. Nothing is sent to households without WhatsApp consent.
+- **WhatsApp**: `lib/whatsapp.ts`, via RichAutomate. With `RICHAUTOMATE_API_KEY` unset, it logs to the console. Four
+  templates are needed (hold = payment link, confirmed = receipt link, cancelled, reminder). Variables are listed in the
+  file. Nothing is sent to households without WhatsApp consent (they get SMS instead).
+- **Booking reminders**: `POST /api/cron/reminders` sends the `reminder` template the day before a confirmed booking's
+  first date. Set `CRON_SECRET`, then schedule it daily (e.g. 10:00 IST) in Google Cloud Scheduler:
+  `gcloud scheduler jobs create http booking-reminders --location=asia-southeast1 --schedule="0 10 * * *" --time-zone=Asia/Kolkata --http-method=POST --uri={APP_URL}/api/cron/reminders --headers="Authorization=Bearer <CRON_SECRET>"`
 - **Receipt**: on payment the PDF is generated (no dependency) and uploaded to a public Backblaze B2 bucket
   (`lib/b2.ts`). The WhatsApp confirmation carries only that link. Without B2 env vars, or if an upload fails, the link
   falls back to `/r/{bookingDocId}/pdf`, which the app generates live.
