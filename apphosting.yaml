@@ -23,9 +23,9 @@ env:
     value: HallbookingKey # same value as in your .env.local
   - variable: GST_INVOICE_PREFIX
     value: HB
+  - variable: CRON_SECRET
+    secret: CRON_SECRET
   # - variable: MSG91_AUTHKEY
   #   secret: MSG91_AUTHKEY
-  # - variable: CRON_SECRET
-  #   secret: CRON_SECRET
   # - variable: TRUST_GSTIN
   #   value: CHANGE-ME
