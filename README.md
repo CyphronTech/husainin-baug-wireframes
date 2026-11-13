@@ -48,13 +48,13 @@ npm run dev                       # terminal 2 → http://localhost:3000
 - **Payments**: `lib/razorpay.ts`. With `RAZORPAY_KEY_ID` unset, links point to `/mock-pay/...`, which calls the same
   `markPaid()` the webhook does. Going live: set the 3 keys, add webhook `{APP_URL}/api/razorpay/webhook` for `payment_link.paid`.
 - **WhatsApp**: `lib/whatsapp.ts`, via MSG91. With `MSG91_AUTHKEY` unset, it logs to the console. Four
-  templates are needed (hold = payment link, confirmed = receipt link, cancelled, reminder). Variables are listed in the
+  templates are needed (hold = payment link, confirmed = receipt PDF as a document header, cancelled, reminder). Variables are listed in the
   file. Nothing is sent to households without WhatsApp consent (they get SMS instead).
 - **Booking reminders**: `POST /api/cron/reminders` sends the `reminder` template the day before a confirmed booking's
   first date. Set `CRON_SECRET`, then schedule it daily (e.g. 10:00 IST) in Google Cloud Scheduler:
   `gcloud scheduler jobs create http booking-reminders --location=asia-southeast1 --schedule="0 10 * * *" --time-zone=Asia/Kolkata --http-method=POST --uri={APP_URL}/api/cron/reminders --headers="Authorization=Bearer <CRON_SECRET>"`
 - **Receipt**: on payment the PDF is generated (no dependency) and uploaded to a public Backblaze B2 bucket
-  (`lib/b2.ts`). The WhatsApp confirmation carries only that link. Without B2 env vars, or if an upload fails, the link
+  (`lib/b2.ts`). WhatsApp sends that PDF itself as the message's document; the SMS fallback sends the link. Without B2 env vars, or if an upload fails, the link
   falls back to `/r/{bookingDocId}/pdf`, which the app generates live.
 - **Cancellations**: unpaid hold → creator/admin releases it directly. Paid → creator requests, admin approves and records the manual refund.
 - **Audit**: every mutation writes to `audit/` within the same transaction.

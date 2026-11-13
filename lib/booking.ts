@@ -3,7 +3,7 @@ import { cartItems, parseDays } from "./cart";
 import { readVenues as getVenues } from "./data";
 import { db } from "./firebase-admin";
 import { dmy, inr, summary, today } from "./format";
-import { storeReceipt } from "./receipt";
+import { receiptFile, storeReceipt } from "./receipt";
 import { sendSms } from "./sms";
 import { sendWhatsApp, type Template } from "./whatsapp";
 import type { AppUser, Block, Booking, Cancellation, DayEvent, Item, Lock, Slot, Venue } from "./types";
@@ -205,7 +205,9 @@ export async function notify(b: Booking, template: Template, refund?: number) {
   const values = messageValues(b, template, refund);
   const log = (action: string) => db.runTransaction(async (tx) => audit(tx, null, action, { bookingId: b.id, values }));
   if (b.household.whatsappConsent) {
-    const ok = await sendWhatsApp(template, b.household.mobile, values);
+    // Receipt goes as the PDF itself (document header); SMS can't attach files, so it keeps the link as its last value.
+    const pdf = template === "confirmed" && b.receiptUrl && b.receiptNo ? { url: b.receiptUrl, filename: receiptFile(b) } : undefined;
+    const ok = await sendWhatsApp(template, b.household.mobile, pdf ? values.slice(0, -1) : values, pdf);
     await log(ok ? `whatsapp.${template}` : `whatsapp.${template}.failed`);
     if (ok) return;
   }

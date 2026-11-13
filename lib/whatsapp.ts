@@ -1,7 +1,7 @@
 // MSG91 WhatsApp template send. Templates must be pre-approved (MSG91 panel → WhatsApp → Templates) with body
 // variables in this order:
 //   hold:      {{1}} name, {{2}} booking no, {{3}} venue · date · slot, {{4}} amount, {{5}} minutes, {{6}} payment link
-//   confirmed: {{1}} name, {{2}} booking no, {{3}} venue · date · slot, {{4}} amount, {{5}} receipt link
+//   confirmed: {{1}} name, {{2}} booking no, {{3}} venue · date · slot, {{4}} amount — header: DOCUMENT (the receipt PDF)
 //   cancelled: {{1}} name, {{2}} booking no, {{3}} venue · date · slot, {{4}} refund amount
 //   reminder:  {{1}} name, {{2}} booking no, {{3}} venue · date · slot, {{4}} first booked date
 const TEMPLATES = {
@@ -12,13 +12,17 @@ const TEMPLATES = {
 };
 export type Template = keyof typeof TEMPLATES;
 
-/** Never throws: a failed message must not undo a payment or cancellation. Returns delivery-accepted. */
-export async function sendWhatsApp(template: Template, mobile: string, values: string[]) {
+/**
+ * Never throws: a failed message must not undo a payment or cancellation. Returns delivery-accepted.
+ * `doc` = public file URL sent as the template's document header (the template must have a DOCUMENT header).
+ */
+export async function sendWhatsApp(template: Template, mobile: string, values: string[], doc?: { url: string; filename: string }) {
   if (!process.env.MSG91_AUTHKEY) {
-    console.log(`[whatsapp:dev] ${template} → ${mobile}`, values);
+    console.log(`[whatsapp:dev] ${template} → ${mobile}`, values, doc ?? "");
     return true;
   }
-  const components = Object.fromEntries(values.map((value, i) => [`body_${i + 1}`, { type: "text", value }]));
+  const components: Record<string, object> = Object.fromEntries(values.map((value, i) => [`body_${i + 1}`, { type: "text", value }]));
+  if (doc) components.header_1 = { type: "document", value: doc.url, filename: doc.filename };
   try {
     const res = await fetch("https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/", {
       method: "POST",

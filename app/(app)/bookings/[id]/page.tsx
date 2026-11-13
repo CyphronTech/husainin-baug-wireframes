@@ -17,7 +17,7 @@ const hm = (iso?: string) => (iso ? new Date(iso).toLocaleTimeString("en-IN", { 
 /** Message previews mirror the approved WhatsApp templates (lib/whatsapp.ts). */
 const PREVIEW = {
   hold: ([name, no, what, amt, mins, url]: string[]) => [`Booking on hold: ${no}`, `Dear ${name}, ${what} is held for you. Please pay ${amt} within ${mins} minutes:\n${url}\n— Husainin Baug`],
-  confirmed: ([, no, what, amt, url]: string[]) => [`Booking confirmed: ${no}`, `Payment of ${amt} received. ${what}.\nYour receipt: ${url}\n— Husainin Baug`],
+  confirmed: ([, no, what, amt, url]: string[]) => [`Booking confirmed: ${no}`, `Payment of ${amt} received. ${what}.\nReceipt (PDF): ${url}\n— Husainin Baug`],
   cancelled: ([name, no, what, refund]: string[]) => [`Booking cancelled: ${no}`, `Dear ${name}, your booking ${what} is cancelled. Refund: ${refund}.\n— Husainin Baug`],
   reminder: ([name, no, what, date]: string[]) => [`Booking reminder: ${no}`, `Dear ${name}, a reminder that your booking starts on ${date}: ${what}.\n— Husainin Baug`],
 };
