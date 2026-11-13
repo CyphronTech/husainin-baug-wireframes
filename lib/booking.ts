@@ -1,4 +1,4 @@
-import type { DocumentReference, DocumentSnapshot, Transaction } from "firebase-admin/firestore";
+import { FieldValue, type DocumentReference, type DocumentSnapshot, type Transaction } from "firebase-admin/firestore";
 import { cartItems, parseDays } from "./cart";
 import { readVenues as getVenues } from "./data";
 import { db } from "./firebase-admin";
@@ -192,11 +192,14 @@ export function messageValues(b: Booking, template: Template, refund?: number) {
   const base = [b.household.name, b.no, summary(b.items), inr(b.amount)];
   if (template === "hold") return [...base, String(HOLD_MINUTES), b.payment?.url ?? ""];
   if (template === "confirmed") return [...base, b.receiptUrl ?? ""];
-  if (template === "reminder") return [...base.slice(0, 3), dmy(firstDate(b))];
+  if (template === "reminder") return [...base.slice(0, 3), dmy(firstDate(b)), String(daysUntil(firstDate(b)))];
   return [...base.slice(0, 3), refund ? inr(refund) : "—"];
 }
 
 const firstDate = (b: Booking) => b.items.map((i) => i.date).sort()[0];
+const daysUntil = (date: string) => Math.round((Date.parse(date) - Date.parse(today())) / 864e5);
+/** Reminders go this many days before a confirmed booking's first date. */
+const REMINDER_DAYS = [5, 2];
 
 /** WhatsApp first; SMS when WhatsApp fails or the household hasn't consented to WhatsApp. */
 // shortcut: "fails" = MSG91 rejected the send. A message accepted but never delivered isn't caught.
@@ -215,18 +218,19 @@ export async function notify(b: Booking, template: Template, refund?: number) {
 }
 
 /**
- * Daily job (POST /api/cron/reminders): reminds confirmed bookings whose first date is tomorrow (IST).
- * A multi-day booking gets one reminder, before its first day. Returns how many were sent.
+ * Daily job (POST /api/cron/reminders): reminds confirmed bookings whose first date is 5 or 2 days away (IST).
+ * Multi-day bookings count from their first day. Booked later than 5 days out → only the 2-day one. Returns how many were sent.
  */
 export async function sendReminders() {
-  const tomorrow = new Date(new Date(today() + "T00:00:00Z").getTime() + 864e5).toISOString().slice(0, 10);
-  const locks = await db.collection("locks").where("date", "==", tomorrow).where("kind", "==", "booking").where("status", "==", "confirmed").get();
+  const dates = REMINDER_DAYS.map((n) => new Date(Date.parse(today()) + n * 864e5).toISOString().slice(0, 10));
+  const locks = await db.collection("locks").where("date", "in", dates).where("kind", "==", "booking").where("status", "==", "confirmed").get();
   let sent = 0;
   for (const id of new Set(locks.docs.map((l) => (l.data() as Lock).refId))) {
     const b = await getBooking(id);
-    if (b?.status !== "confirmed" || firstDate(b) !== tomorrow || b.reminderSentFor === tomorrow) continue;
+    const days = b && daysUntil(firstDate(b));
+    if (b?.status !== "confirmed" || !REMINDER_DAYS.includes(days!) || b.remindersSent?.includes(days!)) continue;
     await notify(b, "reminder");
-    await db.doc(`bookings/${id}`).update({ reminderSentFor: tomorrow }); // a second run the same day skips it
+    await db.doc(`bookings/${id}`).update({ remindersSent: FieldValue.arrayUnion(days) }); // a second run the same day skips it
     sent++;
   }
   return sent;
