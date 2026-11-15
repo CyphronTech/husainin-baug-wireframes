@@ -445,3 +445,11 @@ td a[href^="/bookings/"] { white-space: nowrap; } /* booking numbers (BK-0009) n
 dialog.modal .card.cart { bottom: calc(-1 * var(--space-5)); border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
 .card.cart .step-nav { position: sticky; bottom: calc(-1 * var(--space-5)); margin-bottom: calc(-1 * var(--space-5)); padding-bottom: var(--space-5); background: var(--surface); }
 .main:has(.cart-float) { padding-bottom: 112px; } /* room to scroll Next above the floating cart, which starts folded */
+/* Payment received popup (bookings/[id]/paid-watcher.tsx) */
+dialog.paid-pop { width: min(440px, calc(100vw - 2 * var(--space-4))); padding: var(--space-7) var(--space-6) var(--space-6); background: var(--surface); text-align: center; }
+dialog.paid-pop::backdrop { background: rgb(0 0 0 / 0.55); }
+.paid-icon { display: grid; place-items: center; width: 72px; height: 72px; margin: 0 auto var(--space-4); border-radius: var(--radius-full); background: var(--accent); color: var(--on-accent); }
+.paid-pop h2 { font-size: var(--text-xl); margin: 0 0 var(--space-2); }
+.paid-pop p { margin: 0 0 var(--space-5); color: var(--text-muted); }
+.paid-actions { display: grid; gap: var(--space-3); }
+.paid-actions .btn { width: 100%; }
