@@ -1,5 +1,5 @@
 import { FieldValue, type DocumentReference, type DocumentSnapshot, type Transaction } from "firebase-admin/firestore";
-import { cartItems, parseDays } from "./cart";
+import { cartItems, eventFor, parseDays } from "./cart";
 import { readVenues as getVenues } from "./data";
 import { db } from "./firebase-admin";
 import { dmy, inr, summary, today } from "./format";
@@ -67,13 +67,22 @@ export function sizeProblem(venues: Venue[], { thaal, guests }: Size) {
   if (guests > guestLimit(venues)) return `${guests} guests is more than the ${guestLimit(venues)} these halls hold`;
   return "";
 }
-/** Each booked date has its own function: it needs details, and that date's halls must hold its size on their own. */
+/**
+ * Every booked date needs its function. Halls are checked per session: the halls booked for the morning must hold the
+ * morning's function (its own, or the whole day's), and the same for the evening.
+ */
 export function cartProblem(items: Item[], venues: Venue[], days: DayEvent[]) {
   for (const d of [...new Set(items.map((i) => i.date))].sort()) {
-    const day = days.find((x) => x.date === d);
-    if (!day) return `${dmy(d)}: enter what the function is`;
-    const p = sizeProblem(venues.filter((v) => items.some((i) => i.date === d && i.venueId === v.id)), day);
-    if (p) return `${dmy(d)}: ${p}`;
+    if (!days.some((x) => x.date === d)) return `${dmy(d)}: enter what the function is`;
+    for (const s of ["M", "E"] as const) {
+      const halls = venues.filter((v) => v.type === "hall" && items.some((i) => i.date === d && i.venueId === v.id && (i.slot === s || i.slot === "D")));
+      if (!halls.length) continue;
+      const ev = eventFor(days, d, s);
+      const when = `${dmy(d)} ${s === "M" ? "morning" : "evening"}`;
+      if (!ev) return `${when}: enter what the function is`;
+      const p = sizeProblem(halls, ev);
+      if (p) return `${(ev.slot ?? "D") === "D" ? dmy(d) : when}: ${p}`;
+    }
   }
   return "";
 }

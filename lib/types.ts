@@ -32,7 +32,8 @@ export type AppUser = { uid: string; name: string; mobile: string; email: string
 
 export type Household = { id: string; hof: string; name: string; mobile: string; address: string; sectorId: string; whatsappConsent: boolean };
 
-export type DayEvent = { date: string; purpose: string; thaal: number; guests: number };
+/** Function for one date: the whole day (D), or only its Morning (M) or Evening (E) session. Missing slot (older bookings) = D. */
+export type DayEvent = { date: string; slot?: Slot; purpose: string; thaal: number; guests: number };
 
 export type Item ={ venueId: string; venueName: string; date: string; slot: Slot; rate: number };
 

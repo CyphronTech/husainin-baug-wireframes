@@ -40,15 +40,18 @@ export default async function BookSlots({ searchParams }: { searchParams: SP }) 
   }
   if (sp.purpose !== undefined) {
     // Just came from step 2: check what was entered for date d and add it to the dates.
-    const kept = { purpose: sp.purpose, purposeOther: sp.purposeOther ?? "", th: sp.th ?? "", g: sp.g ?? "" };
+    const kept = { purpose: sp.purpose, purposeOther: sp.purposeOther ?? "", th: sp.th ?? "", g: sp.g ?? "", ss: sp.ss ?? "" };
     const purpose = sp.purpose === "Other" ? (sp.purposeOther ?? "").trim() : sp.purpose;
-    const day = { date: d, purpose, thaal: count(sp.th), guests: count(sp.g) };
+    const day = { date: d, slot: sp.ss === "M" || sp.ss === "E" ? sp.ss : ("D" as Slot), purpose, thaal: count(sp.th), guests: count(sp.g) };
     const missing = d < today() ? "Pick today or a later date" : !purpose || !PURPOSES.includes(sp.purpose) ? "Choose what the function is" : purpose.length > 60 ? "Keep the function name under 60 letters" : !day.thaal && !day.guests ? "Enter the number of thaal or guests" : "";
     if (missing) back(missing, kept);
     days = setDay(days, day);
   }
-  const day = days.find((x) => x.date === d);
+  // The function shown: the session asked for (ss), else the date's first one.
+  const day = days.find((x) => x.date === d && (x.slot ?? "D") === sp.ss) ?? days.find((x) => x.date === d);
   if (!day) back(""); // a date's function comes first (step 2)
+  const ss = day.slot ?? "D";
+  const sessions: ("M" | "E")[] = ss === "D" ? ["M", "E"] : [ss];
 
   const [allVenues, { locks }, households] = await Promise.all([getVenues(), loadWeek(d, d), getHouseholds(user.role === "admin" ? undefined : user.sectorId!)]);
   const hh = households.find((x) => x.id === sp.h);
@@ -62,14 +65,18 @@ export default async function BookSlots({ searchParams }: { searchParams: SP }) 
     error = (e as Error).message; // a bad cart starts over
   }
 
-  const state = { h: hh.id, d, ev: toDays(days), c: toCart(items) };
+  const state = { h: hh.id, d, ss, ev: toDays(days), c: toCart(items) };
   const href = (o: Record<string, string>) => `/book/slots?${new URLSearchParams({ ...state, ...o })}`;
   const step2 = (o: Record<string, string>) => `/book?${new URLSearchParams({ h: hh.id, ev: state.ev, c: state.c, ...o })}`;
   const dates = [...new Set([...items.map((i) => i.date), d])].sort();
   const problem = cartProblem(items, allVenues, days);
-  // Size meter for the date shown: thaal when given, else guests, against that date's halls in the cart.
-  const onDate = active.filter((v) => items.some((i) => i.date === d && i.venueId === v.id));
-  const [unit, need, cap] = day.thaal ? (["Thaal", day.thaal, thaalLimit(onDate)] as const) : (["Guests", day.guests, guestLimit(onDate)] as const);
+  // Size check for the function shown: thaal when given, else guests, against the halls added for its session(s).
+  // A whole-day function counts its smaller session, so neither morning nor evening is short.
+  const limit = day.thaal ? thaalLimit : guestLimit;
+  const caps = sessions
+    .map((s) => limit(active.filter((v) => items.some((i) => i.date === d && i.venueId === v.id && (i.slot === s || i.slot === "D")))))
+    .filter(Boolean);
+  const [unit, need, cap] = [day.thaal ? "Thaal" : "Guests", day.thaal || day.guests, caps.length ? Math.min(...caps) : 0] as const;
 
   const fits = (v: Venue) => !sizeProblem([v], day);
   const hallList = active.filter((v) => v.type === "hall");
@@ -94,9 +101,9 @@ export default async function BookSlots({ searchParams }: { searchParams: SP }) 
         <div className="day-head">
           <div>
             <h2 className="m0">{dmy(d)}</h2>
-            <p className="m0 muted">{day.purpose} · {sizeText(day)} · for {hh.name}</p>
+            <p className="m0 muted">{ss !== "D" && <b>{SLOT_LABEL[ss]} · </b>}{day.purpose} · {sizeText(day)} · for {hh.name}</p>
           </div>
-          <Link className="btn btn-icon" href={step2({ d })}><Icon name="pencil" />Change</Link>
+          <Link className="btn btn-icon" href={step2({ d, ss })}><Icon name="pencil" />Change</Link>
         </div>
         {/* Only when the halls added are too small; nothing to say once they fit. */}
         {cap > 0 && cap < need && (
@@ -107,7 +114,7 @@ export default async function BookSlots({ searchParams }: { searchParams: SP }) 
             {groups.length > 1 && <h3>{g.title}</h3>}
             {g.venues[0].type === "room"
               ? <RoomTypes rooms={g.venues} date={d} locks={locks} inCart={(v) => has(v, d, "D")} toggleHref={(v) => href({ c: toggleSlot(items, v, d, "D") })} />
-              : <HallCards venues={g.venues} date={d} locks={locks} inCart={(v, s) => has(v, d, s)} toggleHref={(v, s) => href({ c: toggleSlot(items, v, d, s) })} />}
+              : <HallCards venues={g.venues} date={d} sessions={sessions} locks={locks} inCart={(v, s) => has(v, d, s)} toggleHref={(v, s) => href({ c: toggleSlot(items, v, d, s) })} />}
           </section>
         ))}
       </div>
@@ -118,13 +125,17 @@ export default async function BookSlots({ searchParams }: { searchParams: SP }) 
           {items.length > 0 && <Link prefetch={false} scroll={false} className="icon-btn danger" href={href({ c: "" })} aria-label="Empty cart" title="Empty cart"><Icon name="trash" /></Link>}
         </div>
         {dates.map((date) => {
-          const ev = days.find((x) => x.date === date);
+          const evs = days.filter((x) => x.date === date);
           const mine = items.filter((i) => i.date === date);
           return (
             <section key={date} className={`cart-day${date === d ? " on" : ""}`}>
               <h3>
-                <Link prefetch={false} scroll={false} href={href({ d: date })}>{dmy(date)}</Link>
-                <span className="muted">{ev ? `${ev.purpose} · ${sizeText(ev)}` : "Function not entered"}</span>
+                <Link prefetch={false} scroll={false} href={href({ d: date, ss: "" })}>{dmy(date)}</Link>
+                {evs.length ? evs.map((ev) => (
+                  <Link key={ev.slot} prefetch={false} scroll={false} className="muted" href={href({ d: date, ss: ev.slot ?? "D" })}>
+                    {(ev.slot ?? "D") !== "D" && `${SLOT_LABEL[ev.slot!]}: `}{ev.purpose} · {sizeText(ev)}
+                  </Link>
+                )) : <span className="muted">Function not entered</span>}
               </h3>
               {mine.length === 0 ? <p className="muted m0">No halls yet. Tap a free slot above.</p> : (
                 <ul className="cart-list">
@@ -143,11 +154,17 @@ export default async function BookSlots({ searchParams }: { searchParams: SP }) 
             </section>
           );
         })}
-        <Link className="btn btn-icon mt-3" href={step2({})}><Icon name="plus" />Add another date</Link>
-        {problem && <p className="alert warn mb-3">{problem}. Add another hall on that date, or change its function.</p>}
+        <Link className="btn btn-icon mt-3" href={step2({})}><Icon name="plus" />Add another date or session</Link>
+        {problem && (
+          <p className="alert warn mb-3">
+            {problem.endsWith("enter what the function is")
+              ? `${problem}: tap "Add another date or session" and pick that date and session.`
+              : `${problem}. Add another hall for it, or change its function.`}
+          </p>
+        )}
         <form action={bookFromWizard} className="step-nav">
           {Object.entries(state).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
-          <Link prefetch={false} className="btn btn-icon" href={step2({ d })}><Icon name="back" />Back</Link>
+          <Link prefetch={false} className="btn btn-icon" href={step2({ d, ss })}><Icon name="back" />Back</Link>
           {items.length > 0 && <span className="step-total"><b className="checkout-total">{inr(total)}</b><span className="muted">{lines} · {new Set(items.map((i) => i.date)).size} {new Set(items.map((i) => i.date)).size === 1 ? "date" : "dates"}</span></span>}
           {items.length > 0 && !problem
             ? <Submit className="btn primary btn-icon"><Icon name="send" />Book &amp; send link</Submit>
