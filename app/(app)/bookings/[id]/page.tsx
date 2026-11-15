@@ -11,6 +11,7 @@ import { requireUser } from "@/lib/session";
 import type { Booking, Cancellation } from "@/lib/types";
 import { Badge, Msg, type SP } from "@/lib/ui";
 import { Submit } from "@/lib/submit";
+import { PaidWatcher } from "./paid-watcher";
 
 const hm = (iso?: string) => (iso ? new Date(iso).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kolkata" }) : "");
 
@@ -48,6 +49,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
     <>
       <div className="top"><h1>Payment and WhatsApp messages</h1></div>
       <Msg msg={sp.msg} />
+      <PaidWatcher waiting={status === "On hold"} paid={b.status === "confirmed"} no={b.no} amount={inr(b.amount)} />
       <div className="grid g2e mb-5">
         <div className="card stack">
           <h2 className="m0">Booking {b.no}</h2>
