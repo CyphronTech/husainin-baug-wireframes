@@ -55,14 +55,17 @@ const NAME: Record<Slot, string> = { M: "Morning", E: "Evening", D: "Full day" }
 export function HallCards(p: {
   venues: Venue[];
   date: string;
+  /** Hall sessions to offer: only the ones the function is for (default both). */
+  sessions?: Slot[];
   locks: Map<string, Lock>;
   inCart: (venueId: string, slot: Slot) => boolean;
   toggleHref: (venueId: string, slot: Slot) => string;
 }) {
+  const slotsOf = (v: Venue): readonly Slot[] => (v.type === "hall" ? (p.sessions ?? ["M", "E"]) : ["D"]);
   return (
     <ul className="hall-list">
       {p.venues.map((v) => {
-        const any = (v.type === "hall" ? (["M", "E"] as const) : (["D"] as const)).some((s) => p.inCart(v.id, s));
+        const any = slotsOf(v).some((s) => p.inCart(v.id, s));
         return (
           <li key={v.id} className={`hall-row${any ? " picked" : ""}`}>
             <div className="hall-info">
@@ -83,7 +86,7 @@ export function HallCards(p: {
               </span>
             </div>
             <div className="slot-btns">
-              {(v.type === "hall" ? (["M", "E"] as const) : (["D"] as const)).map((s) => {
+              {slotsOf(v).map((s) => {
                 const l = p.locks.get(`${v.id}_${p.date}_${s}`);
                 const label = `${v.name} ${NAME[s]}`;
                 if (l) return <span key={s} className="slot-btn taken" aria-label={`${label}: ${TAKEN[l.status]}`}><small>{NAME[s]}</small>{TAKEN[l.status]}</span>;

@@ -36,7 +36,9 @@ export default async function BookStep1({ searchParams }: { searchParams: SP }) 
     items = cartItems(sp.c ?? "", venues);
   } catch {} // a bad cart shows nothing here; step 3 says what is wrong
   const date = dateToIso(sp.d ?? "");
-  const day = days.find((x) => x.date === date); // editing a date already entered
+  const ss = sp.ss === "M" || sp.ss === "E" || sp.ss === "D" ? sp.ss : undefined;
+  const day = days.find((x) => x.date === date && (!ss || (x.slot ?? "D") === ss)); // editing a function already entered
+  const session = ss && ss !== "D" ? ss : day?.slot === "E" ? "E" : "M"; // whole-day entries (older links) open as Morning
   const purpose = sp.purpose ?? day?.purpose;
   const inList = purpose && PURPOSES.includes(purpose);
 
@@ -81,13 +83,20 @@ export default async function BookStep1({ searchParams }: { searchParams: SP }) 
             </div>
           </div>
           <div className="card">
-            <h2>{day ? "Change this date" : days.length ? "Add another date" : "Date & function"}</h2>
+            <h2>{day ? "Change this function" : days.length ? "Add another date or session" : "Date & function"}</h2>
             {/* Purpose fields post with form="book" (see purpose.tsx). */}
             <Form id="book" action="/book/slots" className="stack">
               <input type="hidden" name="h" value={hh.id} />
               {sp.c && <input type="hidden" name="c" value={sp.c} />}
               {sp.ev && <input type="hidden" name="ev" value={sp.ev} />}
               <label className="date-one"><span>Date <span className="req" aria-hidden="true">*</span></span><DateField hijri={hijri} name="d" required defaultValue={date >= today() ? date : days.length ? addDays(days.at(-1)!.date, 1) : today()} /></label>
+              {/* Morning and evening can be different functions with a different number of thaal: enter each as its own session. */}
+              <fieldset className="purpose">
+                <legend>Session</legend>
+                {([["M", "Morning"], ["E", "Evening"]] as const).map(([v, label]) => (
+                  <label key={v}><input type="radio" name="ss" value={v} defaultChecked={session === v} />{label}</label>
+                ))}
+              </fieldset>
               <Purpose options={PURPOSES} initial={!purpose ? "Wedding" : inList ? purpose : "Other"} initialOther={sp.purposeOther ?? (inList ? "" : purpose ?? "")} />
               <div>
                 <div className="row">

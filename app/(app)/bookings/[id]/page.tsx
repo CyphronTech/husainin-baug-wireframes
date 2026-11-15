@@ -58,7 +58,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
           </p>
           {!!b.days?.length && (
             <ul className="m0">
-              {b.days.map((x) => <li key={x.date}>{dmy(x.date)}: {x.purpose}{x.thaal ? ` · ${x.thaal} thaal` : ""}{x.guests ? ` · ${x.guests} guests` : ""}</li>)}
+              {b.days.map((x) => <li key={x.date + (x.slot ?? "D")}>{dmy(x.date)}{(x.slot ?? "D") !== "D" && ` ${SLOT_LABEL[x.slot!].toLowerCase()}`}: {x.purpose}{x.thaal ? ` · ${x.thaal} thaal` : ""}{x.guests ? ` · ${x.guests} guests` : ""}</li>)}
             </ul>
           )}
           <div className="row items-center">

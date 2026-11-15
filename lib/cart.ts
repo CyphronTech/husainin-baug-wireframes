@@ -44,25 +44,33 @@ export function toggleSlot(items: Item[], venueId: string, date: string, s: Slot
   return toCart([...rest, { venueId, date, slot }]);
 }
 
+const SESSION_ORDER = { D: 0, M: 1, E: 2 } as const;
+
 /**
- * Function details per date, "date~purpose~thaal~guests,…" with purpose URI-encoded. Each date of a booking can be a
- * different function and size. Comes from the URL: throws on anything invalid. Sorted by date, one entry per date.
+ * Function details, "date~purpose~thaal~guests[~session],…" with purpose URI-encoded. A date has one function for the
+ * whole day (session D, the default) or its own function per session (M and/or E), each with its own size.
+ * Comes from the URL: throws on anything invalid. Sorted by date then session, one entry per date + session.
  */
 export function parseDays(s: string): DayEvent[] {
   const days = new Map<string, DayEvent>();
   for (const part of s.split(",").filter(Boolean)) {
-    const [date, p, th, g, extra] = part.split("~");
+    const [date, p, th, g, sl = "D", extra] = part.split("~");
     const purpose = decodeURIComponent(p ?? "").trim();
     const [thaal, guests] = [th, g].map((x) => (/^\d{0,5}$/.test(x ?? "") ? Number(x || 0) : NaN));
-    if (extra !== undefined || !realDate(date) || !purpose || purpose.length > 60 || isNaN(thaal) || isNaN(guests) || (!thaal && !guests))
+    if (extra !== undefined || !realDate(date) || !["M", "E", "D"].includes(sl) || !purpose || purpose.length > 60 || isNaN(thaal) || isNaN(guests) || (!thaal && !guests))
       throw new Error("The function details have an invalid line");
-    days.set(date, { date, purpose, thaal, guests });
+    days.set(`${date}_${sl}`, { date, slot: sl as Slot, purpose, thaal, guests });
   }
   if (days.size > MAX_LINES) throw new Error(`Max ${MAX_LINES} dates per booking`);
-  return [...days.values()].sort((a, b) => a.date.localeCompare(b.date));
+  return [...days.values()].sort((a, b) => a.date.localeCompare(b.date) || SESSION_ORDER[a.slot ?? "D"] - SESSION_ORDER[b.slot ?? "D"]);
 }
 
-export const toDays = (days: DayEvent[]) => days.map((d) => `${d.date}~${encodeURIComponent(d.purpose)}~${d.thaal || ""}~${d.guests || ""}`).join(",");
+export const toDays = (days: DayEvent[]) =>
+  days.map((d) => `${d.date}~${encodeURIComponent(d.purpose)}~${d.thaal || ""}~${d.guests || ""}${d.slot && d.slot !== "D" ? `~${d.slot}` : ""}`).join(",");
 
-/** Days after setting one date's details (adds the date or replaces it). */
-export const setDay = (days: DayEvent[], day: DayEvent) => parseDays(toDays([...days.filter((d) => d.date !== day.date), day]));
+/** Days after setting one function. A whole-day function replaces that date's sessions; a session replaces the whole day. */
+export const setDay = (days: DayEvent[], day: DayEvent) =>
+  parseDays(toDays([...days.filter((d) => d.date !== day.date || ((d.slot ?? "D") !== "D" && (day.slot ?? "D") !== "D" && d.slot !== day.slot)), day]));
+
+/** The function covering a session of a date: its own, else the whole-day one. */
+export const eventFor = (days: DayEvent[], date: string, s: "M" | "E") => days.find((x) => x.date === date && (x.slot ?? "D") === s) ?? days.find((x) => x.date === date && (x.slot ?? "D") === "D");

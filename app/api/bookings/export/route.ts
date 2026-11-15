@@ -20,7 +20,7 @@ export async function GET(req: Request) {
       b.items.map((i) => `${i.venueName} ${dmy(i.date)} ${SLOT_LABEL[i.slot]}`).join("; "),
       new Date(`${b.items[0].date}T00:00:00Z`),
       new Date(`${b.items.at(-1)!.date}T00:00:00Z`),
-      b.days?.length ? b.days.map((d) => `${dmy(d.date)}: ${d.purpose}`).join("; ") : b.event?.purpose ?? "",
+      b.days?.length ? b.days.map((d) => `${dmy(d.date)}${(d.slot ?? "D") !== "D" ? ` ${SLOT_LABEL[d.slot!].toLowerCase()}` : ""}: ${d.purpose}${d.thaal ? ` (${d.thaal} thaal)` : ""}`).join("; ") : b.event?.purpose ?? "",
       b.event?.thaal || "",
       b.event?.guests || "",
       b.amount,

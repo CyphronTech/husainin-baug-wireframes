@@ -444,3 +444,4 @@ td a[href^="/bookings/"] { white-space: nowrap; } /* booking numbers (BK-0009) n
 .card.cart { position: sticky; bottom: 0; z-index: 2; max-height: 45vh; overflow-y: auto; margin-bottom: 0; box-shadow: 0 -8px 24px rgb(0 0 0 / 0.10); }
 dialog.modal .card.cart { bottom: calc(-1 * var(--space-5)); border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
 .card.cart .step-nav { position: sticky; bottom: calc(-1 * var(--space-5)); margin-bottom: calc(-1 * var(--space-5)); padding-bottom: var(--space-5); background: var(--surface); }
+.main:has(.cart-float) { padding-bottom: 112px; } /* room to scroll Next above the floating cart, which starts folded */
