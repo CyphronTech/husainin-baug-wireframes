@@ -345,17 +345,6 @@ a.step-btn:hover { background: var(--info-bg); }
 a.step-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .step-btn.off { color: var(--line); cursor: not-allowed; }
 /* Step 2: cart stays in view, bottom right, while another date is entered */
-.cart-float { position: fixed; right: var(--space-5); bottom: var(--space-5); z-index: 20; width: min(340px, calc(100vw - 2 * var(--space-4))); border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); box-shadow: 0 8px 28px rgb(0 0 0 / 0.16); }
-.cart-float summary { display: flex; align-items: center; gap: var(--space-2); min-height: 52px; padding: 0 var(--space-4); border-radius: var(--radius-lg); background: var(--accent); color: var(--on-accent); font-weight: var(--weight-semibold); cursor: pointer; list-style: none; }
-.cart-float summary::-webkit-details-marker { display: none; }
-.cart-float summary b { margin-left: auto; }
-.cart-float[open] summary { border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
-.cart-float summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.cart-float-body { display: grid; gap: var(--space-3); max-height: 50vh; overflow-y: auto; padding: var(--space-3) var(--space-4) var(--space-4); }
-.cart-float h3 { margin: 0 0 var(--space-1); font-size: var(--text-sm); }
-.cart-float ul { margin: 0; padding: 0; list-style: none; }
-.cart-float li { display: flex; justify-content: space-between; gap: var(--space-2); padding: 4px 0; font-size: var(--text-sm); border-bottom: 1px solid var(--line); }
-@media (max-width: 560px) { .cart-float { right: var(--space-4); bottom: var(--space-4); } }
 .qty-n { min-width: 44px; text-align: center; font-size: var(--text-lg); font-weight: var(--weight-bold); }
 @media (max-width: 560px) {
   .slot-btns { width: 100%; }
@@ -440,11 +429,6 @@ td a[href^="/bookings/"] { white-space: nowrap; } /* booking numbers (BK-0009) n
 @media (max-width: 520px) { .steps span:not(.on) { font-size: 0; gap: 0; } .steps span:not(.on)::before { font-size: var(--text-sm); } } /* phones: numbers only, except the current step */
 .top > form { min-width: 0; max-width: 100%; } /* a long month name wraps the button below instead of overflowing the card */
 .ms-field { grid-template-columns: minmax(0, 1fr); } /* long option names shrink with an ellipsis instead of spilling over the next control */
-/* Cart stays pinned under the hall list while it scrolls; a long cart scrolls inside, the Book row always shows */
-.card.cart { position: sticky; bottom: 0; z-index: 2; max-height: 45vh; overflow-y: auto; margin-bottom: 0; box-shadow: 0 -8px 24px rgb(0 0 0 / 0.10); }
-dialog.modal .card.cart { bottom: calc(-1 * var(--space-5)); border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
-.card.cart .step-nav { position: sticky; bottom: calc(-1 * var(--space-5)); margin-bottom: calc(-1 * var(--space-5)); padding-bottom: var(--space-5); background: var(--surface); }
-.main:has(.cart-float) { padding-bottom: 112px; } /* room to scroll Next above the floating cart, which starts folded */
 /* Payment received popup (bookings/[id]/paid-watcher.tsx) */
 dialog.paid-pop { width: min(440px, calc(100vw - 2 * var(--space-4))); padding: var(--space-7) var(--space-6) var(--space-6); background: var(--surface); text-align: center; }
 dialog.paid-pop::backdrop { background: rgb(0 0 0 / 0.55); }
@@ -453,3 +437,37 @@ dialog.paid-pop::backdrop { background: rgb(0 0 0 / 0.55); }
 .paid-pop p { margin: 0 0 var(--space-5); color: var(--text-muted); }
 .paid-actions { display: grid; gap: var(--space-3); }
 .paid-actions .btn { width: 100%; }
+/* Hall card that is itself the tap target (one session to pick): tick circle instead of a button */
+.hall-row.tap { padding: 0; }
+.hall-tap { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); width: 100%; padding: var(--space-3) var(--space-4); border-radius: inherit; color: inherit; text-decoration: none; }
+.hall-row.tap:hover { border-color: var(--accent); background: var(--info-bg); }
+.hall-tap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row-check { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border: 2px solid var(--border-strong); border-radius: var(--radius-full); color: var(--on-accent); transition: background-color 150ms, border-color 150ms; }
+.hall-row.picked .row-check { background: var(--accent); border-color: var(--accent); }
+.hall-row.taken { border-style: dashed; background: var(--muted-bg); }
+.row-taken { color: var(--text-muted); font-weight: var(--weight-semibold); }
+/* Halls step: halls left, cart always open on the right; the cart sticks while the hall list scrolls */
+.slots-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--space-4); align-items: start; }
+.slots-grid > .card { margin-bottom: 0; }
+.cart-side { position: sticky; top: var(--space-4); max-height: calc(100dvh - 2 * var(--space-4)); overflow-y: auto; }
+.cart-side .step-nav { flex-wrap: wrap; }
+.cart-side .step-total { order: -1; flex: 1 0 100%; display: flex; justify-content: space-between; align-items: baseline; margin-left: 0; text-align: left; }
+.cart-side .step-nav .btn { min-width: 0; }
+@media (max-width: 860px) { .slots-grid { grid-template-columns: 1fr; } .cart-side { position: static; max-height: none; } }
+/* Step 2: household strip, date & function form and its halls stacked on the left */
+.slots-main { display: grid; gap: var(--space-4); align-content: start; min-width: 0; }
+.slots-main > .card { margin-bottom: 0; }
+.hh-strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
+.hh-strip .link { margin-left: auto; }
+/* Compact halls & rooms list: name and facts on one line, tighter rows; the "Not available" group is quieter */
+.slots .hall-list { gap: 6px; }
+.slots .hall-row { padding: var(--space-2) var(--space-3); }
+.slots .hall-row.tap { padding: 0; }
+.slots .hall-tap { gap: var(--space-3); padding: var(--space-2) var(--space-3); min-height: 52px; }
+.slots .hall-info { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--space-3); }
+.slots .hall-info b { font-size: var(--text-base); }
+.slots .hall-facts { gap: 2px var(--space-2); }
+.slots .row-check { width: 28px; height: 28px; }
+.slots .pick-group { margin-top: var(--space-4); }
+.slots .pick-group.off h3 { color: var(--text-muted); }
+.slots .pick-group.off .hall-row { padding-block: 6px; opacity: 0.75; }

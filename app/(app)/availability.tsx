@@ -13,7 +13,7 @@ import type { SP } from "@/lib/ui";
  * venue holds venue ids and the types "hall" / "room": repeated by the filter form, comma-joined by the week links.
  */
 // Month filter jumps to the 1st of that month (Misri or English, per the user's calendar); prev/next week links carry `start`.
-const weekStart = (sp: Awaited<SP>) => dateToIso(sp.start ?? "") || dateToIso(sp.month?.length === 7 ? `${sp.month}-01` : sp.month ?? "") || today();
+export const weekStart = (sp: Awaited<SP>) => dateToIso(sp.start ?? "") || dateToIso(sp.month?.length === 7 ? `${sp.month}-01` : sp.month ?? "") || today();
 
 /** The calendar's reads. A dashboard calls this before its own reads so both run at once instead of one after the other. */
 export function availabilityData(sp: Awaited<SP>) {

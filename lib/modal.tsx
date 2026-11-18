@@ -23,7 +23,7 @@ export function TrackPage() {
 }
 
 /** Popup for an intercepted route. No close on backdrop click: a stray click would lose a half-filled form. */
-export function Modal({ label, close, keepQuery, children }: { label: string; close?: string; keepQuery?: boolean; children: React.ReactNode }) {
+export function Modal({ label, close, children }: { label: string; close?: string; children: React.ReactNode }) {
   const router = useRouter();
   const path = usePathname();
   const query = useSearchParams().toString();
@@ -34,7 +34,7 @@ export function Modal({ label, close, keepQuery, children }: { label: string; cl
   // A parallel slot keeps its last content on soft navigation (a catch-all slot route would 404 /login), so hide here.
   if (path !== openedAt) return null;
   const dismiss = () => {
-    const to = keepQuery && query ? `${close}?${query}` : close ?? lastPage;
+    const to = close ?? lastPage;
     startNav();
     // Next ignores a push to the exact URL already under the popup (the × did nothing), so step back to it instead.
     if (to === under) router.back();

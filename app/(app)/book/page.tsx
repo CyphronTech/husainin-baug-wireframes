@@ -1,46 +1,24 @@
 import Form from "next/form";
 import Link from "next/link";
-import { getHouseholds, getSectors, getVenues } from "@/lib/data";
+import { redirect } from "next/navigation";
+import { getHouseholds, getSectors } from "@/lib/data";
 import { Icon } from "@/lib/icons";
 import { requireUser } from "@/lib/session";
 import { Msg, Steps, type SP } from "@/lib/ui";
 import { HouseholdCard } from "./household-card";
-import { Purpose } from "./purpose";
 import { HhSearchInput } from "./hh-search-input";
-import { PURPOSES, type DayEvent, type Item } from "@/lib/types";
-import { cartItems, parseDays } from "@/lib/cart";
-import { CartFloat } from "./cart-float";
-import { addDays } from "@/lib/calendar";
-import { DateField } from "@/lib/date-field";
-import { fmt, today } from "@/lib/format";
-import { dateToIso } from "@/lib/misri";
 
 /**
- * Steps 1–2 of a new booking: pick the household (ITS / HOF ID) first, then a date with its function and size.
- * Step 2 opens the halls picker for that date (/book/slots, a popup on soft navigation). Each further date comes back here,
- * since every date can be a different function and size.
- * URL: h = household, q = household search, d = date being entered, ev = details of dates already entered (lib/cart.ts parseDays), c = cart.
+ * Step 1 of a new booking: pick the household (ITS / HOF ID). Once picked, step 2 (date, function and halls on one
+ * page) is /book/slots; links that still carry h here go straight on to it.
+ * URL: h = household, q = household search, d / ss = function to show, ev = functions entered (lib/cart.ts parseDays), c = cart.
  */
 export default async function BookStep1({ searchParams }: { searchParams: SP }) {
-  const { hijri, dmy } = await fmt();
   const user = await requireUser();
   const sp = await searchParams;
-  const [households, sectors, venues] = await Promise.all([getHouseholds(user.role === "admin" ? undefined : user.sectorId!), getSectors(), getVenues()]);
+  const [households, sectors] = await Promise.all([getHouseholds(user.role === "admin" ? undefined : user.sectorId!), getSectors()]);
   const hh = households.find((h) => h.id === sp.h);
-  let days: DayEvent[] = [];
-  try {
-    days = parseDays(sp.ev ?? "");
-  } catch {} // bad details: start the dates over
-  let items: Item[] = [];
-  try {
-    items = cartItems(sp.c ?? "", venues);
-  } catch {} // a bad cart shows nothing here; step 3 says what is wrong
-  const date = dateToIso(sp.d ?? "");
-  const ss = sp.ss === "M" || sp.ss === "E" || sp.ss === "D" ? sp.ss : undefined;
-  const day = days.find((x) => x.date === date && (!ss || (x.slot ?? "D") === ss)); // editing a function already entered
-  const session = ss && ss !== "D" ? ss : day?.slot === "E" ? "E" : "M"; // whole-day entries (older links) open as Morning
-  const purpose = sp.purpose ?? day?.purpose;
-  const inList = purpose && PURPOSES.includes(purpose);
+  if (hh) redirect(`/book/slots?${new URLSearchParams(Object.fromEntries(Object.entries({ h: hh.id, d: sp.d, ss: sp.ss, ev: sp.ev, c: sp.c, msg: sp.msg }).filter(([, v]) => v)) as Record<string, string>)}`);
 
   // Details already entered ride along when the household is searched for or changed.
   const keep = Object.fromEntries(Object.entries({ d: sp.d, ev: sp.ev, c: sp.c }).filter(([, v]) => v)) as Record<string, string>;
@@ -52,9 +30,8 @@ export default async function BookStep1({ searchParams }: { searchParams: SP }) 
   return (
     <>
       <div className="top"><h1>New booking</h1></div>
-      <Steps on={hh ? 2 : 1} />
+      <Steps on={1} />
       <Msg msg={sp.msg} />
-      {!hh ? (
         <div className="card">
           <h2>Who is the booking for?</h2>
           <Form action="/book" className="hh-search">
@@ -73,49 +50,6 @@ export default async function BookStep1({ searchParams }: { searchParams: SP }) 
             <Link className="btn btn-icon" href="/"><Icon name="back" />Cancel</Link>
           </div>
         </div>
-      ) : (
-        <>
-          <div className="card">
-            <h2>Booking for</h2>
-            <div className="hh-pick on">
-              <HouseholdCard h={hh} sector={sectorName(hh.sectorId)} />
-              <Link className="icon-btn" href={here({})} aria-label="Change household" title="Change household"><Icon name="pencil" /></Link>
-            </div>
-          </div>
-          <div className="card">
-            <h2>{day ? "Change this function" : days.length ? "Add another date or session" : "Date & function"}</h2>
-            {/* Purpose fields post with form="book" (see purpose.tsx). */}
-            <Form id="book" action="/book/slots" className="stack">
-              <input type="hidden" name="h" value={hh.id} />
-              {sp.c && <input type="hidden" name="c" value={sp.c} />}
-              {sp.ev && <input type="hidden" name="ev" value={sp.ev} />}
-              <label className="date-one"><span>Date <span className="req" aria-hidden="true">*</span></span><DateField hijri={hijri} name="d" required defaultValue={date >= today() ? date : days.length ? addDays(days.at(-1)!.date, 1) : today()} /></label>
-              {/* Morning and evening can be different functions with a different number of thaal: enter each as its own session. */}
-              <fieldset className="purpose">
-                <legend>Session</legend>
-                {([["M", "Morning"], ["E", "Evening"]] as const).map(([v, label]) => (
-                  <label key={v}><input type="radio" name="ss" value={v} defaultChecked={session === v} />{label}</label>
-                ))}
-              </fieldset>
-              <Purpose options={PURPOSES} initial={!purpose ? "Wedding" : inList ? purpose : "Other"} initialOther={sp.purposeOther ?? (inList ? "" : purpose ?? "")} />
-              <div>
-                <div className="row">
-                  <label>No. of thaal<input name="th" type="number" inputMode="numeric" min={1} step={1} defaultValue={sp.th ?? (day?.thaal || "")} /></label>
-                  <label>No. of guests<input name="g" type="number" inputMode="numeric" min={1} step={1} defaultValue={sp.g ?? (day?.guests || "")} /></label>
-                </div>
-                <p className="muted m0">Enter thaal, guests or both. Halls that fit are shown first on the next step.</p>
-              </div>
-              <div className="step-nav">
-                {days.length
-                  ? <Link className="btn btn-icon" href={`/book/slots?${new URLSearchParams({ h: hh.id, ev: sp.ev ?? "", c: sp.c ?? "", d: days.at(-1)!.date })}`}><Icon name="back" />Back to cart</Link>
-                  : <Link className="btn btn-icon" href={here({})}><Icon name="back" />Back</Link>}
-                <button className="btn primary btn-icon">Next: pick halls<Icon name="next" /></button>
-              </div>
-            </Form>
-          </div>
-          {days.length > 0 && <CartFloat items={items} days={days} dmy={dmy} href={`/book/slots?${new URLSearchParams({ h: hh.id, ev: sp.ev ?? "", c: sp.c ?? "", d: days.at(-1)!.date })}`} />}
-        </>
-      )}
     </>
   );
 }
