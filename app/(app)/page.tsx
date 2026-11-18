@@ -8,13 +8,13 @@ import { fmt, inr, istMidnight, slotSummary, today } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Block, Booking, Lock } from "@/lib/types";
 import { Badge, type SP } from "@/lib/ui";
-import { Availability, availabilityData } from "./availability";
+import { Availability, availabilityData, weekStart } from "./availability";
 import { SectorDashboard } from "./sector-dashboard";
 
 export default async function Dashboard({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
   const avail = availabilityData(sp); // calendar reads run alongside this page's own reads
-  const [user, { dmy }] = await Promise.all([requireUser(), fmt()]);
+  const [user, { dmy, monthStart: monthOf, monthLabel }] = await Promise.all([requireUser(), fmt()]);
   if (user.role !== "admin") return <SectorDashboard user={user} sp={sp} avail={avail} />;
 
   const t = today();
@@ -38,7 +38,12 @@ export default async function Dashboard({ searchParams }: { searchParams: SP }) 
     ? (await db.getAll(...upcomingIds.map((id) => db.doc(`bookings/${id}`)))).map((d) => ({ id: d.id, ...d.data() }) as Booking).sort((a, b) => a.items[0].date.localeCompare(b.items[0].date))
     : [];
   const collected = rows<Booking>(paid).filter((b) => b.status === "confirmed").reduce((s, b) => s + b.amount, 0);
-  const miqaats = rows<Block>(blocks).filter((b) => b.kind === "miqaat").sort((a, b) => a.from.localeCompare(b.from));
+  // Miqaat list follows the month picked in the calendar above (Misri or English month, per the user).
+  const shownMonth = monthOf(weekStart(sp));
+  const nextMonth = monthOf(shownMonth, 1);
+  const miqaats = rows<Block>(blocks)
+    .filter((b) => b.kind === "miqaat" && b.from < nextMonth && b.to >= shownMonth)
+    .sort((a, b) => a.from.localeCompare(b.from));
   const vName = (id: string) => venues.find((v) => v.id === id)?.name ?? id;
 
   return (
@@ -90,11 +95,13 @@ export default async function Dashboard({ searchParams }: { searchParams: SP }) 
 
       <div className="grid g2e">
         <div className="card">
-          <h2>Upcoming Miqaat blocks</h2>
-          <table>
-            <thead><tr><th>Miqaat</th><th>Dates</th><th>Venues blocked</th></tr></thead>
-            <tbody>{miqaats.map((m) => <tr key={m.id}><td>{m.name}</td><td>{dmy(m.from)}{m.to !== m.from && ` – ${dmy(m.to)}`}</td><td>{m.venueIds.map(vName).join(", ")}</td></tr>)}</tbody>
-          </table>
+          <h2>Miqaat blocks · {monthLabel(shownMonth)}</h2>
+          {miqaats.length ? (
+            <table>
+              <thead><tr><th>Miqaat</th><th>Dates</th><th>Venues blocked</th></tr></thead>
+              <tbody>{miqaats.map((m) => <tr key={m.id}><td>{m.name}</td><td>{dmy(m.from)}{m.to !== m.from && ` – ${dmy(m.to)}`}</td><td>{m.venueIds.map(vName).join(", ")}</td></tr>)}</tbody>
+            </table>
+          ) : <p className="muted">No upcoming Miqaat blocks in this month.</p>}
           <p><Link href="/miqaats">Manage Miqaat details</Link></p>
         </div>
         <div className="card">

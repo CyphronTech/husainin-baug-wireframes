@@ -66,25 +66,42 @@ export function HallCards(p: {
     <ul className="hall-list">
       {p.venues.map((v) => {
         const any = slotsOf(v).some((s) => p.inCart(v.id, s));
+        const only = slotsOf(v).length === 1 ? slotsOf(v)[0] : null;
+        const info = (
+          <div className="hall-info">
+            <b>{v.name}</b>
+            <span className="hall-facts">
+              {v.type === "hall" ? (
+                <>
+                  <span className={`tag${v.ac ? " ac" : ""}`}>{v.ac ? "AC" : "Non-AC"}</span>
+                  <span>Up to {maxThaal(v)} thaal</span>
+                  <span>{inr(v.rates.morning ?? 0)} / session</span>
+                </>
+              ) : (
+                <>
+                  <span>{v.capacity} persons</span>
+                  <span>{inr(v.rates.perDay ?? 0)} / day</span>
+                </>
+              )}
+            </span>
+          </div>
+        );
+        if (only) {
+          // One session to pick: the whole card is the tap target, with a tick for "added" — no separate button.
+          const l = p.locks.get(`${v.id}_${p.date}_${only}`);
+          if (l) return <li key={v.id} className="hall-row taken">{info}<span className="row-taken">{TAKEN[l.status]}</span></li>;
+          return (
+            <li key={v.id} className={`hall-row tap${any ? " picked" : ""}`}>
+              <Link prefetch={false} scroll={false} href={p.toggleHref(v.id, only)} className="hall-tap" aria-pressed={any} aria-label={`${v.name} ${NAME[only]}: ${any ? "added, tap to remove" : "free, tap to add"}`}>
+                {info}
+                <span className="row-check" aria-hidden="true">{any && <Icon name="check" size={20} />}</span>
+              </Link>
+            </li>
+          );
+        }
         return (
           <li key={v.id} className={`hall-row${any ? " picked" : ""}`}>
-            <div className="hall-info">
-              <b>{v.name}</b>
-              <span className="hall-facts">
-                {v.type === "hall" ? (
-                  <>
-                    <span className={`tag${v.ac ? " ac" : ""}`}>{v.ac ? "AC" : "Non-AC"}</span>
-                    <span>Up to {maxThaal(v)} thaal</span>
-                    <span>{inr(v.rates.morning ?? 0)} / session</span>
-                  </>
-                ) : (
-                  <>
-                    <span>{v.capacity} persons</span>
-                    <span>{inr(v.rates.perDay ?? 0)} / day</span>
-                  </>
-                )}
-              </span>
-            </div>
+            {info}
             <div className="slot-btns">
               {slotsOf(v).map((s) => {
                 const l = p.locks.get(`${v.id}_${p.date}_${s}`);
