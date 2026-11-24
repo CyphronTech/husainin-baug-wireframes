@@ -10,7 +10,7 @@ import { fmt, inr, slotSummary } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { Badge, Msg, type SP } from "@/lib/ui";
 
-const STATUSES = ["On hold", "Confirmed", "Cancellation requested", "Cancelled", "Completed", "Expired", "Refund due"];
+const STATUSES = ["On hold", "Awaiting approval", "Confirmed", "Cancellation requested", "Cancelled", "Payment rejected", "Completed", "Expired", "Refund due"];
 const PAGE_SIZE = 25;
 
 export default async function MyBookings({ searchParams }: { searchParams: SP }) {

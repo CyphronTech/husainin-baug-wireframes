@@ -58,6 +58,12 @@ export type Booking = {
   /** Paid after the hold lapsed and someone else took the slot. Admin refunds manually. */
   refundDue?: boolean;
   payment?: { linkId: string; url: string; paymentId?: string; method?: string; paidAt?: string };
+  /** UPI QR payment: screenshot staff uploaded. Admin approves (confirms) or rejects (cancels, slots released). */
+  proof?: { url: string; name: string; at: string; by: string };
+  /** Screenshot uploaded, Admin not decided yet. Own field so the dashboard can count it without an index. */
+  awaitingApproval?: boolean;
+  /** Set when Admin rejected the UPI payment ("" = no reason given). */
+  rejectReason?: string;
   receiptNo?: string;
   /** Public B2 link to the receipt PDF (or the app's /r/{id}/pdf fallback). */
   receiptUrl?: string;

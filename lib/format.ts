@@ -71,8 +71,8 @@ export const istMidnight = (date: string) => new Date(`${date}T00:00:00+05:30`).
 
 /** Status as users see it: holds lapse, past events complete — derived, not stored. */
 export function displayStatus(b: Booking, now = new Date().toISOString()) {
-  if (b.status === "cancelled") return b.refundDue ? "Refund due" : "Cancelled";
-  if (b.status === "pending") return b.holdUntil < now ? "Expired" : "On hold";
+  if (b.status === "cancelled") return b.refundDue ? "Refund due" : b.rejectReason !== undefined ? "Payment rejected" : "Cancelled";
+  if (b.status === "pending") return b.awaitingApproval ? "Awaiting approval" : b.holdUntil < now ? "Expired" : "On hold";
   if (b.cancelRequested) return "Cancellation requested";
   return b.items.at(-1)!.date < ist(now).slice(0, 10) ? "Completed" : "Confirmed";
 }

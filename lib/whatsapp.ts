@@ -4,11 +4,13 @@
 //   confirmed: {{1}} name, {{2}} booking no, {{3}} venue · date · slot, {{4}} amount — header: DOCUMENT (the receipt PDF)
 //   cancelled: {{1}} name, {{2}} booking no, {{3}} venue · date · slot, {{4}} refund amount
 //   reminder:  {{1}} name, {{2}} booking no, {{3}} venue · date · slot, {{4}} first booked date, {{5}} days left (5 or 2)
+//   rejected:  {{1}} name, {{2}} booking no, {{3}} venue · date · slot, {{4}} reason (UPI payment not verified)
 const TEMPLATES = {
   hold: process.env.MSG91_WA_TEMPLATE_HOLD ?? "booking_on_hold",
   confirmed: process.env.MSG91_WA_TEMPLATE_CONFIRMED ?? "booking_confirmed",
   cancelled: process.env.MSG91_WA_TEMPLATE_CANCELLED ?? "booking_cancelled",
   reminder: process.env.MSG91_WA_TEMPLATE_REMINDER ?? "booking_reminder",
+  rejected: process.env.MSG91_WA_TEMPLATE_REJECTED ?? "booking_rejected",
 };
 export type Template = keyof typeof TEMPLATES;
 

@@ -483,3 +483,13 @@ dialog.paid-pop::backdrop { background: rgb(0 0 0 / 0.55); }
 .fn-sum { font-weight: var(--weight-semibold); }
 .fn-card[open] .fn-sum, .fn-card[open] .fn-change { display: none; }
 .fn-card:not([open]) h2 { font-size: var(--text-sm); color: var(--text-muted); font-weight: normal; }
+
+/* UPI payment on the booking page: numbered steps, QR, uploaded screenshot */
+.pay-step { display: grid; gap: .6rem; justify-items: start; padding: 1rem; border: 1px solid var(--line); border-radius: 12px; }
+.pay-step h3 { display: flex; align-items: center; gap: .5rem; }
+.pay-n { display: inline-grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: .95rem; font-weight: 700; }
+.upi-qr { width: min(240px, 100%); height: auto; border-radius: 8px; justify-self: center; }
+.proof-img { display: block; max-width: min(260px, 100%); max-height: 360px; border-radius: 8px; border: 1px solid var(--line); }
+.pay-or { justify-self: stretch; display: flex; align-items: center; gap: .75rem; color: var(--muted-fg); font-size: .85rem; font-weight: 700; letter-spacing: .08em; }
+.pay-or::before, .pay-or::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
+.pay-link { justify-self: center; }

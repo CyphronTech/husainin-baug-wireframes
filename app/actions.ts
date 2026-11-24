@@ -3,7 +3,7 @@
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { audit, cancelPending, createBooking, decideCancellation, deleteBlock, getBooking, markPaid, notify, requestCancellation, roomType, saveBlock } from "@/lib/booking";
+import { attachProof, audit, cancelPending, decidePayment, createBooking, decideCancellation, deleteBlock, getBooking, markPaid, notify, requestCancellation, roomType, saveBlock } from "@/lib/booking";
 import { displayStatus } from "@/lib/format";
 import { invalidate, readSectors as getSectors, readVenues as getVenues } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
@@ -97,7 +97,7 @@ export async function bookFromWizard(f: FormData) {
       sectorName: sector.name,
       household: { name: hh.name, hof: hh.hof, mobile: hh.mobile, whatsappConsent: hh.whatsappConsent },
     });
-    await sendLink(id).catch(() => {}); // booking + hold stand even if Razorpay is down; retry from booking page
+    // Payment link goes only when staff ask for it (booking page); UPI QR is the default.
     return `/bookings/${id}`;
   });
 }
@@ -127,6 +127,33 @@ export async function resendLink(f: FormData) {
     await scoped(user, id);
     await sendLink(id);
     return `/bookings/${id}?msg=${encodeURIComponent("Payment link sent on WhatsApp")}`;
+  });
+}
+
+/** UPI QR payment: staff upload the household's payment screenshot; Admin then approves or rejects it. */
+export async function uploadPaymentProof(f: FormData) {
+  const id = s(f, "id");
+  const user = await requireUser();
+  await run(`/bookings/${id}`, async () => {
+    await scoped(user, id);
+    const file = f.get("proof") as File | null;
+    if (!file || !file.size) throw new Error("Choose the payment screenshot");
+    if (!file.type.startsWith("image/")) throw new Error("The screenshot must be a photo or image");
+    if (!b2Enabled()) throw new Error("Screenshot upload needs the B2 keys in .env.local");
+    // shortcut: same public B2 bucket as receipts and bills; the path holds the random booking id, so it can't be guessed.
+    const url = await uploadPublic(`payments/${id}/${Date.now()}-${file.name.replace(/[^w.-]+/g, "_")}`, Buffer.from(await file.arrayBuffer()), file.type);
+    await attachProof(user, id, { url, name: file.name, at: new Date().toISOString(), by: user.name });
+    return `/bookings/${id}?msg=${encodeURIComponent("Screenshot uploaded. The venue stays held until Admin approves the payment.")}`;
+  });
+}
+
+export async function decidePaymentAction(f: FormData) {
+  const id = s(f, "id");
+  const admin = await requireAdmin();
+  await run(`/bookings/${id}`, async () => {
+    const approve = s(f, "decision") === "approve";
+    await decidePayment(admin, id, approve, s(f, "reason"));
+    return `/bookings/${id}?msg=${encodeURIComponent(approve ? "Payment approved. Receipt sent to the household." : "Payment rejected. The venue is released and the household has been told.")}`;
   });
 }
 

@@ -70,8 +70,9 @@ export function sizeProblem(venues: Venue[], { thaal, guests }: Size) {
 /**
  * Every booked date needs its function. Halls are checked per session: the halls booked for the morning must hold the
  * morning's function (its own, or the whole day's), and the same for the evening.
+ * checkSize = false: only a missing function counts. Too few thaal/guests is a warning that doesn't stop the booking.
  */
-export function cartProblem(items: Item[], venues: Venue[], days: DayEvent[]) {
+export function cartProblem(items: Item[], venues: Venue[], days: DayEvent[], checkSize = true) {
   for (const d of [...new Set(items.map((i) => i.date))].sort()) {
     if (!days.some((x) => x.date === d)) return `${dmy(d)}: enter what the function is`;
     for (const s of ["M", "E"] as const) {
@@ -80,7 +81,7 @@ export function cartProblem(items: Item[], venues: Venue[], days: DayEvent[]) {
       const ev = eventFor(days, d, s);
       const when = `${dmy(d)} ${s === "M" ? "morning" : "evening"}`;
       if (!ev) return `${when}: enter what the function is`;
-      const p = sizeProblem(halls, ev);
+      const p = checkSize && sizeProblem(halls, ev);
       if (p) return `${(ev.slot ?? "D") === "D" ? dmy(d) : when}: ${p}`;
     }
   }
@@ -118,7 +119,7 @@ export async function createBooking(
   if (past) throw new Error(`${past.venueName} ${dmy(past.date)} is in the past. Remove it from the cart`);
   const venues = all.filter((v) => items.some((i) => i.venueId === v.id));
   const days = parseDays(input.days).filter((d) => items.some((i) => i.date === d.date)); // dates left with no slots drop out
-  const problem = cartProblem(items, venues, days);
+  const problem = cartProblem(items, venues, days, false);
   if (problem) throw new Error(problem);
   const event = { purpose: [...new Set(days.map((d) => d.purpose))].join(" / "), thaal: Math.max(...days.map((d) => d.thaal)), guests: Math.max(...days.map((d) => d.guests)) };
   const refs = itemLockRefs(items, venues);
@@ -165,8 +166,11 @@ export async function getBooking(id: string) {
 /** Called by the Razorpay webhook (and the mock checkout). Idempotent: Razorpay retries webhooks. */
 export async function markPaid(linkId: string, paymentId: string, method: string) {
   const q = await db.collection("bookings").where("payment.linkId", "==", linkId).limit(1).get();
-  if (q.empty) return;
-  const ref = q.docs[0].ref;
+  if (!q.empty) await confirmPaid(q.docs[0].ref, paymentId, method, null);
+}
+
+/** Pending → confirmed: invoice number, confirmed locks, receipt PDF, "confirmed" WhatsApp. by = Admin for a UPI approval. */
+async function confirmPaid(ref: DocumentReference, paymentId: string, method: string, by: AppUser | null) {
   const venues = await getVenues();
   const booking = await db.runTransaction(async (tx) => {
     const b = { id: ref.id, ...(await tx.get(ref)).data() } as Booking;
@@ -185,9 +189,9 @@ export async function markPaid(linkId: string, paymentId: string, method: string
     const fy = financialYear();
     const { no, commit } = await nextNo(tx, `invoice-${fy}`, `${process.env.GST_INVOICE_PREFIX ?? "HB"}/${fy}`, "/");
     commit();
-    tx.update(ref, { ...pay, status: "confirmed", receiptNo: no });
+    tx.update(ref, { ...pay, status: "confirmed", receiptNo: no, ...(b.awaitingApproval && { awaitingApproval: false }) });
     lockRefs.forEach((l) => tx.update(l, { status: "confirmed" }));
-    audit(tx, null, "booking.paid", { bookingId: b.id, paymentId, receiptNo: no });
+    audit(tx, by, "booking.paid", { bookingId: b.id, paymentId, receiptNo: no });
     return { ...b, receiptNo: no, payment: { ...b.payment!, paymentId, method, paidAt } }; // the receipt PDF prints these
   });
   if (!booking) return;
@@ -201,6 +205,7 @@ export function messageValues(b: Booking, template: Template, refund?: number) {
   const base = [b.household.name, b.no, summary(b.items), inr(b.amount)];
   if (template === "hold") return [...base, String(HOLD_MINUTES), b.payment?.url ?? ""];
   if (template === "confirmed") return [...base, b.receiptUrl ?? ""];
+  if (template === "rejected") return [...base.slice(0, 3), b.rejectReason || "—"];
   if (template === "reminder") return [...base.slice(0, 3), dmy(firstDate(b)), String(daysUntil(firstDate(b)))];
   return [...base.slice(0, 3), refund ? inr(refund) : "—"];
 }
@@ -261,6 +266,45 @@ export async function cancelPending(user: AppUser, bookingId: string) {
     tx.update(ref, { status: "cancelled" });
     audit(tx, user, "booking.release", { bookingId });
   });
+}
+
+/** Locks of a pending booking stay held this long once its UPI screenshot is in: until Admin decides. */
+const UNTIL_DECIDED = "9999-12-31T23:59:59.999Z";
+
+/** UPI QR payment: store the screenshot and keep the slots held until Admin approves or rejects. Re-upload replaces it. */
+export async function attachProof(user: AppUser, bookingId: string, proof: NonNullable<Booking["proof"]>) {
+  const venues = await getVenues();
+  await db.runTransaction(async (tx) => {
+    const ref = db.doc(`bookings/${bookingId}`);
+    const b = { id: bookingId, ...(await tx.get(ref)).data() } as Booking;
+    if (b.status !== "pending" || (!b.awaitingApproval && b.holdUntil < new Date().toISOString())) throw new Error("Hold has expired — create a new booking");
+    // Hold still live, so every lock is still ours: extend them past the 10-minute hold.
+    const locks = await tx.getAll(...itemLockRefs(b.items, venues));
+    locks.filter((l) => l.exists && l.data()!.refId === bookingId).forEach((l) => tx.update(l.ref, { holdUntil: UNTIL_DECIDED }));
+    tx.update(ref, { proof, awaitingApproval: true, holdUntil: UNTIL_DECIDED });
+    audit(tx, user, "booking.proof", { bookingId, url: proof.url });
+  });
+}
+
+/** Admin decision on a UPI screenshot. Approve = confirmed + receipt; reject = cancelled, slots released, household told. */
+export async function decidePayment(admin: AppUser, bookingId: string, approve: boolean, reason: string) {
+  const ref = db.doc(`bookings/${bookingId}`);
+  if (approve) {
+    const b = (await ref.get()).data() as Booking | undefined;
+    if (!b?.awaitingApproval || b.status !== "pending") throw new Error("No payment waiting for approval");
+    return confirmPaid(ref, "UPI screenshot", "upi", admin);
+  }
+  const venues = await getVenues();
+  const booking = await db.runTransaction(async (tx) => {
+    const b = { id: bookingId, ...(await tx.get(ref)).data() } as Booking;
+    if (!b.awaitingApproval || b.status !== "pending") throw new Error("No payment waiting for approval");
+    const locks = await tx.getAll(...itemLockRefs(b.items, venues));
+    locks.filter((l) => l.exists && l.data()!.refId === bookingId).forEach((l) => tx.delete(l.ref));
+    tx.update(ref, { status: "cancelled", awaitingApproval: false, rejectReason: reason });
+    audit(tx, admin, "booking.payment_reject", { bookingId, reason });
+    return { ...b, status: "cancelled" as const, rejectReason: reason };
+  });
+  await notify(booking, "rejected");
 }
 
 export async function requestCancellation(user: AppUser, bookingId: string, reason: string) {
