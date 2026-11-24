@@ -11,6 +11,7 @@ import { requireUser } from "@/lib/session";
 import type { Booking, Cancellation } from "@/lib/types";
 import { Badge, Msg, type SP } from "@/lib/ui";
 import { Submit } from "@/lib/submit";
+import { fileHref } from "@/lib/b2";
 import { PaidWatcher } from "./paid-watcher";
 
 const hm = (iso?: string) => (iso ? new Date(iso).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kolkata" }) : "");
@@ -103,7 +104,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
             <>
               <p className="alert info m0">Screenshot uploaded. The venue stays held until Admin approves the payment.</p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <a href={b.proof!.url} target="_blank" rel="noreferrer"><img className="proof-img" src={b.proof!.url} alt="Payment screenshot" /></a>
+              <a href={fileHref(b.proof!.url)} target="_blank" rel="noreferrer"><img className="proof-img" src={fileHref(b.proof!.url)} alt="Payment screenshot" /></a>
               {user.role === "admin" ? (
                 <form action={decidePaymentAction} className="stack">
                   <input type="hidden" name="id" value={id} />
@@ -174,7 +175,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
                 Cancellation is subject to Admin approval and the trust&apos;s policy.
               </div>
               <div className="row mt-3">
-                <a className="btn btn-icon" href={b.receiptUrl ?? `/r/${b.id}/pdf`}><Icon name="download" />Download PDF</a>
+                <a className="btn btn-icon" href={fileHref(b.receiptUrl ?? `/r/${b.id}/pdf`)}><Icon name="download" />Download PDF</a>
                 <Link className="btn primary btn-icon" href="/my-bookings"><Icon name="list" />Go to my bookings</Link>
               </div>
             </>

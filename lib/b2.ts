@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
-// Backblaze B2 native API: three fetch calls, no SDK.
+// Backblaze B2 native API: a few fetch calls, no SDK. The bucket is PRIVATE: files are read back only through /f/…,
+// which checks the signed-in user (app/f/[...path]/route.ts).
 export const b2Enabled = () => !!(process.env.B2_KEY_ID && process.env.B2_APP_KEY && process.env.B2_BUCKET_ID && process.env.B2_BUCKET_NAME);
 
 async function b2<T>(url: string, init: RequestInit): Promise<T> {
@@ -9,15 +10,18 @@ async function b2<T>(url: string, init: RequestInit): Promise<T> {
   return res.json();
 }
 
-/** Uploads to a PUBLIC bucket and returns the file's public URL. */
-// shortcut: public bucket — anyone with the link can open the file; the link holds the random booking doc id, so it
-// can't be guessed (same protection the app's /r/{id} page has). Re-authorizes on every upload (3 calls), fine at
-// receipt volume. Upgrade: private bucket + b2_get_download_authorization, cache the account token.
-export async function uploadPublic(fileName: string, body: Buffer, contentType: string) {
-  const account = await b2<{ authorizationToken: string; apiInfo: { storageApi: { apiUrl: string; downloadUrl: string } } }>(
+// shortcut: re-authorizes on every call, fine at receipt/screenshot volume. Upgrade: cache the account token (valid 24 h).
+const authorize = () =>
+  b2<{ authorizationToken: string; apiInfo: { storageApi: { apiUrl: string; downloadUrl: string } } }>(
     "https://api.backblazeb2.com/b2api/v3/b2_authorize_account",
     { headers: { Authorization: "Basic " + Buffer.from(`${process.env.B2_KEY_ID}:${process.env.B2_APP_KEY}`).toString("base64") } },
   );
+
+const encodePath = (fileName: string) => fileName.split("/").map(encodeURIComponent).join("/");
+
+/** Uploads a file and returns its B2 link. The link alone doesn't open (private bucket): show it with fileHref(). */
+export async function uploadPublic(fileName: string, body: Buffer, contentType: string) {
+  const account = await authorize();
   const { apiUrl, downloadUrl } = account.apiInfo.storageApi;
   const upload = await b2<{ uploadUrl: string; authorizationToken: string }>(`${apiUrl}/b2api/v3/b2_get_upload_url`, {
     method: "POST",
@@ -36,3 +40,20 @@ export async function uploadPublic(fileName: string, body: Buffer, contentType: 
   });
   return `${downloadUrl}/file/${process.env.B2_BUCKET_NAME}/${fileName}`;
 }
+
+/** Reads a private file. Caller must have checked the user may see it. */
+export async function downloadPrivate(fileName: string) {
+  const account = await authorize();
+  return fetch(`${account.apiInfo.storageApi.downloadUrl}/file/${process.env.B2_BUCKET_NAME}/${encodePath(fileName)}`, {
+    headers: { Authorization: account.authorizationToken },
+  });
+}
+
+/** File path inside the bucket from a stored B2 link (older links may carry a wrong bucket name). */
+export const b2Path = (url: string) => url.match(/^https:\/\/[^/]+\.backblazeb2\.com\/file\/[^/]+\/(.+)$/)?.[1];
+
+/** Link to show in the app: B2 files go through the signed-in /f/ route; other links (e.g. /r/{id}/pdf) stay as they are. */
+export const fileHref = (url: string) => {
+  const path = b2Path(url);
+  return path ? `/f/${encodePath(path)}` : url;
+};

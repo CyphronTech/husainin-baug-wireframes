@@ -1,4 +1,5 @@
 import { Icon } from "@/lib/icons";
+import { fileHref } from "@/lib/b2";
 import Link from "next/link";
 import { Select } from "@/lib/dropdown";
 import { deleteExpense, saveExpense } from "@/app/actions";
@@ -89,7 +90,7 @@ export default async function Expenses({ searchParams }: { searchParams: SP }) {
             {inMonth.map((e) => (
               <tr key={e.id}>
                 <td>{dmy(e.date)}</td><td>{venueName(e.venueId)}</td><td>{e.category}</td><td className="text-right">{inr(e.amount)}</td><td>{e.paidTo}</td>
-                <td>{e.billUrl ? <a href={e.billUrl} target="_blank" rel="noreferrer">{e.billName}</a> : "—"}</td><td>{e.notes}</td>
+                <td>{e.billUrl ? <a href={fileHref(e.billUrl)} target="_blank" rel="noreferrer">{e.billName}</a> : "—"}</td><td>{e.notes}</td>
                 <td>
                   <Link className="link btn-icon" href={`/expenses?month=${month}&edit=${e.id}`} scroll={false}><Icon name="pencil" size={16} />Edit</Link>
                   {/* Native two-step confirm: open, then confirm. No JS. */}

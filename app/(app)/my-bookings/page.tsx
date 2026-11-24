@@ -9,6 +9,7 @@ import { bookingRows } from "@/lib/booking-rows";
 import { fmt, inr, slotSummary } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import { Badge, Msg, type SP } from "@/lib/ui";
+import { fileHref } from "@/lib/b2";
 
 const STATUSES = ["On hold", "Awaiting approval", "Confirmed", "Cancellation requested", "Cancelled", "Payment rejected", "Completed", "Expired", "Refund due"];
 const PAGE_SIZE = 25;
@@ -70,7 +71,7 @@ export default async function MyBookings({ searchParams }: { searchParams: SP })
                   </td>
                   <td>{mine ? "You" : b.createdByName}</td>
                   <td>
-                    {b.receiptNo && <a href={b.receiptUrl ?? `/r/${b.id}/pdf`}>Receipt</a>}{" "}
+                    {b.receiptNo && <a href={fileHref(b.receiptUrl ?? `/r/${b.id}/pdf`)}>Receipt</a>}{" "}
                     {b.shown === "On hold" && <form className="inline" action={resendLink}><input type="hidden" name="id" value={b.id} /><button className="link btn-icon"><Icon name="send" size={16} />Resend link</button></form>}{" "}
                     {b.shown === "Confirmed" && (mine || isAdmin) && <Link href={`/bookings/${b.id}/cancel`}>Request cancellation</Link>}{" "}
                     {isAdmin && crs.some((c) => c.status === "awaiting") && <Link href={`/bookings/${b.id}/cancel`}>Review</Link>}

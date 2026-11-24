@@ -73,14 +73,11 @@ export function receiptPdf(b: Booking) {
   return pdfDoc([ops.join("\n")], 430);
 }
 
-/** Saves the receipt PDF to B2 and returns the link that goes on WhatsApp. Never throws (payment is already done). */
+/**
+ * Keeps a copy of the receipt PDF in B2 and returns the link that goes on WhatsApp: the app's own /r/{id}/pdf, since
+ * the private bucket can't be opened by WhatsApp or the household. Never throws (payment is already done).
+ */
 export async function storeReceipt(b: Booking) {
-  const fallback = `${process.env.APP_URL}/r/${b.id}/pdf`; // generated live by the app
-  if (!b2Enabled()) return fallback;
-  try {
-    return await uploadPublic(`receipts/${b.id}/${receiptFile(b)}`, receiptPdf(b), "application/pdf");
-  } catch (e) {
-    console.error("[b2]", e);
-    return fallback;
-  }
+  if (b2Enabled()) await uploadPublic(`receipts/${b.id}/${receiptFile(b)}`, receiptPdf(b), "application/pdf").catch((e) => console.error("[b2]", e));
+  return `${process.env.APP_URL}/r/${b.id}/pdf`; // generated live by the app
 }
