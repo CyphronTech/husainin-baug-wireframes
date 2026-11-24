@@ -20,7 +20,7 @@ env:
   - variable: B2_BUCKET_ID
     value: 73e86f8ac48976e2a71f061a # same value as in your .env.local (not secret)
   - variable: B2_BUCKET_NAME
-    value: HallbookingKey # same value as in your .env.local
+    value: HallBooking # same value as in your .env.local
   - variable: GST_INVOICE_PREFIX
     value: HB
   - variable: CRON_SECRET
