@@ -18,22 +18,32 @@ export function FunctionForm(p: {
   purposeOther?: string;
   th?: string | number;
   g?: string | number;
+  /** One-line summary shown while folded. Given = the halls are on screen, so the form starts folded. */
+  summary?: string;
 }) {
   const inList = !!p.purpose && PURPOSES.includes(p.purpose);
   return (
-    <div className="card">
-      <h2>{p.heading}</h2>
+    <details className="card fn-card" open={!p.summary}>
+      <summary>
+        <span className="fn-title">
+          <h2 className="m0">{p.heading}</h2>
+          {p.summary && <span className="fn-sum">{p.summary}</span>}
+        </span>
+        {p.summary && <span className="btn btn-icon fn-change"><Icon name="pencil" />Change</span>}
+      </summary>
       {/* Purpose fields post with form="book" (see purpose.tsx). */}
       <Form id="book" action="/book/slots" scroll={false} className="stack">
         {Object.entries(p.hidden).map(([k, v]) => v && <input key={k} type="hidden" name={k} value={v} />)}
-        <label className="date-one"><span>Date <span className="req" aria-hidden="true">*</span></span><DateField hijri={p.hijri} name="d" required defaultValue={p.date} /></label>
-        {/* Morning and evening can be different functions with a different number of thaal: enter each as its own session. */}
-        <fieldset className="purpose">
-          <legend>Session</legend>
-          {([["M", "Morning"], ["E", "Evening"]] as const).map(([v, label]) => (
-            <label key={v}><input type="radio" name="ss" value={v} defaultChecked={p.session === v} />{label}</label>
-          ))}
-        </fieldset>
+        <div className="row date-session">
+          <label className="date-one"><span>Date <span className="req" aria-hidden="true">*</span></span><DateField hijri={p.hijri} name="d" required defaultValue={p.date} /></label>
+          {/* Morning and evening can be different functions with a different number of thaal: enter each as its own session. */}
+          <fieldset className="purpose">
+            <legend>Session</legend>
+            {([["M", "Morning"], ["E", "Evening"]] as const).map(([v, label]) => (
+              <label key={v}><input type="radio" name="ss" value={v} defaultChecked={p.session === v} />{label}</label>
+            ))}
+          </fieldset>
+        </div>
         <Purpose options={PURPOSES} initial={!p.purpose ? "Wedding" : inList ? p.purpose : "Other"} initialOther={p.purposeOther ?? (inList ? "" : p.purpose ?? "")} />
         <div>
           <div className="row">
@@ -46,6 +56,6 @@ export function FunctionForm(p: {
           <button className="btn primary btn-icon"><Icon name="search" />Show halls</button>
         </div>
       </Form>
-    </div>
+    </details>
   );
 }

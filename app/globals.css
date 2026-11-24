@@ -471,3 +471,15 @@ dialog.paid-pop::backdrop { background: rgb(0 0 0 / 0.55); }
 .slots .pick-group { margin-top: var(--space-4); }
 .slots .pick-group.off h3 { color: var(--text-muted); }
 .slots .pick-group.off .hall-row { padding-block: 6px; opacity: 0.75; }
+.date-session { gap: var(--space-3) var(--space-5); } /* date and session on one line; session chips as tall as the date field */
+.date-session .date-one { flex: 0 1 260px; }
+.date-session .purpose label { min-height: var(--control-h); }
+/* Date & function folds to one line once its halls show; Change opens it again (function-form.tsx) */
+.fn-card > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); list-style: none; cursor: pointer; }
+.fn-card > summary::-webkit-details-marker { display: none; }
+.fn-card > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: var(--radius); }
+.fn-card[open] > summary { margin-bottom: var(--space-3); cursor: default; }
+.fn-title { display: grid; gap: 2px; min-width: 0; }
+.fn-sum { font-weight: var(--weight-semibold); }
+.fn-card[open] .fn-sum, .fn-card[open] .fn-change { display: none; }
+.fn-card:not([open]) h2 { font-size: var(--text-sm); color: var(--text-muted); font-weight: normal; }

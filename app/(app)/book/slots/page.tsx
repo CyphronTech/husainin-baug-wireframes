@@ -122,6 +122,7 @@ export default async function BookSlots({ searchParams }: { searchParams: SP }) 
         heading={day || formError ? "Date & function" : days.length ? "Add another date or session" : "Date & function"}
         {...draft}
         session={draft.session as "M" | "E"}
+        summary={day && !formError ? `${dmy(day.date)} · ${SLOT_LABEL[ss]} · ${day.purpose} · ${sizeText(day)}` : undefined}
       />
       {day && (
       <div className="card slots">
