@@ -141,7 +141,7 @@ export async function uploadPaymentProof(f: FormData) {
     if (!file.type.startsWith("image/")) throw new Error("The screenshot must be a photo or image");
     if (!b2Enabled()) throw new Error("Screenshot upload needs the B2 keys in .env.local");
     // shortcut: same public B2 bucket as receipts and bills; the path holds the random booking id, so it can't be guessed.
-    const url = await uploadPublic(`payments/${id}/${Date.now()}-${file.name.replace(/[^w.-]+/g, "_")}`, Buffer.from(await file.arrayBuffer()), file.type);
+    const url = await uploadPublic(`payments/${id}/${Date.now()}-${file.name.replace(/[^\w.-]+/g, "_")}`, Buffer.from(await file.arrayBuffer()), file.type);
     await attachProof(user, id, { url, name: file.name, at: new Date().toISOString(), by: user.name });
     return `/bookings/${id}?msg=${encodeURIComponent("Screenshot uploaded. The venue stays held until Admin approves the payment.")}`;
   });
