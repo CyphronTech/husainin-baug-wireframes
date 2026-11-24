@@ -4,7 +4,7 @@ import { datesBetween, isLive } from "@/lib/booking";
 import { getVenues, rows } from "@/lib/data";
 import { db } from "@/lib/firebase-admin";
 import { addDays } from "@/lib/calendar";
-import { fmt, inr, istMidnight, slotSummary, today } from "@/lib/format";
+import { displayStatus, fmt, inr, istMidnight, slotSummary, today } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 import type { Block, Booking, Lock } from "@/lib/types";
 import { Badge, type SP } from "@/lib/ui";
@@ -22,13 +22,14 @@ export default async function Dashboard({ searchParams }: { searchParams: SP }) 
   const monthDays = datesBetween(monthStart, new Date(Date.UTC(+t.slice(0, 4), +t.slice(5, 7), 0)).toISOString().slice(0, 10));
   const in7 = addDays(t, 6);
 
-  const [venues, monthLocks, upcomingLocks, paid, pendingCr, blocks] = await Promise.all([
+  const [venues, monthLocks, upcomingLocks, paid, pendingCr, blocks, toApprove] = await Promise.all([
     getVenues(),
     db.collection("locks").where("date", ">=", monthStart).where("date", "<=", monthDays.at(-1)).get(),
     db.collection("locks").where("date", ">=", t).where("date", "<=", in7).get(),
     db.collection("bookings").where("payment.paidAt", ">=", istMidnight(monthStart)).get(),
     db.collection("cancellations").where("status", "==", "awaiting").count().get(),
     db.collection("blocks").where("to", ">=", t).get(),
+    db.collection("bookings").where("awaitingApproval", "==", true).count().get(),
   ]);
 
   const ml = monthLocks.docs.map((d) => d.data() as Lock).filter((l) => l.kind === "booking" && isLive(l));
@@ -49,6 +50,7 @@ export default async function Dashboard({ searchParams }: { searchParams: SP }) 
   return (
     <>
       <div className="top"><h1>Admin dashboard</h1></div>
+      {toApprove.data().count > 0 && <p className="alert warn">{toApprove.data().count} UPI payment{toApprove.data().count > 1 ? "s" : ""} waiting for your approval. <Link href="/my-bookings?status=Awaiting+approval">Review</Link></p>}
       <div className="grid g4 mb-5">
         <div className="card"><div className="muted">Bookings this month</div><div className="stat">{new Set(ml.map((l) => l.refId)).size}</div></div>
         <div className="card"><div className="muted">Upcoming events (next 7 days)</div><div className="stat">{upcomingIds.length}</div></div>
@@ -69,7 +71,7 @@ export default async function Dashboard({ searchParams }: { searchParams: SP }) 
                   <td>{slotSummary(b.items)}</td>
                   <td>{b.household.name}<div className="muted">HOF {b.household.hof}</div></td>
                   <td>{b.sectorName}</td>
-                  <td><Badge s={b.status === "pending" ? "On hold" : b.status} /></td>
+                  <td><Badge s={displayStatus(b)} /></td>
                 </tr>
               ))}
             </tbody>

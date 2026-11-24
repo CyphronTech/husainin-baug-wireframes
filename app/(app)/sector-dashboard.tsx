@@ -17,7 +17,7 @@ export async function SectorDashboard({ user, sp, avail }: { user: AppUser; sp: 
     getSectors(),
   ]);
   const shown = bookings.map((b) => ({ ...b, shown: displayStatus(b) }));
-  const upcoming = shown.filter((b) => ["Confirmed", "On hold", "Cancellation requested"].includes(b.shown) && b.items.at(-1)!.date >= t).sort((a, b) => a.items[0].date.localeCompare(b.items[0].date));
+  const upcoming = shown.filter((b) => ["Confirmed", "On hold", "Awaiting approval", "Cancellation requested"].includes(b.shown) && b.items.at(-1)!.date >= t).sort((a, b) => a.items[0].date.localeCompare(b.items[0].date));
   const sectorName = sectors.find((x) => x.id === user.sectorId)?.name;
   const stat = (label: string, value: number, href: string) => (
     <div className="card"><div className="muted">{label}</div><div className="stat">{value}</div><Link href={href}>View</Link></div>
@@ -27,7 +27,7 @@ export async function SectorDashboard({ user, sp, avail }: { user: AppUser; sp: 
     <>
       <div className="top"><h1>Dashboard{sectorName && ` · ${sectorName}`}</h1></div>
       <div className="grid g4 mb-5">
-        {stat("Upcoming bookings", upcoming.filter((b) => b.shown !== "On hold").length, "/my-bookings?status=Confirmed")}
+        {stat("Upcoming bookings", upcoming.filter((b) => b.shown !== "On hold" && b.shown !== "Awaiting approval").length, "/my-bookings?status=Confirmed")}
         {stat("Awaiting payment", shown.filter((b) => b.shown === "On hold").length, "/my-bookings?status=On+hold")}
         {stat("Cancellation requests", crs.docs.filter((d) => d.data().status === "awaiting").length, "/my-bookings?status=Cancellation+requested")}
         {stat("Households", households.length, "/households")}

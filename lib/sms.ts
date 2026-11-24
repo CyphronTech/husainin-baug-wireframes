@@ -7,6 +7,7 @@ const TEMPLATES: Record<Template, string | undefined> = {
   confirmed: process.env.MSG91_SMS_TEMPLATE_CONFIRMED,
   cancelled: process.env.MSG91_SMS_TEMPLATE_CANCELLED,
   reminder: process.env.MSG91_SMS_TEMPLATE_REMINDER,
+  rejected: process.env.MSG91_SMS_TEMPLATE_REJECTED,
 };
 
 /** Never throws. Without MSG91 keys/templates it logs to the console (dev mock). */

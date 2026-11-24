@@ -69,6 +69,7 @@ export default async function BookSlots({ searchParams }: { searchParams: SP }) 
   const href = (o: Record<string, string>) => `/book/slots?${new URLSearchParams({ ...state, ...o })}`;
   const dates = [...new Set([...items.map((i) => i.date), ...(day ? [d] : [])])].sort();
   const problem = cartProblem(items, allVenues, days);
+  const blocked = !!cartProblem(items, allVenues, days, false); // size alone only warns
   // Size check for the function shown: thaal when given, else guests, against the halls added for its session(s).
   // A whole-day function counts its smaller session, so neither morning nor evening is short.
   const limit = day?.thaal ? thaalLimit : guestLimit;
@@ -196,7 +197,7 @@ export default async function BookSlots({ searchParams }: { searchParams: SP }) 
           {Object.entries(state).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
           {items.length > 0 && <span className="step-total"><b className="checkout-total">{inr(total)}</b><span className="muted">{lines} · {new Set(items.map((i) => i.date)).size} {new Set(items.map((i) => i.date)).size === 1 ? "date" : "dates"}</span></span>}
           <Link prefetch={false} className="btn btn-icon" href={`/book?${new URLSearchParams({ ev: state.ev, c: state.c })}`}><Icon name="back" />Back</Link>
-          {items.length > 0 && !problem
+          {items.length > 0 && !blocked
             ? <Submit className="btn primary btn-icon"><Icon name="send" />Book &amp; send link</Submit>
             : <button type="button" className="btn primary btn-icon" disabled><Icon name="send" />Book &amp; send link</button>}
         </form>

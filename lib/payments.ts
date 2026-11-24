@@ -10,7 +10,9 @@ export type PaymentRow = Booking & { payStatus: "paid" | "pending" | "refunded" 
 // beyond that, add a paidAt range query + composite indexes.
 export async function paymentRows(f: { from?: string; to?: string; sector?: string; status?: string }) {
   const [bookings, crs] = await Promise.all([
-    db.collection("bookings").where("payment.linkId", ">", "").get().then(rows<Booking>),
+    // UPI QR payments may have no Razorpay link: they come in through their screenshot.
+    Promise.all([db.collection("bookings").where("payment.linkId", ">", "").get(), db.collection("bookings").where("proof.at", ">", "").get()])
+      .then(([a, b]) => [...new Map([...rows<Booking>(a), ...rows<Booking>(b)].map((x) => [x.id, x])).values()]),
     db.collection("cancellations").where("status", "==", "approved").get().then(rows<Cancellation>),
   ]);
   const refunded = new Map(crs.filter((c) => c.refund).map((c) => [c.bookingId, c]));
