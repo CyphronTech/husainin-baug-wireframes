@@ -13,6 +13,7 @@ import { Badge, Msg, type SP } from "@/lib/ui";
 import { Submit } from "@/lib/submit";
 import { fileHref } from "@/lib/b2";
 import { PaidWatcher } from "./paid-watcher";
+import { UpiPayButton } from "./upi-pay-button";
 
 const hm = (iso?: string) => (iso ? new Date(iso).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kolkata" }) : "");
 
@@ -82,6 +83,8 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
                 <p className="muted m0">Household scans with any UPI app (Google Pay, PhonePe, Paytm).</p>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img className="upi-qr" src="/upi-qr.jpg" alt="UPI QR code for Husainin Baug" width={240} height={240} />
+                <span className="pay-or" aria-hidden="true">OR</span>
+                <UpiPayButton pa={process.env.UPI_VPA || "HUSAINIBAUG@rbl"} pn={process.env.UPI_NAME || "HUSAINI BAUG"} mc={process.env.UPI_MC ?? "8661"} amount={b.amount} no={b.no} />
                 <span className="pay-or" aria-hidden="true">OR</span>
                 <form action={resendLink} className="pay-link"><input type="hidden" name="id" value={id} /><Submit className="btn btn-icon"><Icon name="send" />{b.payment ? "Resend pay link on WhatsApp" : "Send pay link on WhatsApp"}</Submit></form>
               </section>
