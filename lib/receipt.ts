@@ -8,7 +8,7 @@ import type { Booking } from "./types";
 export const receiptFile = (b: Booking) => `Invoice_${b.receiptNo!.replace(/\//g, "-")}.pdf`;
 
 // Letterhead, as on the trust's printed receipt book.
-const TRUST = ["Husainin Baug", "Trust Regn. No. B-8 Pune", "1987, Convent Street, Camp, Pune-411001", "Tel: 020-26356786, 020-26335286"];
+const TRUST = ["Hussaini Baug", "Trust Regn. No. B-8 Pune", "1987, Convent Street, Camp, Pune-411001", "Tel: 020-26356786, 020-26335286"];
 
 /** A Lisan ud-Dawat label (pre-shaped vector paths) whose right edge sits at x. */
 function lisan(key: keyof typeof LISAN, right: number, y: number, size = 14) {

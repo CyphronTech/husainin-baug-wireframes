@@ -8,7 +8,7 @@ export default async function Login({ searchParams }: { searchParams: SP }) {
   return (
     <main className="login">
       <form action={login} className="card stack narrow">
-        <div><h1>Husainin Baug</h1><p className="muted m0">Hall &amp; Room Booking</p></div>
+        <div><h1>Hussaini Baug</h1><p className="muted m0">Hall &amp; Room Booking</p></div>
         <Msg msg={sp.msg} />
         <h2 className="m0">Sign in</h2>
         <label>Username<input name="username" required autoFocus autoComplete="username" /></label>

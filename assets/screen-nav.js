@@ -1,4 +1,4 @@
-/* Husainin Baug wireframes: screen navigation helper.
+/* Hussaini Baug wireframes: screen navigation helper.
  * - Placeholder links (href="#..." with no matching element) never jump or scroll.
  * - When a screen is opened directly (not inside the overview's iframes), a small
  *   floating pill shows: Overview, previous / next screen (canvas order) and the title.

@@ -1,4 +1,4 @@
-/* Husainin Baug: client presentation behaviour.
+/* Hussaini Baug: client presentation behaviour.
    No build step, no network fetches: the screen list is embedded below
    (taken from screens.json, in canvas order). */
 (function () {
@@ -52,7 +52,7 @@
 
   var GROUPS = [
     { id: "login", name: "Login", who: "Shared by both roles" },
-    { id: "admin", name: "Admin", who: "Husainin Baug Admin" },
+    { id: "admin", name: "Admin", who: "Hussaini Baug Admin" },
     { id: "mohalla", name: "Sector / Mohalla user", who: "BURHANI MOHALLA (POONA)" }
   ];
 
