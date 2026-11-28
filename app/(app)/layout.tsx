@@ -15,7 +15,7 @@ export default async function AppLayout({ children, modal }: { children: React.R
   return (
     <div className="shell">
       <aside className="side">
-        <div className="brand"><b>Husainin Baug</b><span>Hall &amp; Room Booking</span></div>
+        <div className="brand"><b>Hussaini Baug</b><span>Hall &amp; Room Booking</span></div>
         <Nav admin={user.role === "admin"} />
       </aside>
       <div className="main">

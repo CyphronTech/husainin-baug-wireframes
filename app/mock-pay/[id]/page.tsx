@@ -24,7 +24,7 @@ export default async function MockPay({ params }: { params: Promise<{ id: string
       <div className="card stack narrow">
         <span className="badge warn">MOCK RAZORPAY</span>
         <h2>Pay {inr(b.amount)}</h2>
-        <p className="muted">Husainin Baug booking {b.no} · {b.household.name}</p>
+        <p className="muted">Hussaini Baug booking {b.no} · {b.household.name}</p>
         {b.status === "pending" ? (
           ["upi", "card", "netbanking"].map((m) => (
             <form key={m} action={mockPay}>

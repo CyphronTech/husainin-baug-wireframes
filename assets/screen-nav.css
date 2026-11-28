@@ -1,4 +1,4 @@
-/* Husainin Baug wireframes: page-fill helpers + floating screen navigation pill. */
+/* Hussaini Baug wireframes: page-fill helpers + floating screen navigation pill. */
 
 /* Let each screen's root block fill a taller viewport (no white band below). */
 body.hb-screen { min-height: 100vh; display: flex; flex-direction: column; }

@@ -19,7 +19,7 @@ export async function createPaymentLink(b: Booking): Promise<{ id: string; url: 
       amount: b.amount * 100,
       currency: "INR",
       reference_id: b.no,
-      description: `Husainin Baug booking ${b.no}`,
+      description: `Hussaini Baug booking ${b.no}`,
       customer: { name: b.household.name, contact: `+91${b.household.mobile}` },
       notify: { sms: false, email: false }, // we send the link on WhatsApp ourselves
       // Razorpay's floor for expire_by is 15 min, longer than our 10-min hold; markPaid() handles late payments.

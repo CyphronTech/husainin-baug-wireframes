@@ -28,6 +28,6 @@ for (const [hof, name, mobile] of [["50450029", "Aliasgar Chaiwala", "8605480902
   batch.set(db.doc(`households/${hof}`), { hof, name, mobile, address: "", sectorId: "bur", whatsappConsent: true });
 
 // shortcut: plain-text password, as requested for now (see login() in app/actions.ts for the upgrade path).
-batch.set(db.doc(`users/${username}`), { username, password, name: "Husainin Baug Admin", mobile: "", email: "", role: "admin", sectorId: null, active: true }, { merge: true });
+batch.set(db.doc(`users/${username}`), { username, password, name: "Hussaini Baug Admin", mobile: "", email: "", role: "admin", sectorId: null, active: true }, { merge: true });
 await batch.commit();
 console.log(`Seeded ${VENUES.length} venues, ${sectors.length} sectors, 3 households, admin ${username}`);

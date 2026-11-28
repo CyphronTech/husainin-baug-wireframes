@@ -1,4 +1,4 @@
-# Husainin Baug — Hall & Room Booking
+# Hussaini Baug — Hall & Room Booking
 
 Next.js 16 (App Router, server actions) + Firestore. Razorpay Payment Links (mocked until keys are set), MSG91 WhatsApp.
 Built from the admin (A1–A9) and Sector / Mohalla (Login, M1–M8) wireframes on `main`.
@@ -91,7 +91,7 @@ Firestore data is shared with any local run that uses the same project. Seed onc
 
 ## Wireframe presentation site (GitHub Pages)
 
-A static presentation site for client review of the **Husainin Baug Hall & Room Booking** wireframes.
+A static presentation site for client review of the **Hussaini Baug Hall & Room Booking** wireframes.
 It contains 18 clickable screens covering three areas:
 
 - **Login**

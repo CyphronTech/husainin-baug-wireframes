@@ -19,11 +19,11 @@ const hm = (iso?: string) => (iso ? new Date(iso).toLocaleTimeString("en-IN", { 
 
 /** Message previews mirror the approved WhatsApp templates (lib/whatsapp.ts). */
 const PREVIEW = {
-  hold: ([name, no, what, amt, mins, url]: string[]) => [`Booking on hold: ${no}`, `Dear ${name}, ${what} is held for you. Please pay ${amt} within ${mins} minutes:\n${url}\n— Husainin Baug`],
-  confirmed: ([, no, what, amt, url]: string[]) => [`Booking confirmed: ${no}`, `Payment of ${amt} received. ${what}.\nReceipt (PDF): ${url}\n— Husainin Baug`],
-  cancelled: ([name, no, what, refund]: string[]) => [`Booking cancelled: ${no}`, `Dear ${name}, your booking ${what} is cancelled. Refund: ${refund}.\n— Husainin Baug`],
-  reminder: ([name, no, what, date, days]: string[]) => [`Booking reminder: ${no}`, `Dear ${name}, your booking starts in ${days} days, on ${date}: ${what}.\n— Husainin Baug`],
-  rejected: ([name, no, what, reason]: string[]) => [`Booking not confirmed: ${no}`, `Dear ${name}, we could not verify your UPI payment for ${what}. Reason: ${reason}. The booking is cancelled; please contact the office.\n— Husainin Baug`],
+  hold: ([name, no, what, amt, mins, url]: string[]) => [`Booking on hold: ${no}`, `Dear ${name}, ${what} is held for you. Please pay ${amt} within ${mins} minutes:\n${url}\n— Hussaini Baug`],
+  confirmed: ([, no, what, amt, url]: string[]) => [`Booking confirmed: ${no}`, `Payment of ${amt} received. ${what}.\nReceipt (PDF): ${url}\n— Hussaini Baug`],
+  cancelled: ([name, no, what, refund]: string[]) => [`Booking cancelled: ${no}`, `Dear ${name}, your booking ${what} is cancelled. Refund: ${refund}.\n— Hussaini Baug`],
+  reminder: ([name, no, what, date, days]: string[]) => [`Booking reminder: ${no}`, `Dear ${name}, your booking starts in ${days} days, on ${date}: ${what}.\n— Hussaini Baug`],
+  rejected: ([name, no, what, reason]: string[]) => [`Booking not confirmed: ${no}`, `Dear ${name}, we could not verify your UPI payment for ${what}. Reason: ${reason}. The booking is cancelled; please contact the office.\n— Hussaini Baug`],
 };
 
 export default async function BookingPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: SP }) {
@@ -82,7 +82,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
                 <h3 className="m0"><span className="pay-n">1</span>Pay {inr(b.amount)} by UPI</h3>
                 <p className="muted m0">Household scans with any UPI app (Google Pay, PhonePe, Paytm).</p>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className="upi-qr" src="/upi-qr.jpg" alt="UPI QR code for Husainin Baug" width={240} height={240} />
+                <img className="upi-qr" src="/upi-qr.jpg" alt="UPI QR code for Hussaini Baug" width={240} height={240} />
                 <span className="pay-or" aria-hidden="true">OR</span>
                 <UpiPayButton pa={process.env.UPI_VPA || "HUSAINIBAUG@rbl"} pn={process.env.UPI_NAME || "HUSAINI BAUG"} mc={process.env.UPI_MC ?? "8661"} amount={b.amount} no={b.no} />
                 <span className="pay-or" aria-hidden="true">OR</span>
@@ -168,7 +168,7 @@ export default async function BookingPage({ params, searchParams }: { params: Pr
           {b.receiptNo ? (
             <>
               <div className="receipt">
-                <b>Husainin Baug</b><br />
+                <b>Hussaini Baug</b><br />
                 <b>Invoice no.</b> {b.receiptNo} · <b>Booking</b> {b.no}<br />
                 <b>Household</b> {b.household.name} · HOF {b.household.hof} · {b.household.mobile}<br />
                 <b>Sector / Mohalla</b> {b.sectorName}<br />
