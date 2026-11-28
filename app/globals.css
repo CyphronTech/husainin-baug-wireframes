@@ -493,3 +493,4 @@ dialog.paid-pop::backdrop { background: rgb(0 0 0 / 0.55); }
 .pay-or { justify-self: stretch; display: flex; align-items: center; gap: .75rem; color: var(--muted-fg); font-size: .85rem; font-weight: 700; letter-spacing: .08em; }
 .pay-or::before, .pay-or::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
 .pay-link { justify-self: center; }
+.btn[aria-disabled="true"] { opacity: .5; pointer-events: none; }
